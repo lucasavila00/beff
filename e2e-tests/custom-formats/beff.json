@@ -16,6 +16,30 @@
     },
     {
       "name": "WriteAuthorizedUserId"
+    },
+    {
+      "name": "StringParentNoMsg"
+    },
+    {
+      "name": "StringChildNoMsg"
+    },
+    {
+      "name": "StringParentMsgOnly"
+    },
+    {
+      "name": "StringParentMsgOnlyChild"
+    },
+    {
+      "name": "StringChildMsgParent"
+    },
+    {
+      "name": "StringChildMsg"
+    },
+    {
+      "name": "StringBothMsgParent"
+    },
+    {
+      "name": "StringBothMsgChild"
     }
   ],
   "numberFormats": [
@@ -30,6 +54,30 @@
     },
     {
       "name": "Rate"
+    },
+    {
+      "name": "NumberParentNoMsg"
+    },
+    {
+      "name": "NumberChildNoMsg"
+    },
+    {
+      "name": "NumberParentMsgOnly"
+    },
+    {
+      "name": "NumberParentMsgOnlyChild"
+    },
+    {
+      "name": "NumberChildMsgParent"
+    },
+    {
+      "name": "NumberChildMsg"
+    },
+    {
+      "name": "NumberBothMsgParent"
+    },
+    {
+      "name": "NumberBothMsgChild"
     }
   ]
 }
