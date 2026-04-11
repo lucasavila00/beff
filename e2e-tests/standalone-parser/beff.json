@@ -3,7 +3,8 @@
   "outputDir": "./src/generated",
   "stringFormats": [
     {
-      "name": "ValidCurrency"
+      "name": "ValidCurrency",
+      "errorMessage": "expected a valid ISO currency code"
     },
     {
       "name": "UserId"

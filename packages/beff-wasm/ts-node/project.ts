@@ -1,5 +1,6 @@
 export type BeffCustomFormat = {
   name: string;
+  errorMessage?: string;
 };
 
 export type BeffUserSettings = {

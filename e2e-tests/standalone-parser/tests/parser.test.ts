@@ -366,7 +366,7 @@ it("Custom Format", () => {
     {
       "errors": [
         {
-          "message": "expected string with format \\"ValidCurrency\\"",
+          "message": "expected a valid ISO currency code",
           "path": [],
           "received": "asdasdadasd",
         },
@@ -401,7 +401,7 @@ it("Mapped Record", () => {
     {
       "errors": [
         {
-          "message": "expected string with format \\"ValidCurrency\\"",
+          "message": "expected a valid ISO currency code",
           "path": [
             "AAAA",
           ],

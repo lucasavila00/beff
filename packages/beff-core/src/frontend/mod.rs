@@ -1605,7 +1605,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             && let Some(value) = head.as_string_const()
         {
             let val_str = value.to_string();
-            if self.settings.string_formats.contains(&val_str) {
+            if self.settings.has_string_format(&val_str) {
                 return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
             } else {
                 return self.error(anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -1654,7 +1654,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             && let Some(value) = next_str.as_string_const()
         {
             let next_str = value.to_string();
-            if self.settings.string_formats.contains(&next_str) {
+            if self.settings.has_string_format(&next_str) {
                 let (first, mut rest) = self.get_string_format_base_formats(base, anchor)?;
                 rest.push(next_str);
                 return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
@@ -1672,7 +1672,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             && let Some(value) = head.as_string_const()
         {
             let val_str = value.to_string();
-            if self.settings.number_formats.contains(&val_str) {
+            if self.settings.has_number_format(&val_str) {
                 return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
             } else {
                 return self.error(anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
@@ -1720,7 +1720,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             && let Some(value) = next_str.as_string_const()
         {
             let next_str = value.to_string();
-            if self.settings.number_formats.contains(&next_str) {
+            if self.settings.has_number_format(&next_str) {
                 let (first, mut rest) = self.get_number_format_base_formats(base, anchor)?;
                 rest.push(next_str);
                 return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));

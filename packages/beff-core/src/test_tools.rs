@@ -1,11 +1,11 @@
 use crate::{
-    BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
+    BeffCustomFormat, BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
     diag::{DiagnosticInformation, Location},
     parser_extractor::ParserExtractResult,
     swc_tools::bind_exports::{FsModuleResolver, parse_and_bind},
 };
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     rc::Rc,
 };
 use swc_common::{GLOBALS, Globals};
@@ -73,28 +73,75 @@ fn parse_modules(fs: &[(&str, &str)]) -> BTreeMap<BffFileName, Rc<ParsedModule>>
     }
     map
 }
-fn extract_types(fs: &[(&str, &str)]) -> ParserExtractResult {
+fn extract_types_with_settings(fs: &[(&str, &str)], settings: BeffUserSettings) -> ParserExtractResult {
     let mut man = TestFileManager {
         fs: parse_modules(fs),
     };
     let entry = EntryPoints {
         parser_entry_point: BffFileName::new("entry.ts".into()),
-        settings: BeffUserSettings {
-            string_formats: BTreeSet::from_iter(vec![
-                "password".to_string(),
-                "User".to_string(),
-                "ReadAuthorizedUser".to_string(),
-                "WriteAuthorizedUser".to_string(),
-            ]),
-            number_formats: BTreeSet::from_iter(vec![
-                "age".to_string(),
-                "NonInfiniteNumber".to_string(),
-                "NonNegativeNumber".to_string(),
-                "Rate".to_string(),
-            ]),
-        },
+        settings,
     };
     crate::extract(&mut man, entry)
+}
+
+fn extract_types(fs: &[(&str, &str)]) -> ParserExtractResult {
+    extract_types_with_settings(
+        fs,
+        BeffUserSettings {
+            string_formats: BTreeMap::from([
+                (
+                    "password".to_string(),
+                    BeffCustomFormat {
+                        error_message: None,
+                    },
+                ),
+                (
+                    "User".to_string(),
+                    BeffCustomFormat {
+                        error_message: None,
+                    },
+                ),
+                (
+                    "ReadAuthorizedUser".to_string(),
+                    BeffCustomFormat {
+                        error_message: None,
+                    },
+                ),
+                (
+                    "WriteAuthorizedUser".to_string(),
+                    BeffCustomFormat {
+                        error_message: None,
+                    },
+                ),
+            ]),
+            number_formats: BTreeMap::from([
+                (
+                    "age".to_string(),
+                    BeffCustomFormat {
+                        error_message: None,
+                    },
+                ),
+                (
+                    "NonInfiniteNumber".to_string(),
+                    BeffCustomFormat {
+                        error_message: None,
+                    },
+                ),
+                (
+                    "NonNegativeNumber".to_string(),
+                    BeffCustomFormat {
+                        error_message: None,
+                    },
+                ),
+                (
+                    "Rate".to_string(),
+                    BeffCustomFormat {
+                        error_message: None,
+                    },
+                ),
+            ]),
+        },
+    )
 }
 
 pub fn print_types(from: &str) -> String {
@@ -118,6 +165,22 @@ pub fn print_types_multifile(sources: &[(&str, &str)]) -> String {
 pub fn print_cgen(from: &str) -> String {
     let sources = [("entry.ts", from)];
     let p = extract_types(&sources);
+    let errors = &p.errors;
+
+    if !errors.is_empty() {
+        panic!("errors: {:?}", errors);
+    }
+
+    let mut out = String::new();
+
+    let code = p.emit_code().expect("should be able to emit module");
+    out.push_str(&code);
+    out
+}
+
+pub fn print_cgen_with_settings(from: &str, settings: BeffUserSettings) -> String {
+    let sources = [("entry.ts", from)];
+    let p = extract_types_with_settings(&sources, settings);
     let errors = &p.errors;
 
     if !errors.is_empty() {

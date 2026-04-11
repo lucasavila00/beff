@@ -499,7 +499,7 @@ const direct_hoist_161 = new AnyOfConstsRuntype([
 ]);
 const direct_hoist_162 = new StringWithFormatRuntype([
     "ValidCurrency"
-]);
+], "expected a valid ISO currency code");
 const direct_hoist_163 = new ObjectRuntype({}, [
     {
         "key": direct_hoist_162,

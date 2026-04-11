@@ -654,9 +654,11 @@ export class TypedArrayRuntype implements Runtype {
 
 export class StringWithFormatRuntype implements Runtype {
   private formats: string[];
+  private errorMessage: string | undefined;
 
-  constructor(formats: string[]) {
+  constructor(formats: string[], errorMessage?: string) {
     this.formats = formats;
+    this.errorMessage = errorMessage;
   }
   describe(_ctx: DescribeContext): string {
     if (this.formats.length === 0) {
@@ -698,7 +700,11 @@ export class StringWithFormatRuntype implements Runtype {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
+    return buildError(
+      ctx,
+      this.errorMessage ?? `expected string with format "${this.formats.join(" and ")}"`,
+      input,
+    );
   }
   hash(_ctx: HashContext): number {
     let acc: number[] = [stringWithFormatHash];
