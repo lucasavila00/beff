@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.132
+
+### Patch Changes
+
+- add custom error message to custom formats
+- Updated dependencies
+  - @beff/cli@0.0.132
+
 ## 0.0.131
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.132
+
+### Patch Changes
+
+- add custom error message to custom formats
+
 ## 0.0.131
 
 ### Patch Changes
