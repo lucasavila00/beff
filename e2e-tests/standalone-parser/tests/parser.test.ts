@@ -431,7 +431,7 @@ it("Custom String Format User Hierarchy", () => {
    {
      "errors": [
        {
-         "message": "expected a readable user id",
+         "message": "expected user with read permissions",
          "path": [],
          "received": "asdasdadasd",
        },
@@ -445,7 +445,7 @@ it("Custom String Format User Hierarchy", () => {
     {
       "errors": [
         {
-          "message": "expected a writable user id",
+          "message": "expected user with write permissions",
           "path": [],
           "received": "asdasdadasd",
         },
@@ -459,7 +459,7 @@ it("Custom String Format User Hierarchy", () => {
       {
         "errors": [
           {
-            "message": "expected a writable user id",
+            "message": "expected user with write permissions",
             "path": [],
             "received": "read_write_123",
           },

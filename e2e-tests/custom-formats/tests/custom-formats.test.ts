@@ -19,7 +19,7 @@ it("uses custom error messages for base string formats", () => {
     {
       "errors": [
         {
-          "message": "expected a valid user id",
+          "message": "expected string with format \\"UserId\\"",
           "path": [],
           "received": "abc",
         },

@@ -49,9 +49,23 @@ type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;
 };
 
+export type UserProvidedStringFormat =
+  | ((input: string) => boolean)
+  | {
+      validator: (input: string) => boolean;
+      errorMessage?: (input: string) => string;
+    };
+
+export type UserProvidedNumberFormat =
+  | ((input: number) => boolean)
+  | {
+      validator: (input: number) => boolean;
+      errorMessage?: (input: number) => string;
+    };
+
 export type BuildParserFunction = <T>(args?: {
-  stringFormats?: { [key: string]: (input: string) => boolean };
-  numberFormats?: { [key: string]: (input: number) => boolean };
+  stringFormats?: { [key: string]: UserProvidedStringFormat };
+  numberFormats?: { [key: string]: UserProvidedNumberFormat };
 }) => Parsers<T>;
 
 export type TypeOf<T> = T extends BeffParser<infer U> ? U : never;

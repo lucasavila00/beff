@@ -77,31 +77,31 @@ const direct_hoist_5 = new RefRuntype("NonNegativeNumber");
 const direct_hoist_6 = new RefRuntype("Rate");
 const direct_hoist_7 = new NumberWithFormatRuntype([
     "NonInfiniteNumber"
-], "expected a finite number");
+]);
 const direct_hoist_8 = new NumberWithFormatRuntype([
     "NonInfiniteNumber",
     "NonNegativeNumber"
-], "expected a non-negative number");
+]);
 const direct_hoist_9 = new NumberWithFormatRuntype([
     "NonInfiniteNumber",
     "NonNegativeNumber",
     "Rate"
-], "expected a valid rate");
+]);
 const direct_hoist_10 = new StringWithFormatRuntype([
     "UserId",
     "ReadAuthorizedUserId"
-], "expected user with read permissions");
+]);
 const direct_hoist_11 = new StringWithFormatRuntype([
     "UserId"
-], "expected a valid user id");
+]);
 const direct_hoist_12 = new StringWithFormatRuntype([
     "ValidCurrency"
-], "expected a valid ISO currency code");
+]);
 const direct_hoist_13 = new StringWithFormatRuntype([
     "UserId",
     "ReadAuthorizedUserId",
     "WriteAuthorizedUserId"
-], "expected user with write permissions");
+]);
 const namedRuntypes = {
     "NonInfiniteNumber": direct_hoist_7,
     "NonNegativeNumber": direct_hoist_8,

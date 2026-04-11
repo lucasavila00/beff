@@ -21,14 +21,32 @@ export const Codecs = parse.buildParsers<{
   Rate: Rate;
 }>({
   stringFormats: {
-    ValidCurrency: (input: string) => input === "USD",
+    ValidCurrency: {
+      validator: (input: string) => input === "USD",
+      errorMessage: () => "expected a valid ISO currency code",
+    },
     UserId: (input: string) => input.startsWith("user_"),
-    ReadAuthorizedUserId: (input: string) => input.includes("_read_"),
-    WriteAuthorizedUserId: (input: string) => input.includes("_write_"),
+    ReadAuthorizedUserId: {
+      validator: (input: string) => input.includes("_read_"),
+      errorMessage: () => "expected user with read permissions",
+    },
+    WriteAuthorizedUserId: {
+      validator: (input: string) => input.includes("_write_"),
+      errorMessage: () => "expected user with write permissions",
+    },
   },
   numberFormats: {
-    NonInfiniteNumber: (input: number) => Number.isFinite(input),
-    NonNegativeNumber: (input: number) => input >= 0,
-    Rate: (input: number) => input >= 0 && input <= 1,
+    NonInfiniteNumber: {
+      validator: (input: number) => Number.isFinite(input),
+      errorMessage: () => "expected a finite number",
+    },
+    NonNegativeNumber: {
+      validator: (input: number) => input >= 0,
+      errorMessage: () => "expected a non-negative number",
+    },
+    Rate: {
+      validator: (input: number) => input >= 0 && input <= 1,
+      errorMessage: () => "expected a valid rate",
+    },
   },
 });

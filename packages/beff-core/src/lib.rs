@@ -20,6 +20,7 @@ use parser_extractor::extract_parser;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -79,36 +80,19 @@ pub struct UnresolvedExport {
     pub renamed: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BeffCustomFormat {
-    pub error_message: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BeffUserSettings {
-    pub string_formats: BTreeMap<String, BeffCustomFormat>,
-    pub number_formats: BTreeMap<String, BeffCustomFormat>,
+    pub string_formats: BTreeSet<String>,
+    pub number_formats: BTreeSet<String>,
 }
 
 impl BeffUserSettings {
     pub fn has_string_format(&self, name: &str) -> bool {
-        self.string_formats.contains_key(name)
+        self.string_formats.contains(name)
     }
 
     pub fn has_number_format(&self, name: &str) -> bool {
-        self.number_formats.contains_key(name)
-    }
-
-    pub fn string_format_error_message(&self, name: &str) -> Option<&str> {
-        self.string_formats
-            .get(name)
-            .and_then(|it| it.error_message.as_deref())
-    }
-
-    pub fn number_format_error_message(&self, name: &str) -> Option<&str> {
-        self.number_formats
-            .get(name)
-            .and_then(|it| it.error_message.as_deref())
+        self.number_formats.contains(name)
     }
 }
 
