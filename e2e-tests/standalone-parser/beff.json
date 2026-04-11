@@ -3,34 +3,27 @@
   "outputDir": "./src/generated",
   "stringFormats": [
     {
-      "name": "ValidCurrency",
-      "errorMessage": "expected a valid ISO currency code"
+      "name": "ValidCurrency"
     },
     {
-      "name": "UserId",
-      "errorMessage": "expected a valid user id"
+      "name": "UserId"
     },
     {
-      "name": "ReadAuthorizedUserId",
-      "errorMessage": "expected a readable user id"
+      "name": "ReadAuthorizedUserId"
     },
     {
-      "name": "WriteAuthorizedUserId",
-      "errorMessage": "expected a writable user id"
+      "name": "WriteAuthorizedUserId"
     }
   ],
   "numberFormats": [
     {
-      "name": "NonNegativeNumber",
-      "errorMessage": "expected a non-negative number"
+      "name": "NonNegativeNumber"
     },
     {
-      "name": "NonInfiniteNumber",
-      "errorMessage": "expected a finite number"
+      "name": "NonInfiniteNumber"
     },
     {
-      "name": "Rate",
-      "errorMessage": "expected a valid rate"
+      "name": "Rate"
     }
   ]
 }

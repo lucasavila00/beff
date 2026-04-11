@@ -20,12 +20,7 @@ use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
-use crate::{
-    BeffUserSettings,
-    NamedSchema,
-    ast::runtype::{Optionality, Runtype},
-    parser_extractor::BuiltDecoder,
-};
+use crate::{NamedSchema, ast::runtype::{Optionality, Runtype}, parser_extractor::BuiltDecoder};
 
 fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
     let ast = Module {
@@ -56,7 +51,6 @@ fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
 }
 
 struct PrintContext {
-    settings: BeffUserSettings,
     hoisted: BTreeMap<Runtype, (usize, Expr)>,
     all_names: Vec<RuntypeUUID>,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
@@ -181,30 +175,8 @@ fn no_args_runtype(class_name: &str) -> Expr {
     )
 }
 
-fn string_format_error_message(
-    settings: &BeffUserSettings,
-    first: &String,
-    rest: &[String],
-) -> Option<String> {
-    rest.iter()
-        .rev()
-        .chain(std::iter::once(first))
-        .find_map(|format| settings.string_format_error_message(format).map(str::to_string))
-}
-
-fn number_format_error_message(
-    settings: &BeffUserSettings,
-    first: &String,
-    rest: &[String],
-) -> Option<String> {
-    rest.iter()
-        .rev()
-        .chain(std::iter::once(first))
-        .find_map(|format| settings.number_format_error_message(format).map(str::to_string))
-}
-
-fn formats_array(first: &String, rest: &[String]) -> Expr {
-    Expr::Array(ArrayLit {
+fn formats_runtype(constructor: &str, first: &String, rest: &[String]) -> Expr {
+    let vs_arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
         elems: std::iter::once(first)
             .chain(rest.iter())
@@ -220,11 +192,7 @@ fn formats_array(first: &String, rest: &[String]) -> Expr {
                 })
             })
             .collect(),
-    })
-}
-
-fn formats_runtype(constructor: &str, first: &String, rest: &[String]) -> Expr {
-    let vs_arr = formats_array(first, rest);
+    });
     new_runtype_class(constructor, vec![vs_arr])
 }
 
@@ -675,25 +643,11 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::Never => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
-        Runtype::StringWithFormat(CustomFormat(first, rest)) => match string_format_error_message(
-            &ctx.settings,
-            first,
-            rest,
-        ) {
-            Some(error_message) => new_runtype_class(
-                "StringWithFormatRuntype",
-                vec![formats_array(first, rest), string_lit(&error_message)],
-            ),
-            None => formats_runtype("StringWithFormatRuntype", first, rest),
-        },
+        Runtype::StringWithFormat(CustomFormat(first, rest)) => {
+            formats_runtype("StringWithFormatRuntype", first, rest)
+        }
         Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
-            match number_format_error_message(&ctx.settings, first, rest) {
-                Some(error_message) => new_runtype_class(
-                    "NumberWithFormatRuntype",
-                    vec![formats_array(first, rest), string_lit(&error_message)],
-                ),
-                None => formats_runtype("NumberWithFormatRuntype", first, rest),
-            }
+            formats_runtype("NumberWithFormatRuntype", first, rest)
         }
         Runtype::Date => no_args_runtype("DateRuntype"),
         Runtype::BigInt => no_args_runtype("BigIntRuntype"),
@@ -967,7 +921,6 @@ impl ParserExtractResult {
             .map(|it| it.name.clone())
             .collect::<Vec<RuntypeUUID>>();
         let mut hoisted = PrintContext {
-            settings: self.settings,
             hoisted: BTreeMap::new(),
             all_names,
             type_with_args_names: BTreeMap::new(),

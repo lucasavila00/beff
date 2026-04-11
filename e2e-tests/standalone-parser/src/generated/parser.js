@@ -499,7 +499,7 @@ const direct_hoist_161 = new AnyOfConstsRuntype([
 ]);
 const direct_hoist_162 = new StringWithFormatRuntype([
     "ValidCurrency"
-], "expected a valid ISO currency code");
+]);
 const direct_hoist_163 = new ObjectRuntype({}, [
     {
         "key": direct_hoist_162,
@@ -508,28 +508,28 @@ const direct_hoist_163 = new ObjectRuntype({}, [
 ]);
 const direct_hoist_164 = new NumberWithFormatRuntype([
     "NonInfiniteNumber"
-], "expected a finite number");
+]);
 const direct_hoist_165 = new NumberWithFormatRuntype([
     "NonInfiniteNumber",
     "NonNegativeNumber"
-], "expected a non-negative number");
+]);
 const direct_hoist_166 = new NumberWithFormatRuntype([
     "NonInfiniteNumber",
     "NonNegativeNumber",
     "Rate"
-], "expected a valid rate");
+]);
 const direct_hoist_167 = new StringWithFormatRuntype([
     "UserId",
     "ReadAuthorizedUserId"
-], "expected a readable user id");
+]);
 const direct_hoist_168 = new StringWithFormatRuntype([
     "UserId"
-], "expected a valid user id");
+]);
 const direct_hoist_169 = new StringWithFormatRuntype([
     "UserId",
     "ReadAuthorizedUserId",
     "WriteAuthorizedUserId"
-], "expected a writable user id");
+]);
 const direct_hoist_170 = new ConstRuntype("c");
 const namedRuntypes = {
     "DeploymentState": direct_hoist_66,

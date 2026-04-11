@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.133
+
+### Patch Changes
+
+- improve API for custom formats error messages
+
 ## 0.0.132
 
 ### Patch Changes

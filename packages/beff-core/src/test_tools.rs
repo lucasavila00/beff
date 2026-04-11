@@ -1,11 +1,11 @@
 use crate::{
-    BeffCustomFormat, BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
+    BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
     diag::{DiagnosticInformation, Location},
     parser_extractor::ParserExtractResult,
     swc_tools::bind_exports::{FsModuleResolver, parse_and_bind},
 };
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     rc::Rc,
 };
 use swc_common::{GLOBALS, Globals};
@@ -88,57 +88,17 @@ fn extract_types(fs: &[(&str, &str)]) -> ParserExtractResult {
     extract_types_with_settings(
         fs,
         BeffUserSettings {
-            string_formats: BTreeMap::from([
-                (
-                    "password".to_string(),
-                    BeffCustomFormat {
-                        error_message: None,
-                    },
-                ),
-                (
-                    "User".to_string(),
-                    BeffCustomFormat {
-                        error_message: None,
-                    },
-                ),
-                (
-                    "ReadAuthorizedUser".to_string(),
-                    BeffCustomFormat {
-                        error_message: None,
-                    },
-                ),
-                (
-                    "WriteAuthorizedUser".to_string(),
-                    BeffCustomFormat {
-                        error_message: None,
-                    },
-                ),
+            string_formats: BTreeSet::from_iter(vec![
+                "password".to_string(),
+                "User".to_string(),
+                "ReadAuthorizedUser".to_string(),
+                "WriteAuthorizedUser".to_string(),
             ]),
-            number_formats: BTreeMap::from([
-                (
-                    "age".to_string(),
-                    BeffCustomFormat {
-                        error_message: None,
-                    },
-                ),
-                (
-                    "NonInfiniteNumber".to_string(),
-                    BeffCustomFormat {
-                        error_message: None,
-                    },
-                ),
-                (
-                    "NonNegativeNumber".to_string(),
-                    BeffCustomFormat {
-                        error_message: None,
-                    },
-                ),
-                (
-                    "Rate".to_string(),
-                    BeffCustomFormat {
-                        error_message: None,
-                    },
-                ),
+            number_formats: BTreeSet::from_iter(vec![
+                "age".to_string(),
+                "NonInfiniteNumber".to_string(),
+                "NonNegativeNumber".to_string(),
+                "Rate".to_string(),
             ]),
         },
     )
@@ -177,23 +137,6 @@ pub fn print_cgen(from: &str) -> String {
     out.push_str(&code);
     out
 }
-
-pub fn print_cgen_with_settings(from: &str, settings: BeffUserSettings) -> String {
-    let sources = [("entry.ts", from)];
-    let p = extract_types_with_settings(&sources, settings);
-    let errors = &p.errors;
-
-    if !errors.is_empty() {
-        panic!("errors: {:?}", errors);
-    }
-
-    let mut out = String::new();
-
-    let code = p.emit_code().expect("should be able to emit module");
-    out.push_str(&code);
-    out
-}
-
 pub fn failure(from: &str) -> String {
     let sources = [("entry.ts", from)];
     failure_multifile(&sources)

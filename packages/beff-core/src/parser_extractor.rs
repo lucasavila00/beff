@@ -22,7 +22,6 @@ pub struct BuiltDecoder {
 pub struct ParserExtractResult {
     pub errors: Vec<DiagnosticInformation>,
     pub entry_file_name: BffFileName,
-    pub settings: BeffUserSettings,
     pub validators: Vec<NamedSchema>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
     pub counter: usize,
@@ -197,7 +196,6 @@ pub fn extract_parser<R: FileManager>(
     ParserExtractResult {
         errors,
         entry_file_name,
-        settings: settings.clone(),
         validators,
         built_decoders,
         counter,

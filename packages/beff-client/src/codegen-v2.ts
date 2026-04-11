@@ -283,15 +283,71 @@ const limitedCommaJoinJson = (arr: unknown[]) => {
   );
 };
 type UserProvidedStringValidatorFn = (input: string) => boolean;
-const stringFormatters: Record<string, UserProvidedStringValidatorFn> = {};
-export function registerStringFormatter(name: string, validator: UserProvidedStringValidatorFn) {
-  stringFormatters[name] = validator;
+type UserProvidedStringErrorMessageFn = (input: string) => string;
+type UserProvidedStringFormat =
+  | UserProvidedStringValidatorFn
+  | {
+      validator: UserProvidedStringValidatorFn;
+      errorMessage?: UserProvidedStringErrorMessageFn;
+    };
+type RegisteredStringFormat = {
+  validator: UserProvidedStringValidatorFn;
+  errorMessage?: UserProvidedStringErrorMessageFn;
+};
+const stringFormatters: Record<string, RegisteredStringFormat> = {};
+export function registerStringFormatter(name: string, value: UserProvidedStringFormat) {
+  if (typeof value === "function") {
+    stringFormatters[name] = {
+      validator: value,
+    };
+    return;
+  }
+  stringFormatters[name] = value;
 }
 
 type UserProvidedNumberValidatorFn = (input: number) => boolean;
-const numberFormatters: Record<string, UserProvidedNumberValidatorFn> = {};
-export function registerNumberFormatter(name: string, validator: UserProvidedNumberValidatorFn) {
-  numberFormatters[name] = validator;
+type UserProvidedNumberErrorMessageFn = (input: number) => string;
+type UserProvidedNumberFormat =
+  | UserProvidedNumberValidatorFn
+  | {
+      validator: UserProvidedNumberValidatorFn;
+      errorMessage?: UserProvidedNumberErrorMessageFn;
+    };
+type RegisteredNumberFormat = {
+  validator: UserProvidedNumberValidatorFn;
+  errorMessage?: UserProvidedNumberErrorMessageFn;
+};
+const numberFormatters: Record<string, RegisteredNumberFormat> = {};
+export function registerNumberFormatter(name: string, value: UserProvidedNumberFormat) {
+  if (typeof value === "function") {
+    numberFormatters[name] = {
+      validator: value,
+    };
+    return;
+  }
+  numberFormatters[name] = value;
+}
+
+function resolveStringFormatErrorMessage(formats: string[], input: string): string | undefined {
+  for (const f of [...formats].reverse()) {
+    const formatter = stringFormatters[f];
+    const errorMessage = formatter?.errorMessage;
+    if (errorMessage != null) {
+      return errorMessage(input);
+    }
+  }
+  return undefined;
+}
+
+function resolveNumberFormatErrorMessage(formats: string[], input: number): string | undefined {
+  for (const f of [...formats].reverse()) {
+    const formatter = numberFormatters[f];
+    const errorMessage = formatter?.errorMessage;
+    if (errorMessage != null) {
+      return errorMessage(input);
+    }
+  }
+  return undefined;
 }
 
 type DescribeContext = {
@@ -654,11 +710,9 @@ export class TypedArrayRuntype implements Runtype {
 
 export class StringWithFormatRuntype implements Runtype {
   private formats: string[];
-  private errorMessage: string | undefined;
 
-  constructor(formats: string[], errorMessage?: string) {
+  constructor(formats: string[]) {
     this.formats = formats;
-    this.errorMessage = errorMessage;
   }
   describe(_ctx: DescribeContext): string {
     if (this.formats.length === 0) {
@@ -683,7 +737,8 @@ export class StringWithFormatRuntype implements Runtype {
     }
 
     for (const f of this.formats) {
-      const validator = stringFormatters[f];
+      const formatter = stringFormatters[f];
+      const validator = formatter?.validator;
 
       if (validator == null) {
         return false;
@@ -702,7 +757,10 @@ export class StringWithFormatRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(
       ctx,
-      this.errorMessage ?? `expected string with format "${this.formats.join(" and ")}"`,
+      typeof input === "string"
+        ? (resolveStringFormatErrorMessage(this.formats, input) ??
+            `expected string with format "${this.formats.join(" and ")}"`)
+        : `expected string with format "${this.formats.join(" and ")}"`,
       input,
     );
   }
@@ -717,10 +775,8 @@ export class StringWithFormatRuntype implements Runtype {
 
 export class NumberWithFormatRuntype implements Runtype {
   private formats: string[];
-  private errorMessage: string | undefined;
-  constructor(formats: string[], errorMessage?: string) {
+  constructor(formats: string[]) {
     this.formats = formats;
-    this.errorMessage = errorMessage;
   }
   describe(_ctx: DescribeContext): string {
     if (this.formats.length === 0) {
@@ -745,7 +801,8 @@ export class NumberWithFormatRuntype implements Runtype {
     }
 
     for (const f of this.formats) {
-      const validator = numberFormatters[f];
+      const formatter = numberFormatters[f];
+      const validator = formatter?.validator;
 
       if (validator == null) {
         return false;
@@ -764,7 +821,10 @@ export class NumberWithFormatRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(
       ctx,
-      this.errorMessage ?? `expected number with format "${this.formats.join(" and ")}"`,
+      typeof input === "number"
+        ? (resolveNumberFormatErrorMessage(this.formats, input) ??
+            `expected number with format "${this.formats.join(" and ")}"`)
+        : `expected number with format "${this.formats.join(" and ")}"`,
       input,
     );
   }

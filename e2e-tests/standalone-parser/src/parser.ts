@@ -348,31 +348,52 @@ export const {
   DeploymentState: DeploymentState;
 }>({
   stringFormats: {
-    ValidCurrency: (input: string) => {
-      if (input === "USD") {
-        return true;
-      }
-      return false;
+    ValidCurrency: {
+      validator: (input: string) => {
+        if (input === "USD") {
+          return true;
+        }
+        return false;
+      },
+      errorMessage: () => "expected a valid ISO currency code",
     },
-    UserId: (input: string) => {
-      return input.startsWith("user_");
+    UserId: {
+      validator: (input: string) => {
+        return input.startsWith("user_");
+      },
+      errorMessage: () => "expected a valid user id",
     },
-    ReadAuthorizedUserId: (input: string) => {
-      return input.includes("_read_");
+    ReadAuthorizedUserId: {
+      validator: (input: string) => {
+        return input.includes("_read_");
+      },
+      errorMessage: () => "expected user with read permissions",
     },
-    WriteAuthorizedUserId: (input: string) => {
-      return input.includes("_write_");
+    WriteAuthorizedUserId: {
+      validator: (input: string) => {
+        return input.includes("_write_");
+      },
+      errorMessage: () => "expected user with write permissions",
     },
   },
   numberFormats: {
-    NonNegativeNumber: (input: number) => {
-      return input >= 0;
+    NonNegativeNumber: {
+      validator: (input: number) => {
+        return input >= 0;
+      },
+      errorMessage: () => "expected a non-negative number",
     },
-    NonInfiniteNumber: (input: number) => {
-      return Number.isFinite(input);
+    NonInfiniteNumber: {
+      validator: (input: number) => {
+        return Number.isFinite(input);
+      },
+      errorMessage: () => "expected a finite number",
     },
-    Rate: (input: number) => {
-      return input >= 0 && input <= 1;
+    Rate: {
+      validator: (input: number) => {
+        return input >= 0 && input <= 1;
+      },
+      errorMessage: () => "expected a valid rate",
     },
   },
 });

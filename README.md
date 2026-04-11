@@ -165,8 +165,7 @@ Beff allows you to define custom string validation formats. First, configure you
   "outputDir": "./src/generated",
   "stringFormats": [
     {
-      "name": "ValidCurrency",
-      "errorMessage": "expected a valid ISO currency code"
+      "name": "ValidCurrency"
     }
   ]
 }
@@ -183,50 +182,39 @@ export const Parsers = parse.buildParsers<{
   ValidCurrency: ValidCurrency;
 }>({
   stringFormats: {
-    ValidCurrency: (input: string) => {
-      if (VALID_CURRENCIES.includes(input)) {
-        return true;
-      }
-      return false;
+    ValidCurrency: {
+      validator: (input: string) => {
+        if (VALID_CURRENCIES.includes(input)) {
+          return true;
+        }
+        return false;
+      },
+      errorMessage: () => "expected a valid ISO currency code",
     },
   },
 });
 ```
 
-`errorMessage` is optional and can be omitted entirely:
+Runtime format definitions support both forms:
 
-```json
-{
-  "stringFormats": [
-    {
-      "name": "ValidCurrency"
-    }
-  ]
+```ts
+stringFormats: {
+  ValidCurrency: (input: string) => input === "USD",
 }
 ```
 
-When provided, failed parses use it instead of the default `expected string with format "..."` message.
+```ts
+stringFormats: {
+  ValidCurrency: {
+    validator: (input: string) => input === "USD",
+    errorMessage: (input: string) => `expected ISO currency code, got ${input}`,
+  },
+}
+```
+
+`errorMessage` is optional. When provided, failed parses use it instead of the default `expected string with format "..."` message.
 
 This also works with `StringFormatExtends`. If multiple formats in the chain define an `errorMessage`, the upper / more specific one wins:
-
-```json
-{
-  "stringFormats": [
-    {
-      "name": "UserId",
-      "errorMessage": "expected a valid user id"
-    },
-    {
-      "name": "ReadAuthorizedUserId",
-      "errorMessage": "expected user with read permissions"
-    },
-    {
-      "name": "WriteAuthorizedUserId",
-      "errorMessage": "expected user with write permissions"
-    }
-  ]
-}
-```
 
 ```ts
 import { StringFormat, StringFormatExtends } from "@beff/client";
@@ -234,6 +222,23 @@ import { StringFormat, StringFormatExtends } from "@beff/client";
 export type UserId = StringFormat<"UserId">;
 export type ReadAuthorizedUserId = StringFormatExtends<UserId, "ReadAuthorizedUserId">;
 export type WriteAuthorizedUserId = StringFormatExtends<ReadAuthorizedUserId, "WriteAuthorizedUserId">;
+
+const Parsers = parse.buildParsers({
+  stringFormats: {
+    UserId: {
+      validator: (input: string) => input.startsWith("user_"),
+      errorMessage: () => "expected a valid user id",
+    },
+    ReadAuthorizedUserId: {
+      validator: (input: string) => input.includes("_read_"),
+      errorMessage: () => "expected user with read permissions",
+    },
+    WriteAuthorizedUserId: {
+      validator: (input: string) => input.includes("_write_"),
+      errorMessage: () => "expected user with write permissions",
+    },
+  },
+});
 ```
 
 ### Custom Number Formats
@@ -246,8 +251,7 @@ Similarly, you can define custom number validation formats. Configure your `beff
   "outputDir": "./src/generated",
   "numberFormats": [
     {
-      "name": "NonNegativeNumber",
-      "errorMessage": "expected a non-negative number"
+      "name": "NonNegativeNumber"
     }
   ]
 }
@@ -264,8 +268,16 @@ export const Parsers = parse.buildParsers<{
   NonNegativeNumber: NonNegativeNumber;
 }>({
   numberFormats: {
-    NonNegativeNumber: (input: number) => {
-      return input >= 0;
+    NonNegativeNumber: {
+      validator: (input: number) => {
+        return input >= 0;
+      },
+      errorMessage: () => "expected a non-negative number",
+    },
+    NegativeNumber: {
+      validator: (input: number) => {
+        return input < 0;
+      },
     },
   },
 });
