@@ -1312,6 +1312,36 @@ mod tests {
     }
 
     #[test]
+    fn ok_number_with_fmt_decoder_custom_error_message() {
+        insta::assert_snapshot!(print_cgen_with_settings(
+            r#"
+        export type Alias = NumberFormat<"age">;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#,
+            BeffUserSettings {
+                string_formats: BTreeMap::new(),
+                number_formats: BTreeMap::from([(
+                    "age".to_string(),
+                    BeffCustomFormat {
+                        error_message: Some("expected a valid age".to_string()),
+                    },
+                )]),
+            }
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype("Alias");
+        const direct_hoist_1 = new NumberWithFormatRuntype([
+            "age"
+        ], "expected a valid age");
+        const namedRuntypes = {
+            "Alias": direct_hoist_1
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
     fn ok_string_with_fmt_record_decoder() {
         insta::assert_snapshot!(print_cgen(
             r#"

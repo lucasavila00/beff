@@ -192,6 +192,17 @@ fn string_format_error_message(
         .find_map(|format| settings.string_format_error_message(format).map(str::to_string))
 }
 
+fn number_format_error_message(
+    settings: &BeffUserSettings,
+    first: &String,
+    rest: &[String],
+) -> Option<String> {
+    rest.iter()
+        .rev()
+        .chain(std::iter::once(first))
+        .find_map(|format| settings.number_format_error_message(format).map(str::to_string))
+}
+
 fn formats_array(first: &String, rest: &[String]) -> Expr {
     Expr::Array(ArrayLit {
         span: DUMMY_SP,
@@ -676,7 +687,13 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
             None => formats_runtype("StringWithFormatRuntype", first, rest),
         },
         Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
-            formats_runtype("NumberWithFormatRuntype", first, rest)
+            match number_format_error_message(&ctx.settings, first, rest) {
+                Some(error_message) => new_runtype_class(
+                    "NumberWithFormatRuntype",
+                    vec![formats_array(first, rest), string_lit(&error_message)],
+                ),
+                None => formats_runtype("NumberWithFormatRuntype", first, rest),
+            }
         }
         Runtype::Date => no_args_runtype("DateRuntype"),
         Runtype::BigInt => no_args_runtype("BigIntRuntype"),

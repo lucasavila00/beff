@@ -717,8 +717,10 @@ export class StringWithFormatRuntype implements Runtype {
 
 export class NumberWithFormatRuntype implements Runtype {
   private formats: string[];
-  constructor(formats: string[]) {
+  private errorMessage: string | undefined;
+  constructor(formats: string[], errorMessage?: string) {
     this.formats = formats;
+    this.errorMessage = errorMessage;
   }
   describe(_ctx: DescribeContext): string {
     if (this.formats.length === 0) {
@@ -760,7 +762,11 @@ export class NumberWithFormatRuntype implements Runtype {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
+    return buildError(
+      ctx,
+      this.errorMessage ?? `expected number with format "${this.formats.join(" and ")}"`,
+      input,
+    );
   }
   hash(_ctx: HashContext): number {
     let acc: number[] = [numberWithFormatHash];

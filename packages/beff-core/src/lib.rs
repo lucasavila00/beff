@@ -104,6 +104,12 @@ impl BeffUserSettings {
             .get(name)
             .and_then(|it| it.error_message.as_deref())
     }
+
+    pub fn number_format_error_message(&self, name: &str) -> Option<&str> {
+        self.number_formats
+            .get(name)
+            .and_then(|it| it.error_message.as_deref())
+    }
 }
 
 pub struct EntryPoints {

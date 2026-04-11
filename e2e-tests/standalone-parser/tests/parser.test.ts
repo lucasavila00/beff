@@ -387,7 +387,7 @@ it("Mapped Record", () => {
     {
       "errors": [
         {
-          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber and Rate\\"",
+          "message": "expected a valid rate",
           "path": [
             "USD",
           ],
@@ -418,7 +418,7 @@ it("Custom String Format User Hierarchy", () => {
     {
       "errors": [
         {
-          "message": "expected string with format \\"UserId\\"",
+          "message": "expected a valid user id",
           "path": [],
           "received": "asdasdadasd",
         },
@@ -431,7 +431,7 @@ it("Custom String Format User Hierarchy", () => {
    {
      "errors": [
        {
-         "message": "expected string with format \\"UserId and ReadAuthorizedUserId\\"",
+         "message": "expected a readable user id",
          "path": [],
          "received": "asdasdadasd",
        },
@@ -445,7 +445,7 @@ it("Custom String Format User Hierarchy", () => {
     {
       "errors": [
         {
-          "message": "expected string with format \\"UserId and ReadAuthorizedUserId and WriteAuthorizedUserId\\"",
+          "message": "expected a writable user id",
           "path": [],
           "received": "asdasdadasd",
         },
@@ -459,7 +459,7 @@ it("Custom String Format User Hierarchy", () => {
       {
         "errors": [
           {
-            "message": "expected string with format \\"UserId and ReadAuthorizedUserId and WriteAuthorizedUserId\\"",
+            "message": "expected a writable user id",
             "path": [],
             "received": "read_write_123",
           },
@@ -474,7 +474,7 @@ it("custom number format", () => {
     {
       "errors": [
         {
-          "message": "expected number with format \\"NonInfiniteNumber\\"",
+          "message": "expected a finite number",
           "path": [],
           "received": Infinity,
         },
@@ -487,7 +487,7 @@ it("custom number format", () => {
     {
       "errors": [
         {
-          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber\\"",
+          "message": "expected a non-negative number",
           "path": [],
           "received": -123,
         },
@@ -499,7 +499,7 @@ it("custom number format", () => {
     {
       "errors": [
         {
-          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber and Rate\\"",
+          "message": "expected a valid rate",
           "path": [],
           "received": 123,
         },
@@ -511,7 +511,7 @@ it("custom number format", () => {
     {
       "errors": [
         {
-          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber and Rate\\"",
+          "message": "expected a valid rate",
           "path": [],
           "received": -123,
         },
@@ -523,7 +523,7 @@ it("custom number format", () => {
     {
       "errors": [
         {
-          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber and Rate\\"",
+          "message": "expected a valid rate",
           "path": [],
           "received": Infinity,
         },
