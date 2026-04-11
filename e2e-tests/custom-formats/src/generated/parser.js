@@ -90,7 +90,7 @@ const direct_hoist_9 = new NumberWithFormatRuntype([
 const direct_hoist_10 = new StringWithFormatRuntype([
     "UserId",
     "ReadAuthorizedUserId"
-], "expected a readable user id");
+], "expected user with read permissions");
 const direct_hoist_11 = new StringWithFormatRuntype([
     "UserId"
 ], "expected a valid user id");
@@ -101,7 +101,7 @@ const direct_hoist_13 = new StringWithFormatRuntype([
     "UserId",
     "ReadAuthorizedUserId",
     "WriteAuthorizedUserId"
-], "expected a writable user id");
+], "expected user with write permissions");
 const namedRuntypes = {
     "NonInfiniteNumber": direct_hoist_7,
     "NonNegativeNumber": direct_hoist_8,

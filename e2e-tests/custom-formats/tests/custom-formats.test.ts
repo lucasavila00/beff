@@ -34,7 +34,7 @@ it("uses the most specific custom error message for string format extends", () =
     {
       "errors": [
         {
-          "message": "expected a readable user id",
+          "message": "expected user with read permissions",
           "path": [],
           "received": "user_123",
         },
@@ -47,7 +47,7 @@ it("uses the most specific custom error message for string format extends", () =
     {
       "errors": [
         {
-          "message": "expected a writable user id",
+          "message": "expected user with write permissions",
           "path": [],
           "received": "user_read_123",
         },
