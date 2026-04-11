@@ -6,6 +6,9 @@
       "name": "ValidCurrency"
     },
     {
+      "name": "ShortCode"
+    },
+    {
       "name": "UserId"
     },
     {
@@ -18,6 +21,9 @@
   "numberFormats": [
     {
       "name": "NonInfiniteNumber"
+    },
+    {
+      "name": "NegativeNumber"
     },
     {
       "name": "NonNegativeNumber"

@@ -14,7 +14,9 @@ it("uses custom error messages for base string formats", () => {
       "success": false,
     }
   `);
+});
 
+it("falls back to the default message for function-only string formats", () => {
   expect(Codecs.UserId.safeParse("abc")).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -22,6 +24,21 @@ it("uses custom error messages for base string formats", () => {
           "message": "expected string with format \\"UserId\\"",
           "path": [],
           "received": "abc",
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+
+it("falls back to the default message for object string formats without errorMessage", () => {
+  expect(Codecs.ShortCode.safeParse("LONG")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string with format \\"ShortCode\\"",
+          "path": [],
+          "received": "LONG",
         },
       ],
       "success": false,
@@ -72,6 +89,21 @@ it("uses custom error messages for base number formats", () => {
   `);
 });
 
+it("falls back to the default message for object number formats without errorMessage", () => {
+  expect(Codecs.NegativeNumber.safeParse(1)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number with format \\"NegativeNumber\\"",
+          "path": [],
+          "received": 1,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+
 it("uses the most specific custom error message for number format extends", () => {
   expect(Codecs.NonNegativeNumber.safeParse(-1)).toMatchInlineSnapshot(`
     {
@@ -102,6 +134,8 @@ it("uses the most specific custom error message for number format extends", () =
 
 it("still parses valid values", () => {
   expect(Codecs.ValidCurrency.parse("USD")).toBe("USD");
+  expect(Codecs.ShortCode.parse("ABC")).toBe("ABC");
   expect(Codecs.WriteAuthorizedUserId.parse("user_read_write_123")).toBe("user_read_write_123");
+  expect(Codecs.NegativeNumber.parse(-1)).toBe(-1);
   expect(Codecs.Rate.parse(0.5)).toBe(0.5);
 });
