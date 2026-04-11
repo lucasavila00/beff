@@ -1,7 +1,11 @@
 #[cfg(test)]
 mod tests {
 
-    use beff_core::test_tools::{print_cgen, print_types};
+    use beff_core::{
+        BeffCustomFormat, BeffUserSettings,
+        test_tools::{print_cgen, print_cgen_with_settings, print_types},
+    };
+    use std::collections::BTreeMap;
 
     #[test]
     fn ok_either() {
@@ -1268,6 +1272,66 @@ mod tests {
         const direct_hoist_1 = new StringWithFormatRuntype([
             "password"
         ]);
+        const namedRuntypes = {
+            "Alias": direct_hoist_1
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn ok_string_with_fmt_decoder_custom_error_message() {
+        insta::assert_snapshot!(print_cgen_with_settings(
+            r#"
+        export type Alias = StringFormat<"password">;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#,
+            BeffUserSettings {
+                string_formats: BTreeMap::from([(
+                    "password".to_string(),
+                    BeffCustomFormat {
+                        error_message: Some("expected a strong password".to_string()),
+                    },
+                )]),
+                number_formats: BTreeMap::new(),
+            }
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype("Alias");
+        const direct_hoist_1 = new StringWithFormatRuntype([
+            "password"
+        ], "expected a strong password");
+        const namedRuntypes = {
+            "Alias": direct_hoist_1
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn ok_number_with_fmt_decoder_custom_error_message() {
+        insta::assert_snapshot!(print_cgen_with_settings(
+            r#"
+        export type Alias = NumberFormat<"age">;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#,
+            BeffUserSettings {
+                string_formats: BTreeMap::new(),
+                number_formats: BTreeMap::from([(
+                    "age".to_string(),
+                    BeffCustomFormat {
+                        error_message: Some("expected a valid age".to_string()),
+                    },
+                )]),
+            }
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype("Alias");
+        const direct_hoist_1 = new NumberWithFormatRuntype([
+            "age"
+        ], "expected a valid age");
         const namedRuntypes = {
             "Alias": direct_hoist_1
         };

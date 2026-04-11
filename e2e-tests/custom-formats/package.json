@@ -1,6 +1,6 @@
 {
-  "name": "openapi-schema-generator",
-  "version": "1.0.96",
+  "name": "custom-formats",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {

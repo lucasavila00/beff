@@ -12,21 +12,21 @@
     },
     {
       "name": "ReadAuthorizedUserId",
-      "errorMessage": "expected a readable user id"
+      "errorMessage": "expected user with read permissions"
     },
     {
       "name": "WriteAuthorizedUserId",
-      "errorMessage": "expected a writable user id"
+      "errorMessage": "expected user with write permissions"
     }
   ],
   "numberFormats": [
     {
-      "name": "NonNegativeNumber",
-      "errorMessage": "expected a non-negative number"
-    },
-    {
       "name": "NonInfiniteNumber",
       "errorMessage": "expected a finite number"
+    },
+    {
+      "name": "NonNegativeNumber",
+      "errorMessage": "expected a non-negative number"
     },
     {
       "name": "Rate",
