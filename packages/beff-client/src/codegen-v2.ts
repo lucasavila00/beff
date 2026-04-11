@@ -758,8 +758,8 @@ export class StringWithFormatRuntype implements Runtype {
     return buildError(
       ctx,
       typeof input === "string"
-        ? resolveStringFormatErrorMessage(this.formats, input) ??
-            `expected string with format "${this.formats.join(" and ")}"`
+        ? (resolveStringFormatErrorMessage(this.formats, input) ??
+            `expected string with format "${this.formats.join(" and ")}"`)
         : `expected string with format "${this.formats.join(" and ")}"`,
       input,
     );
@@ -822,8 +822,8 @@ export class NumberWithFormatRuntype implements Runtype {
     return buildError(
       ctx,
       typeof input === "number"
-        ? resolveNumberFormatErrorMessage(this.formats, input) ??
-            `expected number with format "${this.formats.join(" and ")}"`
+        ? (resolveNumberFormatErrorMessage(this.formats, input) ??
+            `expected number with format "${this.formats.join(" and ")}"`)
         : `expected number with format "${this.formats.join(" and ")}"`,
       input,
     );

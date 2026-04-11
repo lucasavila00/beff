@@ -277,7 +277,7 @@ export const Parsers = parse.buildParsers<{
     NegativeNumber: {
       validator: (input: number) => {
         return input < 0;
-      }
+      },
     },
   },
 });
