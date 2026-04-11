@@ -165,7 +165,8 @@ Beff allows you to define custom string validation formats. First, configure you
   "outputDir": "./src/generated",
   "stringFormats": [
     {
-      "name": "ValidCurrency"
+      "name": "ValidCurrency",
+      "errorMessage": "expected a valid ISO currency code"
     }
   ]
 }
@@ -183,13 +184,56 @@ export const Parsers = parse.buildParsers<{
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {
-      if (VALID_CURRENCIES.include(input)) {
+      if (VALID_CURRENCIES.includes(input)) {
         return true;
       }
       return false;
     },
   },
 });
+```
+
+`errorMessage` is optional and can be omitted entirely:
+
+```json
+{
+  "stringFormats": [
+    {
+      "name": "ValidCurrency"
+    }
+  ]
+}
+```
+
+When provided, failed parses use it instead of the default `expected string with format "..."` message.
+
+This also works with `StringFormatExtends`. If multiple formats in the chain define an `errorMessage`, the upper / more specific one wins:
+
+```json
+{
+  "stringFormats": [
+    {
+      "name": "UserId",
+      "errorMessage": "expected a valid user id"
+    },
+    {
+      "name": "ReadAuthorizedUserId",
+      "errorMessage": "expected user with read permissions"
+    },
+    {
+      "name": "WriteAuthorizedUserId",
+      "errorMessage": "expected user with write permissions"
+    }
+  ]
+}
+```
+
+```ts
+import { StringFormat, StringFormatExtends } from "@beff/client";
+
+export type UserId = StringFormat<"UserId">;
+export type ReadAuthorizedUserId = StringFormatExtends<UserId, "ReadAuthorizedUserId">;
+export type WriteAuthorizedUserId = StringFormatExtends<ReadAuthorizedUserId, "WriteAuthorizedUserId">;
 ```
 
 ### Custom Number Formats
@@ -202,7 +246,8 @@ Similarly, you can define custom number validation formats. Configure your `beff
   "outputDir": "./src/generated",
   "numberFormats": [
     {
-      "name": "ValidCurrency"
+      "name": "NonNegativeNumber",
+      "errorMessage": "expected a non-negative number"
     }
   ]
 }
@@ -225,6 +270,8 @@ export const Parsers = parse.buildParsers<{
   },
 });
 ```
+
+`errorMessage` also works for number formats. It can be omitted, and with `NumberFormatExtends` the upper / more specific format message wins when multiple formats define one.
 
 ### Ad-hoc Validator Creation
 
