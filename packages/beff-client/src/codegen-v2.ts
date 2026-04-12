@@ -361,6 +361,7 @@ export type SchemaPrintingMode = "flat" | "contextual";
 export type SchemaPrintingContextOptions = {
   refPathTemplate: string;
   definitionContainerKey: string | null;
+  namedTypeSchemaOverrides?: Record<string, BeffParser<unknown>>;
 };
 
 export class SchemaPrintingContext {
@@ -368,12 +369,19 @@ export class SchemaPrintingContext {
   readonly definitionContainerKey: string | null;
   private readonly collectedDefinitions: Record<string, JSONSchema7Definition>;
   private readonly inProgressDefinitions: Record<string, boolean>;
+  private readonly namedTypeSchemaOverrides: Record<string, Runtype>;
 
   constructor(options: SchemaPrintingContextOptions) {
     this.refPathTemplate = options.refPathTemplate;
     this.definitionContainerKey = options.definitionContainerKey;
     this.collectedDefinitions = {};
     this.inProgressDefinitions = {};
+    this.namedTypeSchemaOverrides = Object.fromEntries(
+      Object.entries(options.namedTypeSchemaOverrides ?? {}).map(([name, parser]) => [
+        name,
+        (parser as ParserFromRuntype)._runtype,
+      ]),
+    );
   }
 
   get refTemplate(): string {
@@ -390,6 +398,10 @@ export class SchemaPrintingContext {
 
   isDefinitionInProgress(name: string): boolean {
     return this.inProgressDefinitions[name] === true;
+  }
+
+  getNamedTypeSchemaOverride(name: string): Runtype | undefined {
+    return this.namedTypeSchemaOverrides[name];
   }
 
   markDefinitionInProgress(name: string): void {
@@ -1773,7 +1785,8 @@ export abstract class BaseRefRuntype implements Runtype {
       }
       if (!printingContext.hasDefinition(name) && !printingContext.isDefinitionInProgress(name)) {
         printingContext.markDefinitionInProgress(name);
-        const body = to.schema(ctx);
+        const schemaTarget = printingContext.getNamedTypeSchemaOverride(name) ?? to;
+        const body = schemaTarget.schema(ctx);
         printingContext.storeDefinition(name, body);
       }
       return { $ref: printingContext.getRef(name) };

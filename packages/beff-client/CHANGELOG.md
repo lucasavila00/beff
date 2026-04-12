@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.134
+
+### Patch Changes
+
+- add namedTypeSchemaOverrides
+- Updated dependencies
+  - @beff/cli@0.0.134
+
 ## 0.0.133
 
 ### Patch Changes

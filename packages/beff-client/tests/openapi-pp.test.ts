@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { b, createNamedType, overrideNamedType } from "../src/index.js";
 import { removeNullUnionBranch } from "../src/openapi-pp.js";
 import {
   AnyOfDiscriminatedRuntype,
@@ -199,5 +200,73 @@ describe("discriminated union schemas", () => {
         "DiscriminatedTypeCRON1000470817",
       ]
     `);
+  });
+});
+
+describe("named type schema overrides", () => {
+  const RecursiveTree = createNamedType("OpenApiCompatRecursiveTree", b.Unknown());
+  overrideNamedType(
+    "OpenApiCompatRecursiveTree",
+    b.Object({
+      value: b.String(),
+      children: b.Array(RecursiveTree),
+    }),
+  );
+
+  it("overrides named types only during contextual schema printing", () => {
+    const withoutOverride = new SchemaPrintingContext({
+      refPathTemplate: "#/components/schemas/{name}",
+      definitionContainerKey: null,
+    });
+
+    expect(RecursiveTree.schemaWithContext(withoutOverride)).toEqual({
+      $ref: "#/components/schemas/OpenApiCompatRecursiveTree",
+    });
+    expect(withoutOverride.exportDefinitions()).toEqual({
+      OpenApiCompatRecursiveTree: {
+        type: "object",
+        properties: {
+          children: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/OpenApiCompatRecursiveTree",
+            },
+          },
+          value: {
+            type: "string",
+          },
+        },
+        required: ["value", "children"],
+        additionalProperties: false,
+      },
+    });
+
+    const withOverride = new SchemaPrintingContext({
+      refPathTemplate: "#/components/schemas/{name}",
+      definitionContainerKey: null,
+      namedTypeSchemaOverrides: {
+        OpenApiCompatRecursiveTree: b.Unknown(),
+      },
+    });
+
+    expect(RecursiveTree.schemaWithContext(withOverride)).toEqual({
+      $ref: "#/components/schemas/OpenApiCompatRecursiveTree",
+    });
+    expect(withOverride.exportDefinitions()).toEqual({
+      OpenApiCompatRecursiveTree: {},
+    });
+
+    expect(
+      RecursiveTree.validate({
+        value: "root",
+        children: [{ value: "leaf", children: [] }],
+      }),
+    ).toBe(true);
+    expect(
+      RecursiveTree.validate({
+        value: 1,
+        children: [],
+      }),
+    ).toBe(false);
   });
 });
