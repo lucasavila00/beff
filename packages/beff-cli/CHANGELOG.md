@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.134
+
+### Patch Changes
+
+- add namedTypeSchemaOverrides
+
 ## 0.0.133
 
 ### Patch Changes

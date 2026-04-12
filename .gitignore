@@ -7,3 +7,4 @@ node_modules
 coverage/*
 target/
 .pnpm-store/
+rfc/

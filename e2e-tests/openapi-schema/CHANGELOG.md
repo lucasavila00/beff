@@ -1,5 +1,13 @@
 # openapi-schema-generator
 
+## 1.0.98
+
+### Patch Changes
+
+- Updated dependencies
+  - @beff/client@0.0.134
+  - @beff/cli@0.0.134
+
 ## 1.0.97
 
 ### Patch Changes

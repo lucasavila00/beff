@@ -136,6 +136,38 @@ const schema = Parsers.User.schemaWithContext(ctx);
 const definitions = ctx.exportDefinitions();
 ```
 
+If you need a different schema shape only for one export target, pass `namedTypeSchemaOverrides`.
+This changes the emitted definition for `.schemaWithContext(...)` without changing runtime validation:
+
+```ts
+import { b, createNamedType, overrideNamedType, SchemaPrintingContext } from "@beff/client";
+
+const RecursiveTree = createNamedType("RecursiveTree", b.Unknown());
+
+overrideNamedType(
+  "RecursiveTree",
+  b.Object({
+    value: b.String(),
+    children: b.Array(RecursiveTree),
+  }),
+);
+
+const ctx = new SchemaPrintingContext({
+  refPathTemplate: "#/components/schemas/{name}",
+  definitionContainerKey: null,
+  namedTypeSchemaOverrides: {
+    RecursiveTree: b.Unknown(),
+  },
+});
+
+RecursiveTree.schemaWithContext(ctx);
+ctx.exportDefinitions();
+// { RecursiveTree: {} }
+```
+
+Use `overrideNamedType(...)` when you want to change the named type globally, including validation.
+Use `namedTypeSchemaOverrides` when you only need a different schema representation for a specific JSON Schema or OpenAPI export.
+
 ## CLI Options
 
 The `beff` binary can also run in watch mode.
