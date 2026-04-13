@@ -253,6 +253,13 @@ it("works3", () => {
     }
   `);
 
+  expect(Codecs.EmptyClosedRecord.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
+      "type": "object",
+    }
+  `);
+
   // expect(Codecs.UsesGenericWrapper.schema()).toMatchInlineSnapshot(`
   //   {
   //     "format": "ValidCurrency",

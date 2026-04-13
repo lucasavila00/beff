@@ -49,6 +49,8 @@ type SemVer = `${number}.${number}.${number}`;
 
 type NonEmptyString = [string, ...string[]];
 
+type EmptyClosedRecord = Record<string, never>;
+
 type GenericWrapper<T> = {
   value: T;
   value2: T | boolean;
@@ -81,6 +83,7 @@ export const Codecs = parse.buildParsers<{
   NonEmptyString: NonEmptyString;
   //
   ValidCurrency: ValidCurrency;
+  EmptyClosedRecord: EmptyClosedRecord;
   // UsesGenericWrapper: UsesGenericWrapper;
 }>({
   stringFormats: {
