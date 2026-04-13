@@ -1581,18 +1581,21 @@ export class ObjectRuntype implements Runtype {
       return { ...base, additionalProperties: false };
     }
 
-    // special case for Record<string, unknown>
+    // special case for Record<string, T> with no named properties
     if (Object.keys(properties).length === 0 && indexSchemas.length === 1) {
-      const [indexSchema] = indexSchemas;
-      return {
-        type: "object",
-        additionalProperties:
-          typeof indexSchema.additionalProperties === "object" &&
-          indexSchema.additionalProperties != null &&
-          Object.keys(indexSchema.additionalProperties).length === 0
-            ? true
-            : indexSchema.additionalProperties,
-      };
+      const valueRuntype = this.indexedPropertiesParser[0].value;
+
+      // Record<string, never> -> empty closed object (keys don't matter)
+      if (valueRuntype instanceof NeverRuntype) {
+        return { type: "object", additionalProperties: false };
+      }
+
+      // Record<string, unknown> -> simplify additionalProperties to true
+      if (valueRuntype instanceof AnyRuntype) {
+        return { ...indexSchemas[0], additionalProperties: true };
+      }
+
+      return indexSchemas[0];
     }
 
     return {

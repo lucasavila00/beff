@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.135
+
+### Patch Changes
+
+- improve printing empty closed record as json type
+- Updated dependencies
+  - @beff/cli@0.0.135
+
 ## 0.0.134
 
 ### Patch Changes

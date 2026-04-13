@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.135
+
+### Patch Changes
+
+- improve printing empty closed record as json type
+
 ## 0.0.134
 
 ### Patch Changes

@@ -50,6 +50,9 @@ it("flattens record-like objects compared to the raw schema output", () => {
       "properties": {
         "payload": {
           "additionalProperties": true,
+          "propertyNames": {
+            "type": "string",
+          },
           "type": "object",
         },
       },
@@ -74,6 +77,52 @@ it("flattens record-like objects compared to the raw schema output", () => {
         "properties": {
           "payload": {
             "additionalProperties": true,
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        },
+        "required": [
+          "payload",
+        ],
+        "type": "object",
+      },
+    }
+  `);
+});
+
+it("flattens Record<string, never> into an empty closed object", () => {
+  expect(Codecs.OpenApiCompatEmptyRecordPayload.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
+      "properties": {
+        "payload": {
+          "additionalProperties": false,
+          "type": "object",
+        },
+      },
+      "required": [
+        "payload",
+      ],
+      "type": "object",
+    }
+  `);
+
+  const ctx = createOpenApiContext();
+  expect(Codecs.OpenApiCompatEmptyRecordPayload.schemaWithContext(ctx)).toMatchInlineSnapshot(`
+    {
+      "$ref": "#/components/schemas/OpenApiCompatEmptyRecordPayload",
+    }
+  `);
+
+  expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
+    {
+      "OpenApiCompatEmptyRecordPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "payload": {
+            "additionalProperties": false,
             "type": "object",
           },
         },

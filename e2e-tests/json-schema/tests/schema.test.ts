@@ -41,6 +41,16 @@ it("works2", () => {
   expect(Codecs.object.schema()).toMatchInlineSnapshot(`
     {
       "additionalProperties": true,
+      "propertyNames": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+        ],
+      },
       "type": "object",
     }
   `);
@@ -249,6 +259,13 @@ it("works3", () => {
         "children",
         "value",
       ],
+      "type": "object",
+    }
+  `);
+
+  expect(Codecs.EmptyClosedRecord.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
       "type": "object",
     }
   `);

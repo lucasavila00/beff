@@ -62,6 +62,10 @@ type OpenApiCompatRecordPayload = {
   payload: Record<string, unknown>;
 };
 
+type OpenApiCompatEmptyRecordPayload = {
+  payload: Record<string, never>;
+};
+
 type OpenApiCompatOptionalizedPayload = {
   maybeText: string | null;
   maybeEnum: "fallback" | "primary" | null;
@@ -129,6 +133,7 @@ export const Codecs = parse.buildParsers<{
   OpenApiCompatConstPayload: OpenApiCompatConstPayload;
   OpenApiCompatEnumPayload: OpenApiCompatEnumPayload;
   OpenApiCompatRecordPayload: OpenApiCompatRecordPayload;
+  OpenApiCompatEmptyRecordPayload: OpenApiCompatEmptyRecordPayload;
   OpenApiCompatOptionalizedPayload: OpenApiCompatOptionalizedPayload;
   OpenApiCompatOptinal: OpenApiCompatOptinal;
   OpenApiCompatDiscUnion: OpenApiCompatDiscUnion;
