@@ -50,6 +50,9 @@ it("flattens record-like objects compared to the raw schema output", () => {
       "properties": {
         "payload": {
           "additionalProperties": true,
+          "propertyNames": {
+            "type": "string",
+          },
           "type": "object",
         },
       },
@@ -74,6 +77,9 @@ it("flattens record-like objects compared to the raw schema output", () => {
         "properties": {
           "payload": {
             "additionalProperties": true,
+            "propertyNames": {
+              "type": "string",
+            },
             "type": "object",
           },
         },

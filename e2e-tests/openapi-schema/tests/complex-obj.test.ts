@@ -44,6 +44,9 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
                 },
                 "metadata": {
                   "additionalProperties": true,
+                  "propertyNames": {
+                    "type": "string",
+                  },
                   "type": "object",
                 },
                 "type": {
@@ -104,6 +107,9 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
                 },
                 "metadata": {
                   "additionalProperties": true,
+                  "propertyNames": {
+                    "type": "string",
+                  },
                   "type": "object",
                 },
                 "type": {
@@ -166,6 +172,9 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
           },
           "metadata": {
             "additionalProperties": true,
+            "propertyNames": {
+              "type": "string",
+            },
             "type": "object",
           },
           "type": {
@@ -209,6 +218,9 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
           },
           "metadata": {
             "additionalProperties": true,
+            "propertyNames": {
+              "type": "string",
+            },
             "type": "object",
           },
           "type": {

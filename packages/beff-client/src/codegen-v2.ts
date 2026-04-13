@@ -1585,14 +1585,14 @@ export class ObjectRuntype implements Runtype {
     if (Object.keys(properties).length === 0 && indexSchemas.length === 1) {
       const valueRuntype = this.indexedPropertiesParser[0].value;
 
-      // Record<string, never> -> empty closed object
+      // Record<string, never> -> empty closed object (keys don't matter)
       if (valueRuntype instanceof NeverRuntype) {
         return { type: "object", additionalProperties: false };
       }
 
-      // Record<string, unknown> -> open object
+      // Record<string, unknown> -> simplify additionalProperties to true
       if (valueRuntype instanceof AnyRuntype) {
-        return { type: "object", additionalProperties: true };
+        return { ...indexSchemas[0], additionalProperties: true };
       }
 
       return indexSchemas[0];
