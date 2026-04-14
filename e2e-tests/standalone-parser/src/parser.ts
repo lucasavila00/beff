@@ -14,6 +14,7 @@ import {
 } from "./types3";
 import * as T4 from "./types4";
 import { b } from "./types4";
+import { Query } from "./error-repro";
 
 export const ALL_TYPES = [
   "OmitSettings",
@@ -279,6 +280,7 @@ export const {
   DtsConfig: DtsConfigCodec,
   M1: M1Codec,
   S1: S1Codec,
+  Query: QueryCodec,
 } = parse.buildParsers<{
   Repro5: Repro5;
   Repro6: Repro6;
@@ -344,6 +346,7 @@ export const {
   Float64ArrayCodec: Float64ArrayType;
   BigInt64ArrayCodec: BigInt64ArrayType;
   TsxTask: TsxTask;
+  Query: Query;
   DtsConfig: DtsConfig;
   DeploymentState: DeploymentState;
 }>({

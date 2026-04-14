@@ -1,10 +1,4 @@
-import {
-  type BeffParser,
-  type DecodeError,
-  type ParseOptions,
-  type RegularDecodeError,
-  type UnionDecodeError,
-} from "./types.js";
+import { type BeffParser, type DecodeError, type ParseOptions, type RegularDecodeError } from "./types.js";
 import { z } from "zod";
 import {
   generateHashFromString,
@@ -235,11 +229,27 @@ function deepmergeArray(options: any) {
 
 const deepmerge = deepmergeConstructor({ mergeArray: deepmergeArray }) as (...args: unknown[]) => unknown;
 
-function buildUnionError(
-  ctx: { path: string[] },
-  errors: DecodeError[],
-  received: unknown,
-): UnionDecodeError[] {
+function maxErrorDepth(errors: DecodeError[]): number {
+  let max = 0;
+  for (const err of errors) {
+    const depth = "isUnionError" in err ? err.path.length + maxErrorDepth(err.errors) : err.path.length;
+    if (depth > max) max = depth;
+  }
+  return max;
+}
+
+function prependPath(parentPath: string[], err: DecodeError): DecodeError {
+  if ("isUnionError" in err) {
+    return { ...err, path: [...parentPath, ...err.path] };
+  }
+  return { ...err, path: [...parentPath, ...err.path] };
+}
+
+function buildUnionError(ctx: { path: string[] }, errors: DecodeError[], received: unknown): DecodeError[] {
+  // Single branch survived filtering — flatten instead of wrapping
+  if (errors.length === 1) {
+    return [prependPath(ctx.path, errors[0])];
+  }
   return [
     {
       path: [...ctx.path],
@@ -1105,15 +1115,21 @@ export class AnyOfRuntype implements Runtype {
     return deepmerge(...items);
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    const acc = [];
+    const branchErrors: DecodeError[][] = [];
     const oldPaths = ctx.path;
     ctx.path = [];
     for (const v of this.schemas) {
-      const errors = v.reportDecodeError(ctx, input);
-      acc.push(...errors);
+      branchErrors.push(v.reportDecodeError(ctx, input));
     }
     ctx.path = oldPaths;
-    return buildUnionError(ctx, acc, input);
+
+    // Filter to closest-matching branches by max error depth
+    const depths = branchErrors.map((errors) => maxErrorDepth(errors));
+    const bestDepth = Math.max(...depths);
+    const filtered =
+      bestDepth > 0 ? branchErrors.filter((_, i) => depths[i] === bestDepth).flat() : branchErrors.flat();
+
+    return buildUnionError(ctx, filtered, input);
   }
   describe(ctx: DescribeContext): string {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
@@ -1490,10 +1506,11 @@ export class OptionalFieldRuntype implements Runtype {
     }
     return this.t.parseAfterValidation(ctx, input);
   }
+  // validate() returns true for null/undefined, so reportDecodeError is only
+  // called when input is non-null. Reporting "expected nullish value" here
+  // would be noise — only the inner type's errors are relevant.
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    const acc: DecodeError[] = [];
-    acc.push(...buildError(ctx, "expected nullish value", input));
-    return [...acc, ...this.t.reportDecodeError(ctx, input)];
+    return this.t.reportDecodeError(ctx, input);
   }
   describe(ctx: DescribeContext): string {
     return this.t.describe(ctx);
