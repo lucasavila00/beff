@@ -45,7 +45,9 @@ describe("printErrors top-level", () => {
   it("numbers multiple top-level errors", () => {
     expect(
       printErrors([regular("expected string", ["a"], 1), regular("expected number", ["b"], "x")]),
-    ).toMatchInlineSnapshot('"#0 (a) expected string, received: 1 | #1 (b) expected number, received: \\"x\\""');
+    ).toMatchInlineSnapshot(
+      '"#0 (a) expected string, received: 1 | #1 (b) expected number, received: \\"x\\""',
+    );
   });
 
   it("prints regular error with nested path (flattened union)", () => {

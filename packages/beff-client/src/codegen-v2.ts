@@ -1,9 +1,4 @@
-import {
-  type BeffParser,
-  type DecodeError,
-  type ParseOptions,
-  type RegularDecodeError,
-} from "./types.js";
+import { type BeffParser, type DecodeError, type ParseOptions, type RegularDecodeError } from "./types.js";
 import { z } from "zod";
 import {
   generateHashFromString,
@@ -237,8 +232,7 @@ const deepmerge = deepmergeConstructor({ mergeArray: deepmergeArray }) as (...ar
 function maxErrorDepth(errors: DecodeError[]): number {
   let max = 0;
   for (const err of errors) {
-    const depth =
-      "isUnionError" in err ? err.path.length + maxErrorDepth(err.errors) : err.path.length;
+    const depth = "isUnionError" in err ? err.path.length + maxErrorDepth(err.errors) : err.path.length;
     if (depth > max) max = depth;
   }
   return max;
@@ -251,11 +245,7 @@ function prependPath(parentPath: string[], err: DecodeError): DecodeError {
   return { ...err, path: [...parentPath, ...err.path] };
 }
 
-function buildUnionError(
-  ctx: { path: string[] },
-  errors: DecodeError[],
-  received: unknown,
-): DecodeError[] {
+function buildUnionError(ctx: { path: string[] }, errors: DecodeError[], received: unknown): DecodeError[] {
   // Single branch survived filtering — flatten instead of wrapping
   if (errors.length === 1) {
     return [prependPath(ctx.path, errors[0])];
