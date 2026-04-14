@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.137
+
+### Patch Changes
+
+- more improvements to union errros
+
 ## 0.0.136
 
 ### Patch Changes
