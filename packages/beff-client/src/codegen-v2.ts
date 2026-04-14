@@ -245,16 +245,27 @@ function prependPath(parentPath: string[], err: DecodeError): DecodeError {
   return { ...err, path: [...parentPath, ...err.path] };
 }
 
+function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
+  const seen = new Set<string>();
+  return errors.filter((err) => {
+    const key = JSON.stringify(err);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function buildUnionError(ctx: { path: string[] }, errors: DecodeError[], received: unknown): DecodeError[] {
+  const deduplicated = deduplicateErrors(errors);
   // Single branch survived filtering — flatten instead of wrapping
-  if (errors.length === 1) {
-    return [prependPath(ctx.path, errors[0])];
+  if (deduplicated.length === 1) {
+    return [prependPath(ctx.path, deduplicated[0])];
   }
   return [
     {
       path: [...ctx.path],
       received,
-      errors,
+      errors: deduplicated,
       isUnionError: true,
     },
   ];
