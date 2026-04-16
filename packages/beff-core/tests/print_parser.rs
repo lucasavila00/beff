@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use beff_core::test_tools::{print_cgen, print_types};
+    use beff_core::test_tools::{failure, print_cgen, print_types};
 
     #[test]
     fn ok_either() {
@@ -172,6 +172,80 @@ mod tests {
           Meta: Meta,
         }
         "#);
+    }
+    #[test]
+    fn ok_partial_record_string_key() {
+        let from = r#"
+        type Meta = Partial<Record<string, number>>;
+
+        parse.buildParsers<{ Meta: Meta }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Meta = { [key: string]: number };
+
+
+        type BuiltParsers = {
+          Meta: Meta,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_partial_via_named_ref() {
+        let from = r#"
+        type MetaKey = `entity_${string}`;
+        type MetaRecord = Record<MetaKey, string>;
+        type Meta = Partial<MetaRecord>;
+
+        parse.buildParsers<{ Meta: Meta }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Meta = { [key: `entity_${string}`]: string };
+
+        type MetaKey = `entity_${string}`;
+
+        type MetaRecord = { [key: `entity_${string}`]: string };
+
+
+        type BuiltParsers = {
+          Meta: Meta,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_partial_preserves_existing_optional() {
+        let from = r#"
+        type Base = { a: string; b?: number };
+        type P = Partial<Base>;
+
+        parse.buildParsers<{ P: P }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Base = { "a": string, "b"?: number };
+
+        type P = { "a"?: string, "b"?: number };
+
+
+        type BuiltParsers = {
+          P: P,
+        }
+        "#);
+    }
+    #[test]
+    fn fail_partial_on_non_object() {
+        let from = r#"
+        type P = Partial<string>;
+
+        parse.buildParsers<{ P: P }>();
+    "#;
+        insta::assert_snapshot!(failure(from), @r"
+        Error: Should have object as type argument
+           ╭─[entry.ts:2:19]
+           │
+         2 │         type P = Partial<string>;
+           │                  ───────┬───────  
+           │                         ╰───────── Should have object as type argument
+        ───╯
+        ");
     }
     #[test]
     fn ok_partial3() {
