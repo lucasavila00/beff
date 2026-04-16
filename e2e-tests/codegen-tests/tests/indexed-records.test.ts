@@ -2,7 +2,9 @@ import { it, expect } from "vitest";
 import { Codecs } from "../src/parser";
 
 it("R: regular syntax with infinite indexed key", () => {
-  expect(Codecs.R.describe()).toMatchInlineSnapshot('"type CodecR = { a: number, b: number, [K in `x_${string}`]: number };"');
+  expect(Codecs.R.describe()).toMatchInlineSnapshot(
+    '"type CodecR = { a: number, b: number, [K in `x_${string}`]: number };"',
+  );
   expect(Codecs.R.schema()).toMatchInlineSnapshot(`
     {
       "allOf": [
@@ -349,7 +351,9 @@ it("R5: mapped infinite optional value", () => {
 });
 
 it("Meta: Partial<Record<MixedUnion, V>>", () => {
-  expect(Codecs.Meta.describe()).toMatchInlineSnapshot('"type CodecMeta = { alpha?: string, beta?: string, [K in (`alpha_entity_${string}` | `beta-entity-${string}`)]?: string };"');
+  expect(Codecs.Meta.describe()).toMatchInlineSnapshot(
+    '"type CodecMeta = { alpha?: string, beta?: string, [K in (`alpha_entity_${string}` | `beta-entity-${string}`)]?: string };"',
+  );
   expect(Codecs.Meta.schema()).toMatchInlineSnapshot(`
     {
       "allOf": [
@@ -506,7 +510,9 @@ it("Meta: Partial<Record<MixedUnion, V>>", () => {
 });
 
 it("Meta2: Record<MixedUnion, V>", () => {
-  expect(Codecs.Meta2.describe()).toMatchInlineSnapshot('"type CodecMeta2 = { alpha: string, beta: string, [K in (`alpha_entity_${string}` | `beta-entity-${string}`)]: string };"');
+  expect(Codecs.Meta2.describe()).toMatchInlineSnapshot(
+    '"type CodecMeta2 = { alpha: string, beta: string, [K in (`alpha_entity_${string}` | `beta-entity-${string}`)]: string };"',
+  );
   expect(Codecs.Meta2.schema()).toMatchInlineSnapshot(`
     {
       "allOf": [
@@ -556,9 +562,7 @@ it("Meta2: Record<MixedUnion, V>", () => {
       "success": true,
     }
   `);
-  expect(
-    Codecs.Meta2.safeParse({ alpha: "a", beta: "b", alpha_entity_xyz: "x" }),
-  ).toMatchInlineSnapshot(`
+  expect(Codecs.Meta2.safeParse({ alpha: "a", beta: "b", alpha_entity_xyz: "x" })).toMatchInlineSnapshot(`
     {
       "data": {
         "alpha": "a",
@@ -629,9 +633,8 @@ it("Meta2: Record<MixedUnion, V>", () => {
       "success": false,
     }
   `);
-  expect(
-    Codecs.Meta2.safeParse({ alpha: "a", beta: "b", alpha_entity_xyz: undefined }),
-  ).toMatchInlineSnapshot(`
+  expect(Codecs.Meta2.safeParse({ alpha: "a", beta: "b", alpha_entity_xyz: undefined }))
+    .toMatchInlineSnapshot(`
     {
       "errors": [
         {
