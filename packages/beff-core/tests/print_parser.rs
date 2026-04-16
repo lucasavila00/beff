@@ -150,6 +150,30 @@ mod tests {
         "#);
     }
     #[test]
+    fn ok_partial_record_with_tpl_lit_keys() {
+        let from = r#"
+        type MetaKey =
+            | "alpha"
+            | "beta"
+            | `alpha_entity_${string}`
+            | `beta-entity-${string}`;
+
+        type Meta = Partial<Record<MetaKey, string>>;
+
+        parse.buildParsers<{ Meta: Meta }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Meta = { [key: ("alpha" | `alpha_entity_${string}` | "beta" | `beta-entity-${string}`)]: string };
+
+        type MetaKey = ("alpha" | `alpha_entity_${string}` | "beta" | `beta-entity-${string}`);
+
+
+        type BuiltParsers = {
+          Meta: Meta,
+        }
+        "#);
+    }
+    #[test]
     fn ok_partial3() {
         let from = r#"
 

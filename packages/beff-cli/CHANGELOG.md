@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.138
+
+### Patch Changes
+
+- Fix Partial<Record<K, V>> with template literal keys
+
 ## 0.0.137
 
 ### Patch Changes
