@@ -763,10 +763,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                 .map(|it| {
                     let value_rt = match &it.value {
                         Optionality::Optional(schema) => {
-                            let nullable_schema = &Runtype::any_of(
-                                vec![Runtype::Null, schema.clone()].into_iter().collect(),
-                            );
-                            print_runtype(nullable_schema, named_schemas, ctx)
+                            optionality_wrapper(print_runtype(schema, named_schemas, ctx))
                         }
                         Optionality::Required(schema) => print_runtype(schema, named_schemas, ctx),
                     };

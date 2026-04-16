@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.139
+
+### Patch Changes
+
+- Improve internal representation for indexed records
+
 ## 0.0.138
 
 ### Patch Changes

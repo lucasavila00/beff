@@ -1085,22 +1085,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn collect_consts_from_union(&self, it: Runtype) -> Result<Vec<String>, DiagnosticInfoMessage> {
-        let mut string_keys = vec![];
-
-        for v in self.extract_union(it)? {
-            match v.extract_single_string_const() {
-                Some(str) => {
-                    string_keys.push(str.clone());
-                }
-                _ => {
-                    return Err(DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings);
-                }
-            }
-        }
-
-        Ok(string_keys)
-    }
     fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
@@ -1118,9 +1102,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     .iter()
                     .map(|(k, v)| (k.clone(), v.clone().to_optional()))
                     .collect();
+                let new_indexed = indexed_properties.as_ref().map(|ip| {
+                    Box::new(IndexedProperty {
+                        key: ip.key.clone(),
+                        value: ip.value.clone().to_optional(),
+                    })
+                });
                 Ok(Runtype::Object {
                     vs: new_vs,
-                    indexed_properties: indexed_properties.clone(),
+                    indexed_properties: new_indexed,
                 })
             }
             Runtype::Ref(r) => {
@@ -1368,28 +1358,44 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         }
                     }
                     let key_clone = key.clone();
-                    match self.collect_consts_from_union(key) {
-                        Ok(res) => {
-                            let value = type_args[1].clone();
-                            Ok(Runtype::object(
-                                res.into_iter()
-                                    .map(|it| (it, value.clone().required()))
-                                    .collect(),
-                            ))
-                        }
-                        Err(_) => {
-                            let value = type_args[1].clone();
+                    let value = type_args[1].clone();
+                    match self.extract_union(key) {
+                        Ok(parts) => {
+                            let mut consts: Vec<String> = vec![];
+                            let mut indexed_parts: Vec<Runtype> = vec![];
+                            for part in parts {
+                                match part.extract_single_string_const() {
+                                    Some(s) => consts.push(s),
+                                    None => indexed_parts.push(part),
+                                }
+                            }
+                            let vs: BTreeMap<String, Optionality<Runtype>> = consts
+                                .into_iter()
+                                .map(|k| (k, value.clone().required()))
+                                .collect();
+                            let indexed_properties = if indexed_parts.is_empty() {
+                                None
+                            } else {
+                                Some(Box::new(IndexedProperty {
+                                    key: Runtype::any_of(indexed_parts),
+                                    value: value.clone().required(),
+                                }))
+                            };
                             Ok(Runtype::Object {
-                                vs: BTreeMap::new(),
-                                indexed_properties: Some(
-                                    IndexedProperty {
-                                        key: key_clone,
-                                        value: value.required(),
-                                    }
-                                    .into(),
-                                ),
+                                vs,
+                                indexed_properties,
                             })
                         }
+                        Err(_) => Ok(Runtype::Object {
+                            vs: BTreeMap::new(),
+                            indexed_properties: Some(
+                                IndexedProperty {
+                                    key: key_clone,
+                                    value: value.required(),
+                                }
+                                .into(),
+                            ),
+                        }),
                     }
                 }
                 TsBuiltIn::Pick => match type_args.as_slice() {
@@ -2938,16 +2944,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             return Ok(Runtype::record(key_type, opt_ty));
         }
 
-        let mut string_keys = vec![];
+        let mut string_keys: Vec<String> = vec![];
+        let mut infinite_keys: Vec<Runtype> = vec![];
 
         for v in values {
             match v.extract_single_string_const() {
-                Some(s) => {
-                    string_keys.push(s);
-                }
-                _ => {
-                    return self.error(&anchor, DiagnosticInfoMessage::NonStringKeyInMappedType);
-                }
+                Some(s) => string_keys.push(s),
+                None => infinite_keys.push(v),
             }
         }
 
@@ -2958,7 +2961,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         };
 
-        let mut vs = vec![];
+        if matches!(k.optional, Some(TruePlusMinus::Minus)) {
+            return self.error(&anchor, DiagnosticInfoMessage::MappedTypeMinusNotSupported);
+        }
+        let make_opt = |ty: Runtype| -> Optionality<Runtype> {
+            match k.optional {
+                Some(TruePlusMinus::True) => Optionality::Optional(ty),
+                _ => Optionality::Required(ty),
+            }
+        };
+
+        let mut vs: BTreeMap<String, Optionality<Runtype>> = BTreeMap::new();
         for key in string_keys.into_iter() {
             self.type_application_stack
                 .push((name.clone(), Runtype::single_string_const(&key)));
@@ -2966,22 +2979,28 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             let ty = self.extract_type(type_ann, file_name.clone());
             self.type_application_stack.pop();
             let ty = ty?;
-
-            let ty = match k.optional {
-                Some(opt) => match opt {
-                    TruePlusMinus::True => Optionality::Optional(ty),
-                    TruePlusMinus::Plus => Optionality::Required(ty),
-                    TruePlusMinus::Minus => {
-                        return self
-                            .error(&anchor, DiagnosticInfoMessage::MappedTypeMinusNotSupported);
-                    }
-                },
-                None => Optionality::Required(ty),
-            };
-            vs.push((key, ty));
+            vs.insert(key, make_opt(ty));
         }
 
-        Ok(Runtype::object(vs))
+        let indexed_properties = if infinite_keys.is_empty() {
+            None
+        } else {
+            let key_runtype = Runtype::any_of(infinite_keys);
+            self.type_application_stack
+                .push((name.clone(), key_runtype.clone()));
+            let ty = self.extract_type(type_ann, file_name.clone());
+            self.type_application_stack.pop();
+            let ty = ty?;
+            Some(Box::new(IndexedProperty {
+                key: key_runtype,
+                value: make_opt(ty),
+            }))
+        };
+
+        Ok(Runtype::Object {
+            vs,
+            indexed_properties,
+        })
     }
     fn convert_conditional_type(
         &mut self,

@@ -163,7 +163,7 @@ mod tests {
         parse.buildParsers<{ Meta: Meta }>();
     "#;
         insta::assert_snapshot!(print_types(from), @r#"
-        type Meta = { [key: ("alpha" | `alpha_entity_${string}` | "beta" | `beta-entity-${string}`)]: string };
+        type Meta = { "alpha"?: string, "beta"?: string, [key?: (`alpha_entity_${string}` | `beta-entity-${string}`)]: string };
 
         type MetaKey = ("alpha" | `alpha_entity_${string}` | "beta" | `beta-entity-${string}`);
 
@@ -181,7 +181,7 @@ mod tests {
         parse.buildParsers<{ Meta: Meta }>();
     "#;
         insta::assert_snapshot!(print_types(from), @r#"
-        type Meta = { [key: string]: number };
+        type Meta = { [key?: string]: number };
 
 
         type BuiltParsers = {
@@ -199,7 +199,7 @@ mod tests {
         parse.buildParsers<{ Meta: Meta }>();
     "#;
         insta::assert_snapshot!(print_types(from), @r#"
-        type Meta = { [key: `entity_${string}`]: string };
+        type Meta = { [key?: `entity_${string}`]: string };
 
         type MetaKey = `entity_${string}`;
 
@@ -227,6 +227,110 @@ mod tests {
 
         type BuiltParsers = {
           P: P,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_record_mixed_literal_and_template_keys() {
+        let from = r#"
+        type MetaKey =
+            | "alpha"
+            | "beta"
+            | `alpha_entity_${string}`
+            | `beta-entity-${string}`;
+
+        type Meta2 = Record<MetaKey, string>;
+
+        parse.buildParsers<{ Meta2: Meta2 }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Meta2 = { "alpha": string, "beta": string, [key: (`alpha_entity_${string}` | `beta-entity-${string}`)]: string };
+
+        type MetaKey = ("alpha" | `alpha_entity_${string}` | "beta" | `beta-entity-${string}`);
+
+
+        type BuiltParsers = {
+          Meta2: Meta2,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_object_with_named_props_and_index_signature() {
+        let from = r#"
+        type R = { a: number, b: number, [key: `x_${string}`]: number };
+
+        parse.buildParsers<{ R: R }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type R = { "a": number, "b": number, [key: `x_${string}`]: number };
+
+
+        type BuiltParsers = {
+          R: R,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_mapped_finite_required() {
+        let from = r#"
+        type R2 = { [K in 'a'|'b']: number };
+
+        parse.buildParsers<{ R2: R2 }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type R2 = { "a": number, "b": number };
+
+
+        type BuiltParsers = {
+          R2: R2,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_mapped_finite_optional() {
+        let from = r#"
+        type R3 = { [K in 'a'|'b']?: number };
+
+        parse.buildParsers<{ R3: R3 }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type R3 = { "a"?: number, "b"?: number };
+
+
+        type BuiltParsers = {
+          R3: R3,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_mapped_infinite_required() {
+        let from = r#"
+        type R4 = { [K in `x_${string}`]: number };
+
+        parse.buildParsers<{ R4: R4 }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type R4 = { [key: `x_${string}`]: number };
+
+
+        type BuiltParsers = {
+          R4: R4,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_mapped_infinite_optional() {
+        let from = r#"
+        type R5 = { [K in `x_${string}`]?: number };
+
+        parse.buildParsers<{ R5: R5 }>();
+    "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type R5 = { [key?: `x_${string}`]: number };
+
+
+        type BuiltParsers = {
+          R5: R5,
         }
         "#);
     }
