@@ -1085,22 +1085,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn collect_consts_from_union(&self, it: Runtype) -> Result<Vec<String>, DiagnosticInfoMessage> {
-        let mut string_keys = vec![];
-
-        for v in self.extract_union(it)? {
-            match v.extract_single_string_const() {
-                Some(str) => {
-                    string_keys.push(str.clone());
-                }
-                _ => {
-                    return Err(DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings);
-                }
-            }
-        }
-
-        Ok(string_keys)
-    }
     fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
