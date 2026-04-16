@@ -1108,12 +1108,47 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         Runtype::object(acc)
     }
-    fn convert_partial(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
-        let mut acc = vec![];
-        for (k, v) in obj {
-            acc.push((k.clone(), v.clone().to_optional()));
+    fn convert_partial(&mut self, obj: &Runtype, anchor: &Anchor) -> Res<Runtype> {
+        match obj {
+            Runtype::Object {
+                vs,
+                indexed_properties,
+            } => {
+                let new_vs = vs
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone().to_optional()))
+                    .collect();
+                Ok(Runtype::Object {
+                    vs: new_vs,
+                    indexed_properties: indexed_properties.clone(),
+                })
+            }
+            Runtype::Ref(r) => {
+                let map = self
+                    .partial_validators
+                    .get(r)
+                    .and_then(|it| it.as_ref())
+                    .cloned();
+                match map {
+                    Some(schema) => self.convert_partial(&schema, anchor),
+                    None => self.error(
+                        anchor,
+                        DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument,
+                    ),
+                }
+            }
+            _ => {
+                let extracted = self.extract_object_from_runtype(obj, anchor)?;
+                let new_vs = extracted
+                    .into_iter()
+                    .map(|(k, v)| (k, v.to_optional()))
+                    .collect();
+                Ok(Runtype::Object {
+                    vs: new_vs,
+                    indexed_properties: None,
+                })
+            }
         }
-        Runtype::object(acc)
     }
     fn convert_pick_keys(
         obj: &BTreeMap<String, Optionality<Runtype>>,
@@ -1443,10 +1478,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     ),
                 },
                 TsBuiltIn::Partial => match type_args.as_slice() {
-                    [obj] => {
-                        let vs = self.extract_object_from_runtype(obj, anchor)?;
-                        Ok(self.convert_partial(&vs))
-                    }
+                    [obj] => self.convert_partial(obj, anchor),
                     _ => self.error(
                         anchor,
                         DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments,

@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.138
+
+### Patch Changes
+
+- Fix Partial<Record<K, V>> with template literal keys
+- Updated dependencies
+  - @beff/cli@0.0.138
+
 ## 0.0.137
 
 ### Patch Changes
