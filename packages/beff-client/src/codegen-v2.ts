@@ -1559,7 +1559,8 @@ export class ObjectRuntype implements Runtype {
       .join(", ");
 
     const indexPropsParats = this.indexedPropertiesParser.map(({ key, value }) => {
-      return `[K in ${key.describe(ctx)}]: ${value.describe(ctx)}`;
+      const optionalMark = value instanceof OptionalFieldRuntype ? "?" : "";
+      return `[K in ${key.describe(ctx)}]${optionalMark}: ${value.describe(ctx)}`;
     });
     const rest = indexPropsParats.join(", ");
 

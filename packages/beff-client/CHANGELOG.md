@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.139
+
+### Patch Changes
+
+- Improve internal representation for indexed records
+- Updated dependencies
+  - @beff/cli@0.0.139
+
 ## 0.0.138
 
 ### Patch Changes
