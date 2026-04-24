@@ -1,10 +1,11 @@
 {
   "name": "@beff/client",
-  "version": "0.0.139",
+  "version": "0.0.140",
   "description": "",
+  "type": "module",
   "main": "dist/cjs/index.js",
   "scripts": {
-    "build": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json",
+    "build": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json && node ./script/fixup-package.mjs",
     "test": "vitest --run --update"
   },
   "exports": {
@@ -25,7 +26,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.139"
+    "@beff/cli": "workspace:^0.0.140"
   },
   "peerDependencies": {
     "zod": "^3.23.5"

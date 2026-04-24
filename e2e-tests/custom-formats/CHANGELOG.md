@@ -1,5 +1,13 @@
 # custom-formats
 
+## 1.0.8
+
+### Patch Changes
+
+- Updated dependencies
+  - @beff/client@0.0.140
+  - @beff/cli@0.0.140
+
 ## 1.0.7
 
 ### Patch Changes

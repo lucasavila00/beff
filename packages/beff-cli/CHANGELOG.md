@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.140
+
+### Patch Changes
+
+- fix esm compat
+
 ## 0.0.139
 
 ### Patch Changes
