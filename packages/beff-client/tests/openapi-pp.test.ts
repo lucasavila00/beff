@@ -37,6 +37,14 @@ describe("removeNullUnionBranch", () => {
     });
   });
 
+  it("removes nested null branches from optional union wrappers", () => {
+    expect(
+      removeNullUnionBranch({
+        anyOf: [{ anyOf: [{ type: "null" }, { type: "null" }, { type: "string" }] }, { type: "null" }],
+      }),
+    ).toEqual({ type: "string" });
+  });
+
   it("returns null for a non-union schema", () => {
     expect(removeNullUnionBranch({ type: "null" })).toBeNull();
   });

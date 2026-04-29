@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.141
+
+### Patch Changes
+
+- improve json null serialization
+- Updated dependencies
+  - @beff/cli@0.0.141
+
 ## 0.0.140
 
 ### Patch Changes
