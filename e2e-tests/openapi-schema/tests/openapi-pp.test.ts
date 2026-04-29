@@ -220,6 +220,47 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
   `);
 });
 
+it("rewrites optional nullish unions into optional properties", () => {
+  expect(Codecs.OpenApiCompatOptionalNullishPayload.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "type": "number",
+        },
+        "value": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    }
+  `);
+
+  const ctx = createOpenApiContext();
+  expect(Codecs.OpenApiCompatOptionalNullishPayload.schemaWithContext(ctx)).toMatchInlineSnapshot(`
+    {
+      "$ref": "#/components/schemas/OpenApiCompatOptionalNullishPayload",
+    }
+  `);
+
+  expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
+    {
+      "OpenApiCompatOptionalNullishPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "type": "number",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "type": "object",
+      },
+    }
+  `);
+});
+
 it("normalizes recursive optional refs compared to the raw schema output", () => {
   expect(Codecs.RecursiveEnvelope.schema()).toMatchInlineSnapshot(`
     {

@@ -270,6 +270,21 @@ it("works3", () => {
     }
   `);
 
+  expect(Codecs.OptionalNullishInput.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "type": "number",
+        },
+        "value": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    }
+  `);
+
   // expect(Codecs.UsesGenericWrapper.schema()).toMatchInlineSnapshot(`
   //   {
   //     "format": "ValidCurrency",

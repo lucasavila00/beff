@@ -51,6 +51,11 @@ type NonEmptyString = [string, ...string[]];
 
 type EmptyClosedRecord = Record<string, never>;
 
+type OptionalNullishInput = {
+  value?: string | null | undefined;
+  limit?: number | null | undefined;
+};
+
 type GenericWrapper<T> = {
   value: T;
   value2: T | boolean;
@@ -84,6 +89,7 @@ export const Codecs = parse.buildParsers<{
   //
   ValidCurrency: ValidCurrency;
   EmptyClosedRecord: EmptyClosedRecord;
+  OptionalNullishInput: OptionalNullishInput;
   // UsesGenericWrapper: UsesGenericWrapper;
 }>({
   stringFormats: {

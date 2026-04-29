@@ -78,6 +78,11 @@ type OpenApiCompatOptinal = {
   it?: string;
 };
 
+type OpenApiCompatOptionalNullishPayload = {
+  value?: string | null | undefined;
+  limit?: number | null | undefined;
+};
+
 type OpenApiCompatDiscUnion =
   | {
       type: "CRON";
@@ -136,6 +141,7 @@ export const Codecs = parse.buildParsers<{
   OpenApiCompatEmptyRecordPayload: OpenApiCompatEmptyRecordPayload;
   OpenApiCompatOptionalizedPayload: OpenApiCompatOptionalizedPayload;
   OpenApiCompatOptinal: OpenApiCompatOptinal;
+  OpenApiCompatOptionalNullishPayload: OpenApiCompatOptionalNullishPayload;
   OpenApiCompatDiscUnion: OpenApiCompatDiscUnion;
   OpenApiCompatDiscUnionCron: OpenApiCompatDiscUnionCron;
   OpenApiCompatDiscUnionEvent: OpenApiCompatDiscUnionEvent;

@@ -26,13 +26,15 @@ export const removeNullUnionBranch = (definition: JSONSchema7Definition): JSONSc
     return null;
   }
 
-  if (nonNull.length === 1) {
-    return nonNull[0];
+  const normalizedNonNull = nonNull.map((variant) => removeNullUnionBranch(variant) ?? variant);
+
+  if (normalizedNonNull.length === 1) {
+    return normalizedNonNull[0];
   }
 
   return {
     ...definition,
-    [variantsKey]: nonNull,
+    [variantsKey]: normalizedNonNull,
   };
 };
 

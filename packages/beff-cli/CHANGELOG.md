@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.141
+
+### Patch Changes
+
+- improve json null serialization
+
 ## 0.0.140
 
 ### Patch Changes
