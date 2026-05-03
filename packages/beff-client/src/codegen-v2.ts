@@ -1680,13 +1680,22 @@ export class ObjectRuntype implements Runtype {
     let acc: any = {};
 
     const inputKeys = Object.keys(input);
+    const configKeys = Object.keys(this.properties).sort();
+    const hasOwn = Object.prototype.hasOwnProperty;
 
-    for (const k of inputKeys) {
+    for (const k of configKeys) {
+      if (!hasOwn.call(input, k)) {
+        continue;
+      }
       const v = input[k];
-      if (k in this.properties) {
-        const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
-        acc[k] = itemParsed;
-      } else if (this.indexedPropertiesParser.length > 0) {
+      const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
+      acc[k] = itemParsed;
+    }
+
+    if (this.indexedPropertiesParser.length > 0) {
+      const extraKeys = inputKeys.filter((k) => !(k in this.properties)).sort();
+      for (const k of extraKeys) {
+        const v = input[k];
         for (const p of this.indexedPropertiesParser) {
           const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
           if (isValid) {
