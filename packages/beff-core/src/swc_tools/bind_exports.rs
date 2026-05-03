@@ -391,6 +391,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
             match &**import {
                 ImportReference::Named {
                     original_name: orig,
+                    file_name,
                     ..
                 } => {
                     let it = Rc::new(SymbolExport::SomethingOfOtherFile {

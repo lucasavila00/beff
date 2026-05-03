@@ -1540,6 +1540,74 @@ mod tests {
         ");
     }
     #[test]
+    fn imported_type_only_re_export() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "source.ts",
+                r#"
+                    export type T = {
+                        value: string;
+                    };
+                "#,
+            ),
+            (
+                "barrel.ts",
+                r#"
+                    import type { T } from "./source";
+                    export type { T };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { T } from "./barrel";
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r###"
+        type T = { "value": string };
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "###);
+    }
+    #[test]
+    fn imported_type_only_re_export_alias() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "source.ts",
+                r#"
+                    export type T = {
+                        value: string;
+                    };
+                "#,
+            ),
+            (
+                "barrel.ts",
+                r#"
+                    import type { T as Local } from "./source";
+                    export type { Local as PublicT };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { PublicT } from "./barrel";
+                    parse.buildParsers<{ PublicT: PublicT }>();
+                "#
+            )
+        ]), @r###"
+        type T = { "value": string };
+
+
+        type BuiltParsers = {
+          PublicT: T,
+        }
+        "###);
+    }
+    #[test]
     fn import_inline_type() {
         insta::assert_snapshot!(print_types_multifile(&[
             (
