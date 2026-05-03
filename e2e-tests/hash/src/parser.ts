@@ -10,6 +10,12 @@ import {
   VoidCodec,
   ObjCodec,
   ObjCodec2,
+  RecursiveA,
+  RecursiveB,
+  MutualA1,
+  MutualB1,
+  MutualA2,
+  MutualB2,
 } from "../tests/b.test";
 import parse from "./generated/parser";
 import { StringFormat } from "@beff/client";
@@ -28,6 +34,12 @@ export const Codecs = parse.buildParsers<{
   VoidCodec: VoidCodec;
   ObjCodec: ObjCodec;
   ObjCodec2: ObjCodec2;
+  RecursiveA: RecursiveA;
+  RecursiveB: RecursiveB;
+  MutualA1: MutualA1;
+  MutualB1: MutualB1;
+  MutualA2: MutualA2;
+  MutualB2: MutualB2;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

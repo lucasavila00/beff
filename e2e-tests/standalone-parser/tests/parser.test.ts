@@ -698,7 +698,10 @@ it("repro1", () => {
   expect(Repro1.parse({})).toMatchInlineSnapshot("{}");
 });
 it("PartialObject", () => {
-  expect(PartialObject.parse({})).toMatchInlineSnapshot("{}");
+  const parsed = PartialObject.parse({});
+  expect(parsed).toMatchInlineSnapshot("{}");
+  expect(Object.prototype.hasOwnProperty.call(parsed, "a")).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(parsed, "b")).toBe(false);
 });
 it("PartialSettings", () => {
   expect(PartialSettings.parse({})).toMatchInlineSnapshot("{}");

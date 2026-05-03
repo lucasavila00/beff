@@ -79,30 +79,66 @@ const direct_hoist_7 = new RefRuntype("UnknownCodec");
 const direct_hoist_8 = new RefRuntype("VoidCodec");
 const direct_hoist_9 = new RefRuntype("ObjCodec");
 const direct_hoist_10 = new RefRuntype("ObjCodec2");
-const direct_hoist_11 = new AnyRuntype();
-const direct_hoist_12 = new TypeofRuntype("boolean");
-const direct_hoist_13 = new NullishRuntype("null");
-const direct_hoist_14 = new TypeofRuntype("number");
-const direct_hoist_15 = new TypeofRuntype("string");
-const direct_hoist_16 = new ObjectRuntype({
-    "a": direct_hoist_15,
-    "b": direct_hoist_14
+const direct_hoist_11 = new RefRuntype("RecursiveA");
+const direct_hoist_12 = new RefRuntype("RecursiveB");
+const direct_hoist_13 = new RefRuntype("MutualA1");
+const direct_hoist_14 = new RefRuntype("MutualB1");
+const direct_hoist_15 = new RefRuntype("MutualA2");
+const direct_hoist_16 = new RefRuntype("MutualB2");
+const direct_hoist_17 = new AnyRuntype();
+const direct_hoist_18 = new TypeofRuntype("boolean");
+const direct_hoist_19 = new TypeofRuntype("string");
+const direct_hoist_20 = new ObjectRuntype({
+    "next": new OptionalFieldRuntype(direct_hoist_14),
+    "value": direct_hoist_19
 }, []);
-const direct_hoist_17 = new ArrayRuntype(direct_hoist_15);
-const direct_hoist_18 = new NullishRuntype("undefined");
-const direct_hoist_19 = new NullishRuntype("void");
+const direct_hoist_21 = new ObjectRuntype({
+    "next": new OptionalFieldRuntype(direct_hoist_16),
+    "value": direct_hoist_19
+}, []);
+const direct_hoist_22 = new ObjectRuntype({
+    "next": new OptionalFieldRuntype(direct_hoist_13),
+    "value": direct_hoist_19
+}, []);
+const direct_hoist_23 = new ObjectRuntype({
+    "next": new OptionalFieldRuntype(direct_hoist_15),
+    "value": direct_hoist_19
+}, []);
+const direct_hoist_24 = new NullishRuntype("null");
+const direct_hoist_25 = new TypeofRuntype("number");
+const direct_hoist_26 = new ObjectRuntype({
+    "a": direct_hoist_19,
+    "b": direct_hoist_25
+}, []);
+const direct_hoist_27 = new ObjectRuntype({
+    "next": new OptionalFieldRuntype(direct_hoist_11),
+    "value": direct_hoist_19
+}, []);
+const direct_hoist_28 = new ObjectRuntype({
+    "next": new OptionalFieldRuntype(direct_hoist_12),
+    "value": direct_hoist_19
+}, []);
+const direct_hoist_29 = new ArrayRuntype(direct_hoist_19);
+const direct_hoist_30 = new NullishRuntype("undefined");
+const direct_hoist_31 = new NullishRuntype("void");
 const namedRuntypes = {
-    "AnyCodec": direct_hoist_11,
-    "BooleanCodec": direct_hoist_12,
-    "NullCodec": direct_hoist_13,
-    "NumberCodec": direct_hoist_14,
-    "ObjCodec": direct_hoist_16,
-    "ObjCodec2": direct_hoist_16,
-    "StringArrayCodec": direct_hoist_17,
-    "StringCodec": direct_hoist_15,
-    "UndefinedCodec": direct_hoist_18,
-    "UnknownCodec": direct_hoist_11,
-    "VoidCodec": direct_hoist_19
+    "AnyCodec": direct_hoist_17,
+    "BooleanCodec": direct_hoist_18,
+    "MutualA1": direct_hoist_20,
+    "MutualA2": direct_hoist_21,
+    "MutualB1": direct_hoist_22,
+    "MutualB2": direct_hoist_23,
+    "NullCodec": direct_hoist_24,
+    "NumberCodec": direct_hoist_25,
+    "ObjCodec": direct_hoist_26,
+    "ObjCodec2": direct_hoist_26,
+    "RecursiveA": direct_hoist_27,
+    "RecursiveB": direct_hoist_28,
+    "StringArrayCodec": direct_hoist_29,
+    "StringCodec": direct_hoist_19,
+    "UndefinedCodec": direct_hoist_30,
+    "UnknownCodec": direct_hoist_17,
+    "VoidCodec": direct_hoist_31
 };
 const buildParsersInput = {
     "StringCodec": direct_hoist_0,
@@ -115,7 +151,13 @@ const buildParsersInput = {
     "UnknownCodec": direct_hoist_7,
     "VoidCodec": direct_hoist_8,
     "ObjCodec": direct_hoist_9,
-    "ObjCodec2": direct_hoist_10
+    "ObjCodec2": direct_hoist_10,
+    "RecursiveA": direct_hoist_11,
+    "RecursiveB": direct_hoist_12,
+    "MutualA1": direct_hoist_13,
+    "MutualB1": direct_hoist_14,
+    "MutualA2": direct_hoist_15,
+    "MutualB2": direct_hoist_16
 };
 
 export default { buildParsers };

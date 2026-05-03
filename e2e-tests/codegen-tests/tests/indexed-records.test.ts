@@ -232,6 +232,7 @@ it("R4: mapped infinite required value", () => {
       "success": true,
     }
   `);
+  expect(Object.keys(Codecs.R4.parse({ x_b: 2, x_a: 1 }))).toEqual(["x_a", "x_b"]);
   expect(Codecs.R4.safeParse({ y_a: 1 })).toMatchInlineSnapshot(`
     {
       "errors": [
