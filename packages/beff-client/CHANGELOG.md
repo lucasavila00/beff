@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.145
+
+### Patch Changes
+
+- recognize Record<Record<... syntax
+- Updated dependencies
+  - @beff/cli@0.0.145
+
 ## 0.0.144
 
 ### Patch Changes

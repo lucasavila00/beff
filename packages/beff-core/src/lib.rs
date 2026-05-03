@@ -340,6 +340,7 @@ pub enum TsBuiltIn {
     Record,
     Omit,
     Object,
+    Readonly,
     Required,
     Partial,
     Pick,
