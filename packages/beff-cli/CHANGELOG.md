@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.144
+
+### Patch Changes
+
+- preserve obj order
+
 ## 0.0.143
 
 ### Patch Changes

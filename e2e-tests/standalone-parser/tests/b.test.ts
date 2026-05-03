@@ -47,7 +47,7 @@ it("parse", () => {
     }
   `);
 });
-it("normalizes nested object key order", () => {
+it("preserves nested input object key order by default", () => {
   const codec = b.Object({
     z: b.String(),
     nested: b.Object({
@@ -62,6 +62,28 @@ it("normalizes nested object key order", () => {
       a: "first",
     },
   });
+
+  expect(Object.keys(parsed)).toEqual(["z", "nested"]);
+  expect(Object.keys(parsed.nested)).toEqual(["b", "a"]);
+});
+it("normalizes nested object key order when sorted", () => {
+  const codec = b.Object({
+    z: b.String(),
+    nested: b.Object({
+      b: b.Number(),
+      a: b.String(),
+    }),
+  });
+  const parsed = codec.parse(
+    {
+      z: "last",
+      nested: {
+        b: 2,
+        a: "first",
+      },
+    },
+    { objectKeyOrder: "sorted" },
+  );
 
   expect(Object.keys(parsed)).toEqual(["nested", "z"]);
   expect(Object.keys(parsed.nested)).toEqual(["a", "b"]);
