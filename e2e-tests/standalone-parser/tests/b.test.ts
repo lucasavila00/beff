@@ -47,6 +47,25 @@ it("parse", () => {
     }
   `);
 });
+it("normalizes nested object key order", () => {
+  const codec = b.Object({
+    z: b.String(),
+    nested: b.Object({
+      b: b.Number(),
+      a: b.String(),
+    }),
+  });
+  const parsed = codec.parse({
+    z: "last",
+    nested: {
+      b: 2,
+      a: "first",
+    },
+  });
+
+  expect(Object.keys(parsed)).toEqual(["nested", "z"]);
+  expect(Object.keys(parsed.nested)).toEqual(["a", "b"]);
+});
 it("disallow extra properties", () => {
   const T3 = b.Object({
     kind: b.String(),

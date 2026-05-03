@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.143
+
+### Patch Changes
+
+- hash 256
+- Updated dependencies
+  - @beff/cli@0.0.143
+
 ## 0.0.142
 
 ### Patch Changes
