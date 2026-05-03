@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use beff_core::test_tools::{failure, print_cgen, print_types};
+    use beff_core::test_tools::{failure, print_cgen, print_types, print_types_multifile};
 
     #[test]
     fn ok_either() {
@@ -208,6 +208,39 @@ mod tests {
 
         type BuiltParsers = {
           Meta: Meta,
+        }
+        "#);
+    }
+    #[test]
+    fn ok_readonly_record_across_files() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "entry.ts",
+                r#"
+                    import { CustomMetricMap } from "./metrics";
+
+                    parse.buildParsers<{ CustomMetricMap: CustomMetricMap }>();
+                "#,
+            ),
+            (
+                "metrics.ts",
+                r#"
+                    export type SerializedMetricChain = {
+                        id: string;
+                        label: string;
+                    };
+
+                    export type CustomMetricMap = Readonly<Record<string, SerializedMetricChain>>;
+                "#,
+            ),
+        ]), @r#"
+        type CustomMetricMap = { [key: string]: SerializedMetricChain };
+
+        type SerializedMetricChain = { "id": string, "label": string };
+
+
+        type BuiltParsers = {
+          CustomMetricMap: CustomMetricMap,
         }
         "#);
     }

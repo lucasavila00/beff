@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.145
+
+### Patch Changes
+
+- recognize Record<Record<... syntax
+
 ## 0.0.144
 
 ### Patch Changes

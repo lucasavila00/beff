@@ -1473,6 +1473,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
                     ),
                 },
+                TsBuiltIn::Readonly => match type_args.as_slice() {
+                    [obj] => Ok(obj.clone()),
+                    _ => self.error(
+                        anchor,
+                        DiagnosticInfoMessage::ReadonlyShouldHaveOneTypeArgument,
+                    ),
+                },
                 TsBuiltIn::Required => match type_args.as_slice() {
                     [obj] => {
                         let vs = self.extract_object_from_runtype(obj, anchor)?;
@@ -1559,6 +1566,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             "Record" => Some(TsBuiltIn::Record),
             "Omit" => Some(TsBuiltIn::Omit),
             "Object" => Some(TsBuiltIn::Object),
+            "Readonly" => Some(TsBuiltIn::Readonly),
             "Required" => Some(TsBuiltIn::Required),
             "Partial" => Some(TsBuiltIn::Partial),
             "Pick" => Some(TsBuiltIn::Pick),

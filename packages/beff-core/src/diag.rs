@@ -21,6 +21,7 @@ pub enum DiagnosticInfoMessage {
     MapShouldHaveTwoTypeArguments,
     PartialShouldHaveTwoTypeArguments,
     RequiredShouldHaveTwoTypeArguments,
+    ReadonlyShouldHaveOneTypeArgument,
     InvalidNumberOfTypeParametersForArray,
     CannotHaveRecursiveGenericTypes,
     ObjectHasConflictingKeyValueInIntersection,
@@ -533,6 +534,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::RequiredShouldHaveTwoTypeArguments => {
                 "Required should have two type arguments".to_string()
+            }
+            DiagnosticInfoMessage::ReadonlyShouldHaveOneTypeArgument => {
+                "Readonly should have one type argument".to_string()
             }
             DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments => {
                 "Partial should have two type arguments".to_string()
