@@ -232,7 +232,11 @@ it("R4: mapped infinite required value", () => {
       "success": true,
     }
   `);
-  expect(Object.keys(Codecs.R4.parse({ x_b: 2, x_a: 1 }))).toEqual(["x_a", "x_b"]);
+  expect(Object.keys(Codecs.R4.parse({ x_b: 2, x_a: 1 }))).toEqual(["x_b", "x_a"]);
+  expect(Object.keys(Codecs.R4.parse({ x_b: 2, x_a: 1 }, { objectKeyOrder: "sorted" }))).toEqual([
+    "x_a",
+    "x_b",
+  ]);
   expect(Codecs.R4.safeParse({ y_a: 1 })).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -275,6 +279,13 @@ it("R4: mapped infinite required value", () => {
       "success": false,
     }
   `);
+});
+
+it("R: input order interleaves known and indexed properties by default", () => {
+  const input = { x_b: 4, b: 2, x_a: 3, a: 1 };
+
+  expect(Object.keys(Codecs.R.parse(input))).toEqual(["x_b", "b", "x_a", "a"]);
+  expect(Object.keys(Codecs.R.parse(input, { objectKeyOrder: "sorted" }))).toEqual(["a", "b", "x_a", "x_b"]);
 });
 
 it("R5: mapped infinite optional value", () => {

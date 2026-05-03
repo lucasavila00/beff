@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.144
+
+### Patch Changes
+
+- preserve obj order
+- Updated dependencies
+  - @beff/cli@0.0.144
+
 ## 0.0.143
 
 ### Patch Changes

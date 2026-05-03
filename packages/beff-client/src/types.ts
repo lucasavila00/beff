@@ -29,6 +29,7 @@ export type DecodeError = RegularDecodeError | UnionDecodeError;
 
 export type ParseOptions = {
   disallowExtraProperties?: boolean;
+  objectKeyOrder?: "input" | "sorted";
 };
 
 export type BeffParser<T> = {

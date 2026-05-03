@@ -12,6 +12,14 @@ type TestHoist = {
   b: string[];
 };
 
+type NestedOrder = {
+  outer: {
+    a: number;
+    b: number;
+  };
+  label: string;
+};
+
 export type BeforeRequired = {
   a: string;
   b: string | undefined;
@@ -41,6 +49,7 @@ export const Codecs = parse.buildParsers<{
   AliasToAny: AliasToAny;
   AliasToConst: AliasToConst;
   TestHoist: TestHoist;
+  NestedOrder: NestedOrder;
   BeforeRequired: BeforeRequired;
   AfterRequired: AfterRequired;
   R: R;

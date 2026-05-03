@@ -24,3 +24,43 @@ it("works", () => {
     '"type CodecTestHoist = { a: Array<string>, b: Array<string> };"',
   );
 });
+
+it("parse preserves input object key order by default", () => {
+  const parsed = Codecs.TestHoist.parse({
+    b: ["second"],
+    unknown: "dropped",
+    a: ["first"],
+  });
+
+  expect(Object.keys(parsed)).toEqual(["b", "a"]);
+});
+
+it("parse preserves nested input object key order by default", () => {
+  const parsed = Codecs.NestedOrder.parse({
+    label: "top",
+    outer: {
+      b: 2,
+      extra: "dropped",
+      a: 1,
+    },
+  });
+
+  expect(Object.keys(parsed)).toEqual(["label", "outer"]);
+  expect(Object.keys(parsed.outer)).toEqual(["b", "a"]);
+});
+
+it("parse supports sorted object key order as an option", () => {
+  const parsed = Codecs.NestedOrder.parse(
+    {
+      outer: {
+        b: 2,
+        a: 1,
+      },
+      label: "top",
+    },
+    { objectKeyOrder: "sorted" },
+  );
+
+  expect(Object.keys(parsed)).toEqual(["label", "outer"]);
+  expect(Object.keys(parsed.outer)).toEqual(["a", "b"]);
+});

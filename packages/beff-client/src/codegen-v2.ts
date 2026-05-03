@@ -461,6 +461,7 @@ type ValidateContext = {
 
 type ParseContext = {
   disallowExtraProperties: boolean;
+  objectKeyOrder: "input" | "sorted";
 };
 
 type ReportContext = {
@@ -1848,28 +1849,48 @@ export class ObjectRuntype implements Runtype {
     let acc: any = {};
 
     const inputKeys = Object.keys(input);
-    const configKeys = Object.keys(this.properties).sort();
     const hasOwn = Object.prototype.hasOwnProperty;
 
-    for (const k of configKeys) {
-      if (!hasOwn.call(input, k)) {
-        continue;
-      }
-      const v = input[k];
-      const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
-      acc[k] = itemParsed;
-    }
+    if (ctx.objectKeyOrder === "input") {
+      for (const k of inputKeys) {
+        if (hasOwn.call(this.properties, k)) {
+          acc[k] = this.properties[k].parseAfterValidation(ctx, input[k]);
+          continue;
+        }
 
-    if (this.indexedPropertiesParser.length > 0) {
-      const extraKeys = inputKeys.filter((k) => !(k in this.properties)).sort();
-      for (const k of extraKeys) {
-        const v = input[k];
         for (const p of this.indexedPropertiesParser) {
+          const v = input[k];
           const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
           if (isValid) {
             const itemParsed = p.value.parseAfterValidation(ctx, v);
             const keyParsed = p.key.parseAfterValidation(ctx, k);
             acc[keyParsed as any] = itemParsed;
+          }
+        }
+      }
+    } else {
+      const configKeys = Object.keys(this.properties).sort();
+
+      for (const k of configKeys) {
+        if (!hasOwn.call(input, k)) {
+          continue;
+        }
+        const v = input[k];
+        const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
+        acc[k] = itemParsed;
+      }
+
+      if (this.indexedPropertiesParser.length > 0) {
+        const extraKeys = inputKeys.filter((k) => !(k in this.properties)).sort();
+        for (const k of extraKeys) {
+          const v = input[k];
+          for (const p of this.indexedPropertiesParser) {
+            const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
+            if (isValid) {
+              const itemParsed = p.value.parseAfterValidation(ctx, v);
+              const keyParsed = p.key.parseAfterValidation(ctx, k);
+              acc[keyParsed as any] = itemParsed;
+            }
           }
         }
       }
@@ -2110,9 +2131,10 @@ class ParserFromRuntype implements BeffParser<any> {
     options?: ParseOptions,
   ): { success: false; errors: DecodeError[] } | { success: true; data: any } {
     const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+    const objectKeyOrder = options?.objectKeyOrder ?? "input";
     const ok = this.validate(input, options);
     if (ok) {
-      let ctx = { disallowExtraProperties };
+      let ctx = { disallowExtraProperties, objectKeyOrder };
       const parsed = this._runtype.parseAfterValidation(ctx, input);
       return { success: true, data: parsed };
     }
