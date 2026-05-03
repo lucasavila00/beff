@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.142
+
+### Patch Changes
+
+- fix module resolver crash
+
 ## 0.0.141
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.142
+
+### Patch Changes
+
+- fix module resolver crash
+- Updated dependencies
+  - @beff/cli@0.0.142
+
 ## 0.0.141
 
 ### Patch Changes
