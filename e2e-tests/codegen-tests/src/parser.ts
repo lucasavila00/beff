@@ -1,4 +1,5 @@
 import parse from "./generated/parser";
+import * as constants from "./constants";
 
 type AliasToString = string;
 type AliasToNumber = number;
@@ -39,6 +40,7 @@ export type R5 = { [K in `x_${string}`]?: number };
 export type MetaKey = "alpha" | "beta" | `alpha_entity_${string}` | `beta-entity-${string}`;
 export type Meta = Partial<Record<MetaKey, string>>;
 export type Meta2 = Record<MetaKey, string>;
+type KnownConstants = typeof constants;
 
 export const Codecs = parse.buildParsers<{
   Dec: string;
@@ -59,4 +61,5 @@ export const Codecs = parse.buildParsers<{
   R5: R5;
   Meta: Meta;
   Meta2: Meta2;
+  KnownConstants: KnownConstants;
 }>();

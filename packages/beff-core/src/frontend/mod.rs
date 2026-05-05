@@ -596,14 +596,14 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
                     return self.get_addressed_item_from_import_reference(imported, anchor);
                 }
+                if let Some(decl_expr) = parsed_module.locals.exprs_decls.get(&addr.name) {
+                    return self.handle_symbol_expr_decl(decl_expr, &addr.file);
+                }
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.name) {
                     return self.handle_symbol_expr(expr, &addr.file);
                 }
                 if let Some(enum_) = parsed_module.locals.enums.get(&addr.name) {
                     return self.handle_symbol_enum(enum_, &addr.file);
-                }
-                if let Some(decl_expr) = parsed_module.locals.exprs_decls.get(&addr.name) {
-                    return self.handle_symbol_expr_decl(decl_expr, &addr.file);
                 }
 
                 self.get_ctx().error(

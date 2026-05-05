@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
 
-    use beff_core::test_tools::{failure, print_cgen, print_types, print_types_multifile};
+    use beff_core::test_tools::{
+        failure, print_cgen, print_cgen_multifile, print_types, print_types_multifile,
+    };
 
     #[test]
     fn ok_either() {
@@ -1491,6 +1493,50 @@ mod tests {
         };
         "#);
     }
+
+    #[test]
+    fn ok_namespace_typeof_preserves_exported_const_annotations() {
+        insta::assert_snapshot!(print_cgen_multifile(&[
+            (
+                "constants.ts",
+                r#"
+                    export const FOO_VALUE: string = "demo";
+                    export const BAR_OPTION: "red" | "blue" = "red";
+                    export const BAZ_VALUES: string[] = [];
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as constants from "./constants";
+
+                    type KnownConstants = typeof constants;
+
+                    parse.buildParsers<{ KnownConstants: KnownConstants }>();
+                "#
+            )
+        ]), @r#"
+        const direct_hoist_0 = new RefRuntype("KnownConstants");
+        const direct_hoist_1 = new AnyOfConstsRuntype([
+            "blue",
+            "red"
+        ]);
+        const direct_hoist_2 = new TypeofRuntype("string");
+        const direct_hoist_3 = new ArrayRuntype(direct_hoist_2);
+        const direct_hoist_4 = new ObjectRuntype({
+            "BAR_OPTION": direct_hoist_1,
+            "BAZ_VALUES": direct_hoist_3,
+            "FOO_VALUE": direct_hoist_2
+        }, []);
+        const namedRuntypes = {
+            "KnownConstants": direct_hoist_4
+        };
+        const buildParsersInput = {
+            "KnownConstants": direct_hoist_0
+        };
+        "#);
+    }
+
     #[test]
     fn ok_string_with_fmt_decoder() {
         insta::assert_snapshot!(print_cgen(
@@ -1511,7 +1557,6 @@ mod tests {
         };
         "#);
     }
-
 
     #[test]
     fn ok_string_with_fmt_record_decoder() {
