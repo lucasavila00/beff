@@ -124,6 +124,9 @@ pub fn print_types_multifile(sources: &[(&str, &str)]) -> String {
 }
 pub fn print_cgen(from: &str) -> String {
     let sources = [("entry.ts", from)];
+    print_cgen_multifile(&sources)
+}
+pub fn print_cgen_multifile(sources: &[(&str, &str)]) -> String {
     let p = extract_types(&sources);
     let errors = &p.errors;
 

@@ -155,26 +155,23 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
             }
             Decl::Var(var_decl) => {
                 for it in &var_decl.decls {
-                    if let Some(expr) = &it.init
-                        && let Pat::Ident(it) = &it.name
-                    {
-                        let name = it.sym.clone();
-                        let export = Rc::new(SymbolExport::ValueExpr {
-                            expr: Rc::new(*expr.clone()),
-                            name: name.to_string(),
-                            span: it.span,
-                            original_file: self.current_file.clone(),
-                        });
-                        self.symbol_exports.insert_value(it.sym.to_string(), export);
-                    }
-
-                    if var_decl.declare
-                        && let Pat::Ident(it) = &it.name
+                    if let Pat::Ident(it) = &it.name
                         && let Some(ann) = &it.type_ann
                     {
                         let name = it.sym.clone();
                         let export = Rc::new(SymbolExport::ExprDecl {
                             ty: Rc::new(*ann.type_ann.clone()),
+                            name: name.to_string(),
+                            span: it.span,
+                            original_file: self.current_file.clone(),
+                        });
+                        self.symbol_exports.insert_value(it.sym.to_string(), export);
+                    } else if let Some(expr) = &it.init
+                        && let Pat::Ident(it) = &it.name
+                    {
+                        let name = it.sym.clone();
+                        let export = Rc::new(SymbolExport::ValueExpr {
+                            expr: Rc::new(*expr.clone()),
                             name: name.to_string(),
                             span: it.span,
                             original_file: self.current_file.clone(),
