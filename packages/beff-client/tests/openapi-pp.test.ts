@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { b, createNamedType, overrideNamedType } from "../src/index.js";
 import { removeNullUnionBranch } from "../src/openapi-pp.js";
 import {
+  AllOfRuntype,
   AnyOfDiscriminatedRuntype,
   BaseRefRuntype,
   ConstRuntype,
   ObjectRuntype,
+  OptionalFieldRuntype,
   SchemaPrintingContext,
   TypeofRuntype,
 } from "../src/codegen-v2.js";
@@ -208,6 +210,179 @@ describe("discriminated union schemas", () => {
         "DiscriminatedTypeCRON1000470817",
       ]
     `);
+  });
+});
+
+describe("allOf object schema merging", () => {
+  it("prints closed object intersections as one object schema", () => {
+    const schema = new AllOfRuntype([
+      new ObjectRuntype({ key: new ConstRuntype("stock_picker") }, []),
+      new ObjectRuntype(
+        {
+          trainingEndDate: new TypeofRuntype("string"),
+          evaluationStartDate: new TypeofRuntype("string"),
+          evaluationEndDate: new TypeofRuntype("string"),
+          optionalNote: new OptionalFieldRuntype(new TypeofRuntype("string")),
+        },
+        [],
+      ),
+    ]).schema({
+      path: [],
+      seen: {},
+      mode: "flat",
+    });
+
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "additionalProperties": false,
+        "properties": {
+          "evaluationEndDate": {
+            "type": "string",
+          },
+          "evaluationStartDate": {
+            "type": "string",
+          },
+          "key": {
+            "const": "stock_picker",
+          },
+          "optionalNote": {
+            "type": "string",
+          },
+          "trainingEndDate": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "key",
+          "trainingEndDate",
+          "evaluationStartDate",
+          "evaluationEndDate",
+        ],
+        "type": "object",
+      }
+    `);
+  });
+
+  it("merges duplicate properties with identical schemas", () => {
+    const schema = new AllOfRuntype([
+      new ObjectRuntype({ key: new TypeofRuntype("string") }, []),
+      new ObjectRuntype({ key: new TypeofRuntype("string") }, []),
+    ]).schema({
+      path: [],
+      seen: {},
+      mode: "flat",
+    });
+
+    expect(schema).toEqual({
+      type: "object",
+      properties: {
+        key: {
+          type: "string",
+        },
+      },
+      required: ["key"],
+      additionalProperties: false,
+    });
+  });
+
+  it("falls back to allOf for duplicate properties with incompatible schemas", () => {
+    const schema = new AllOfRuntype([
+      new ObjectRuntype({ key: new TypeofRuntype("string") }, []),
+      new ObjectRuntype({ key: new TypeofRuntype("number") }, []),
+    ]).schema({
+      path: [],
+      seen: {},
+      mode: "flat",
+    });
+
+    expect(schema).toEqual({
+      allOf: [
+        {
+          type: "object",
+          properties: {
+            key: {
+              type: "string",
+            },
+          },
+          required: ["key"],
+          additionalProperties: false,
+        },
+        {
+          type: "object",
+          properties: {
+            key: {
+              type: "number",
+            },
+          },
+          required: ["key"],
+          additionalProperties: false,
+        },
+      ],
+    });
+  });
+
+  it("falls back to allOf for non-object intersections", () => {
+    const schema = new AllOfRuntype([
+      new ObjectRuntype({ key: new TypeofRuntype("string") }, []),
+      new TypeofRuntype("string"),
+    ]).schema({
+      path: [],
+      seen: {},
+      mode: "flat",
+    });
+
+    expect(schema).toEqual({
+      allOf: [
+        {
+          type: "object",
+          properties: {
+            key: {
+              type: "string",
+            },
+          },
+          required: ["key"],
+          additionalProperties: false,
+        },
+        {
+          type: "string",
+        },
+      ],
+    });
+  });
+
+  it("falls back to allOf for indexed object schemas", () => {
+    const schema = new AllOfRuntype([
+      new ObjectRuntype({ key: new TypeofRuntype("string") }, []),
+      new ObjectRuntype({}, [{ key: new TypeofRuntype("string"), value: new TypeofRuntype("number") }]),
+    ]).schema({
+      path: [],
+      seen: {},
+      mode: "flat",
+    });
+
+    expect(schema).toEqual({
+      allOf: [
+        {
+          type: "object",
+          properties: {
+            key: {
+              type: "string",
+            },
+          },
+          required: ["key"],
+          additionalProperties: false,
+        },
+        {
+          type: "object",
+          additionalProperties: {
+            type: "number",
+          },
+          propertyNames: {
+            type: "string",
+          },
+        },
+      ],
+    });
   });
 });
 

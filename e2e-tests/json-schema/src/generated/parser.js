@@ -101,111 +101,131 @@ const direct_hoist_17 = new RefRuntype("NonEmptyString");
 const direct_hoist_18 = new RefRuntype("ValidCurrency");
 const direct_hoist_19 = new RefRuntype("EmptyClosedRecord");
 const direct_hoist_20 = new RefRuntype("OptionalNullishInput");
-const direct_hoist_21 = new ConstRuntype("a1");
-const direct_hoist_22 = new ConstRuntype("a");
-const direct_hoist_23 = new ObjectRuntype({
+const direct_hoist_21 = new RefRuntype("ToolInput");
+const direct_hoist_22 = new ConstRuntype("a1");
+const direct_hoist_23 = new ConstRuntype("a");
+const direct_hoist_24 = new ObjectRuntype({
     "a1": direct_hoist_0,
     "a11": new OptionalFieldRuntype(direct_hoist_0),
-    "subType": direct_hoist_21,
-    "type": direct_hoist_22
+    "subType": direct_hoist_22,
+    "type": direct_hoist_23
 }, []);
-const direct_hoist_24 = new ConstRuntype("a2");
-const direct_hoist_25 = new ObjectRuntype({
+const direct_hoist_25 = new ConstRuntype("a2");
+const direct_hoist_26 = new ObjectRuntype({
     "a2": direct_hoist_0,
-    "subType": direct_hoist_24,
-    "type": direct_hoist_22
+    "subType": direct_hoist_25,
+    "type": direct_hoist_23
 }, []);
-const direct_hoist_26 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_23,
-    direct_hoist_25
+const direct_hoist_27 = new AnyOfDiscriminatedRuntype([
+    direct_hoist_24,
+    direct_hoist_26
 ], "subType", {
-    "a1": direct_hoist_23,
-    "a2": direct_hoist_25
+    "a1": direct_hoist_24,
+    "a2": direct_hoist_26
 }, {
-    "a1": direct_hoist_23,
-    "a2": direct_hoist_25
+    "a1": direct_hoist_24,
+    "a2": direct_hoist_26
 });
-const direct_hoist_27 = new ConstRuntype("b");
-const direct_hoist_28 = new ObjectRuntype({
-    "type": direct_hoist_27,
+const direct_hoist_28 = new ConstRuntype("b");
+const direct_hoist_29 = new ObjectRuntype({
+    "type": direct_hoist_28,
     "value": direct_hoist_1
 }, []);
-const direct_hoist_29 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_23,
-    direct_hoist_25,
-    direct_hoist_28
+const direct_hoist_30 = new AnyOfDiscriminatedRuntype([
+    direct_hoist_24,
+    direct_hoist_26,
+    direct_hoist_29
 ], "type", {
-    "a": direct_hoist_26,
-    "b": direct_hoist_28
+    "a": direct_hoist_27,
+    "b": direct_hoist_29
 }, {
-    "a": direct_hoist_26,
-    "b": direct_hoist_28
+    "a": direct_hoist_27,
+    "b": direct_hoist_29
 });
-const direct_hoist_30 = new NeverRuntype();
-const direct_hoist_31 = new ObjectRuntype({}, [
+const direct_hoist_31 = new NeverRuntype();
+const direct_hoist_32 = new ObjectRuntype({}, [
     {
         "key": direct_hoist_0,
-        "value": direct_hoist_30
+        "value": direct_hoist_31
     }
 ]);
-const direct_hoist_32 = new BigIntRuntype();
-const direct_hoist_33 = new ObjectRuntype({
-    "x": direct_hoist_32
+const direct_hoist_33 = new BigIntRuntype();
+const direct_hoist_34 = new ObjectRuntype({
+    "x": direct_hoist_33
 }, []);
-const direct_hoist_34 = new DateRuntype();
-const direct_hoist_35 = new ObjectRuntype({
-    "x": direct_hoist_34
+const direct_hoist_35 = new DateRuntype();
+const direct_hoist_36 = new ObjectRuntype({
+    "x": direct_hoist_35
 }, []);
-const direct_hoist_36 = new TupleRuntype([
+const direct_hoist_37 = new TupleRuntype([
     direct_hoist_0
 ], direct_hoist_0);
-const direct_hoist_37 = new AnyOfRuntype([
+const direct_hoist_38 = new AnyOfRuntype([
     direct_hoist_3,
     direct_hoist_4,
     direct_hoist_1
 ]);
-const direct_hoist_38 = new AnyOfRuntype([
+const direct_hoist_39 = new AnyOfRuntype([
     direct_hoist_3,
     direct_hoist_4,
     direct_hoist_0
 ]);
-const direct_hoist_39 = new ObjectRuntype({
-    "limit": new OptionalFieldRuntype(direct_hoist_37),
-    "value": new OptionalFieldRuntype(direct_hoist_38)
+const direct_hoist_40 = new ObjectRuntype({
+    "limit": new OptionalFieldRuntype(direct_hoist_38),
+    "value": new OptionalFieldRuntype(direct_hoist_39)
 }, []);
-const direct_hoist_40 = new ArrayRuntype(direct_hoist_15);
-const direct_hoist_41 = new ObjectRuntype({
-    "children": direct_hoist_40,
+const direct_hoist_41 = new ArrayRuntype(direct_hoist_15);
+const direct_hoist_42 = new ObjectRuntype({
+    "children": direct_hoist_41,
     "value": direct_hoist_1
 }, []);
-const direct_hoist_42 = new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`");
-const direct_hoist_43 = new ObjectRuntype({
+const direct_hoist_43 = new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`");
+const direct_hoist_44 = new ObjectRuntype({
     "a": direct_hoist_0,
     "b": direct_hoist_1
 }, []);
-const direct_hoist_44 = new ObjectRuntype({
+const direct_hoist_45 = new ObjectRuntype({
     "t1": direct_hoist_9
 }, []);
-const direct_hoist_45 = new ArrayRuntype(direct_hoist_10);
-const direct_hoist_46 = new ObjectRuntype({
-    "t2Array": direct_hoist_45
+const direct_hoist_46 = new ArrayRuntype(direct_hoist_10);
+const direct_hoist_47 = new ObjectRuntype({
+    "t2Array": direct_hoist_46
 }, []);
-const direct_hoist_47 = new StringWithFormatRuntype([
+const direct_hoist_48 = new ConstRuntype("stock_picker");
+const direct_hoist_49 = new ObjectRuntype({
+    "key": direct_hoist_48
+}, []);
+const direct_hoist_50 = new RefRuntype("ToolEnvelope");
+const direct_hoist_51 = new RefRuntype("WorkflowInput");
+const direct_hoist_52 = new AllOfRuntype([
+    direct_hoist_50,
+    direct_hoist_51
+]);
+const direct_hoist_53 = new StringWithFormatRuntype([
     "ValidCurrency"
 ]);
+const direct_hoist_54 = new ObjectRuntype({
+    "evaluationEndDate": direct_hoist_0,
+    "evaluationStartDate": direct_hoist_0,
+    "optionalNote": new OptionalFieldRuntype(direct_hoist_0),
+    "trainingEndDate": direct_hoist_0
+}, []);
 const namedRuntypes = {
-    "DiscriminatedUnion": direct_hoist_29,
-    "EmptyClosedRecord": direct_hoist_31,
-    "InvalidSchemaWithBigInt": direct_hoist_33,
-    "InvalidSchemaWithDate": direct_hoist_35,
-    "NonEmptyString": direct_hoist_36,
-    "OptionalNullishInput": direct_hoist_39,
-    "RecursiveTree": direct_hoist_41,
-    "SemVer": direct_hoist_42,
-    "T1": direct_hoist_43,
-    "T2": direct_hoist_44,
-    "T3": direct_hoist_46,
-    "ValidCurrency": direct_hoist_47
+    "DiscriminatedUnion": direct_hoist_30,
+    "EmptyClosedRecord": direct_hoist_32,
+    "InvalidSchemaWithBigInt": direct_hoist_34,
+    "InvalidSchemaWithDate": direct_hoist_36,
+    "NonEmptyString": direct_hoist_37,
+    "OptionalNullishInput": direct_hoist_40,
+    "RecursiveTree": direct_hoist_42,
+    "SemVer": direct_hoist_43,
+    "T1": direct_hoist_44,
+    "T2": direct_hoist_45,
+    "T3": direct_hoist_47,
+    "ToolEnvelope": direct_hoist_49,
+    "ToolInput": direct_hoist_52,
+    "ValidCurrency": direct_hoist_53,
+    "WorkflowInput": direct_hoist_54
 };
 const buildParsersInput = {
     "string": direct_hoist_0,
@@ -227,7 +247,8 @@ const buildParsersInput = {
     "NonEmptyString": direct_hoist_17,
     "ValidCurrency": direct_hoist_18,
     "EmptyClosedRecord": direct_hoist_19,
-    "OptionalNullishInput": direct_hoist_20
+    "OptionalNullishInput": direct_hoist_20,
+    "ToolInput": direct_hoist_21
 };
 
 exports.default = { buildParsers };

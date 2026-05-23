@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.147
+
+### Patch Changes
+
+- merge object intersection when printing json schema
+- Updated dependencies
+  - @beff/cli@0.0.147
+
 ## 0.0.146
 
 ### Patch Changes
