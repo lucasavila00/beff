@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.147
+
+### Patch Changes
+
+- merge object intersection when printing json schema
+
 ## 0.0.146
 
 ### Patch Changes

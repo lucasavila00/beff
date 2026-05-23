@@ -1178,8 +1178,14 @@ export class AllOfRuntype implements Runtype {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" & ")})`;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
+    const schemas = this.schemas.map((it) => it.schema(ctx));
+    const merged = tryMergeAllOfObjectSchemas(schemas);
+    if (merged != null) {
+      return merged;
+    }
+
     return {
-      allOf: this.schemas.map((it) => it.schema(ctx)),
+      allOf: schemas,
     };
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
@@ -1227,6 +1233,78 @@ export class AllOfRuntype implements Runtype {
       s.hash256(ctx);
     }
   }
+}
+
+const MERGEABLE_OBJECT_SCHEMA_KEYS = new Set(["type", "properties", "required", "additionalProperties"]);
+
+function tryMergeAllOfObjectSchemas(schemas: JSONSchema7[]): JSONSchema7 | null {
+  const properties: Record<string, JSONSchema7Definition> = {};
+  const required = new Set<string>();
+
+  for (const schema of schemas) {
+    if (!isMergeableClosedObjectSchema(schema)) {
+      return null;
+    }
+
+    for (const key of schema.required ?? []) {
+      required.add(key);
+    }
+
+    for (const [key, value] of Object.entries(schema.properties ?? {})) {
+      const existing = properties[key];
+      if (existing != null && !jsonSchemaDefinitionEquals(existing, value)) {
+        return null;
+      }
+      properties[key] = value;
+    }
+  }
+
+  return {
+    type: "object",
+    ...(Object.keys(properties).length > 0 ? { properties } : {}),
+    ...(required.size > 0 ? { required: [...required] } : {}),
+    additionalProperties: false,
+  };
+}
+
+function isMergeableClosedObjectSchema(schema: JSONSchema7): boolean {
+  if (schema.type !== "object" || schema.additionalProperties !== false) {
+    return false;
+  }
+
+  for (const key of Object.keys(schema)) {
+    if (!MERGEABLE_OBJECT_SCHEMA_KEYS.has(key)) {
+      return false;
+    }
+  }
+
+  if (schema.properties != null && typeof schema.properties !== "object") {
+    return false;
+  }
+
+  return schema.required == null || schema.required.every((it) => typeof it === "string");
+}
+
+function jsonSchemaDefinitionEquals(a: JSONSchema7Definition, b: JSONSchema7Definition): boolean {
+  return stableJsonSchemaDefinitionString(a) === stableJsonSchemaDefinitionString(b);
+}
+
+function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string {
+  if (value == null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(stableJsonSchemaDefinitionString).join(",")}]`;
+  }
+
+  const entries = Object.entries(value).sort(([a], [b]) => a.localeCompare(b));
+  return `{${entries
+    .map(
+      ([key, inner]) =>
+        `${JSON.stringify(key)}:${stableJsonSchemaDefinitionString(inner as JSONSchema7Definition)}`,
+    )
+    .join(",")}}`;
 }
 
 export class AnyOfRuntype implements Runtype {

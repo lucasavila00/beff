@@ -285,6 +285,59 @@ it("works3", () => {
     }
   `);
 
+  const toolInputSchema = Codecs.ToolInput.schema();
+  expect(toolInputSchema.type).toBe("object");
+  expect(toolInputSchema).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
+      "properties": {
+        "evaluationEndDate": {
+          "type": "string",
+        },
+        "evaluationStartDate": {
+          "type": "string",
+        },
+        "key": {
+          "const": "stock_picker",
+        },
+        "optionalNote": {
+          "type": "string",
+        },
+        "trainingEndDate": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "key",
+        "evaluationEndDate",
+        "evaluationStartDate",
+        "trainingEndDate",
+      ],
+      "type": "object",
+    }
+  `);
+
+  expect(
+    Codecs.ToolInput.parse({
+      key: "stock_picker",
+      trainingEndDate: "2026-01-01",
+      evaluationStartDate: "2026-02-01",
+      evaluationEndDate: "2026-03-01",
+    }),
+  ).toEqual({
+    key: "stock_picker",
+    trainingEndDate: "2026-01-01",
+    evaluationStartDate: "2026-02-01",
+    evaluationEndDate: "2026-03-01",
+  });
+  expect(
+    Codecs.ToolInput.safeParse({
+      key: "stock_picker",
+      trainingEndDate: "2026-01-01",
+      evaluationStartDate: "2026-02-01",
+    }).success,
+  ).toBe(false);
+
   // expect(Codecs.UsesGenericWrapper.schema()).toMatchInlineSnapshot(`
   //   {
   //     "format": "ValidCurrency",

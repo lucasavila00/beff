@@ -56,6 +56,19 @@ type OptionalNullishInput = {
   limit?: number | null | undefined;
 };
 
+type ToolEnvelope = {
+  key: "stock_picker";
+};
+
+type WorkflowInput = {
+  trainingEndDate: string;
+  evaluationStartDate: string;
+  evaluationEndDate: string;
+  optionalNote?: string;
+};
+
+type ToolInput = ToolEnvelope & WorkflowInput;
+
 type GenericWrapper<T> = {
   value: T;
   value2: T | boolean;
@@ -90,6 +103,7 @@ export const Codecs = parse.buildParsers<{
   ValidCurrency: ValidCurrency;
   EmptyClosedRecord: EmptyClosedRecord;
   OptionalNullishInput: OptionalNullishInput;
+  ToolInput: ToolInput;
   // UsesGenericWrapper: UsesGenericWrapper;
 }>({
   stringFormats: {
