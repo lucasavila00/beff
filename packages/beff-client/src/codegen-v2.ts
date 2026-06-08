@@ -1987,8 +1987,8 @@ export class ObjectRuntype extends BaseRuntype {
       if (members.length === 0) {
         return "{}";
       }
-      const content = members.map(renderObjectMember).join(" ");
-      return `{ ${content} }`;
+      const content = members.map(renderObjectMember).join("\n");
+      return `{\n${content}\n}`;
     }
 
     const content = members.map((it) => it.member).join(", ");

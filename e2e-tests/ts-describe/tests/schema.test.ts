@@ -15,9 +15,12 @@ it("works", () => {
   expect(Codecs.T1.describe()).toMatchInlineSnapshot('"type CodecT1 = { a: string, b: number };"');
   expect(Codecs.DocumentedPayload.describe()).toMatchInlineSnapshot(`
     "/** Documented payload for TypeScript descriptions. */
-    type CodecDocumentedPayload = { /** Stable payload id. */
-    id: string; /** Optional retry count. */
-    retries?: number; };"
+    type CodecDocumentedPayload = {
+    /** Stable payload id. */
+    id: string;
+    /** Optional retry count. */
+    retries?: number;
+    };"
   `);
   expect(Codecs.T2.describe()).toMatchInlineSnapshot('"type CodecT2 = { t1: { a: string, b: number } };"');
   expect(Codecs.T3.describe()).toMatchInlineSnapshot(
@@ -37,12 +40,15 @@ it("works", () => {
     '"type CodecValidCurrency = StringFormat<\\"ValidCurrency\\">;"',
   );
   expect(Codecs.DocumentedSearchInput.describe()).toMatchInlineSnapshot(`
-    "type CodecDocumentedSearchInput = { /** Optional numeric cursor for paged lookup. */
-    cursor: (undefined | number); /**
+    "type CodecDocumentedSearchInput = {
+    /** Optional numeric cursor for paged lookup. */
+    cursor: (undefined | number);
+    /**
      * CompactId represents a formatted identifier
      * while keeping generated schemas small.
      */
-    item: StringFormat<\\"CompactId\\">; };"
+    item: StringFormat<\\"CompactId\\">;
+    };"
   `);
   expect(Codecs.HierarchySelection.describe()).toMatchInlineSnapshot(`
     "/** A selectable hierarchy entry that resolves to a list of target entities. */

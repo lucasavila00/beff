@@ -33,6 +33,14 @@ type DocumentedPayload = {
   retries?: number;
 };
 
+/** Documented result with nullable and required fields. */
+type DocumentedResult = {
+  /** Optional display label. */
+  alpha: null | string;
+  /** Stable lookup key. */
+  beta: string;
+};
+
 type T2 = {
   t1: T1;
 };
@@ -126,6 +134,7 @@ export const Codecs = parse.buildParsers<{
   //
   T1: T1;
   DocumentedPayload: DocumentedPayload;
+  DocumentedResult: DocumentedResult;
   T2: T2;
   T3: T3;
   InvalidSchemaWithDate: InvalidSchemaWithDate;

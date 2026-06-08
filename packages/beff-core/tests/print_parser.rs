@@ -1918,6 +1918,56 @@ mod tests {
         "#);
     }
     #[test]
+    fn ok_jsdoc_metadata_ignores_non_jsdoc_comments() {
+        let printed = print_cgen(
+            r#"
+        /* Plain block comment. */
+        // Plain line comment.
+        export type Alias = string;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#,
+        );
+
+        assert!(printed.contains(r#"new TypeofRuntype(undefined, "string")"#));
+        assert!(!printed.contains(r#""description""#));
+        assert!(!printed.contains("Plain block comment."));
+        assert!(!printed.contains("Plain line comment."));
+    }
+    #[test]
+    fn ok_jsdoc_metadata_reads_export_declare_declarations() {
+        let printed = print_cgen(
+            r#"
+        /** Declared alias. */
+        export declare type Alias = string;
+
+        /** Declared interface. */
+        export declare interface Wrapper {
+            value: Alias;
+        }
+
+        parse.buildParsers<{ Dec: Wrapper }>();
+      "#,
+        );
+
+        assert!(printed.contains(r#""description": "Declared alias.""#));
+        assert!(printed.contains(r#""description": "Declared interface.""#));
+    }
+    #[test]
+    fn ok_jsdoc_metadata_reads_quoted_property_keys() {
+        let printed = print_cgen(
+            r#"
+        export type Alias = {
+            /** Quoted property. */
+            "quoted-key": string;
+        }
+        parse.buildParsers<{ Dec: Alias }>();
+      "#,
+        );
+
+        assert!(printed.contains(r#""quoted-key":"#));
+        assert!(printed.contains(r#""description": "Quoted property.""#));
+    }
+    #[test]
     fn ok_union_decoder() {
         insta::assert_snapshot!(print_cgen(
             r#"
