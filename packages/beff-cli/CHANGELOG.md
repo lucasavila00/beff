@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.148
+
+### Patch Changes
+
+- json schema comments
+
 ## 0.0.147
 
 ### Patch Changes
