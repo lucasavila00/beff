@@ -58,6 +58,12 @@ const writeIfChanged = (filePath: string, content: string) => {
   fs.writeFileSync(filePath, content);
 };
 
+const logTiming = (verbose: boolean, label: string, start: number) => {
+  if (verbose) {
+    console.log(`JS: Timing ${label} ${Date.now() - start}ms`);
+  }
+};
+
 export const execProject = (
   bundler: Bundler,
   projectPath: string,
@@ -78,19 +84,25 @@ export const execProject = (
     fs.mkdirSync(outputDir);
   }
 
+  const bundleStart = Date.now();
   const outResult = bundler.bundle_v2(parserEntryPoint, projectJson.settings);
+  logTiming(verbose, "WASM extraction/codegen", bundleStart);
   if (outResult == null) {
     return "failed";
   }
-  writeIfChanged(
-    path.join(outputDir, "parser.js"),
-    finalizeParserV2File(
-      outResult,
-      mod,
-      projectJson.settings.stringFormats.map((it) => it.name) ?? [],
-      projectJson.settings.numberFormats.map((it) => it.name) ?? [],
-    ),
+  const finalizeStart = Date.now();
+  const parserJs = finalizeParserV2File(
+    outResult,
+    mod,
+    projectJson.settings.stringFormats.map((it) => it.name) ?? [],
+    projectJson.settings.numberFormats.map((it) => it.name) ?? [],
   );
-  writeIfChanged(path.join(outputDir, "parser.d.ts"), gen["parser.d.ts"]);
+  const parserDts = gen["parser.d.ts"];
+  logTiming(verbose, "output finalization", finalizeStart);
+
+  const writeStart = Date.now();
+  writeIfChanged(path.join(outputDir, "parser.js"), parserJs);
+  writeIfChanged(path.join(outputDir, "parser.d.ts"), parserDts);
+  logTiming(verbose, "disk writes", writeStart);
   return "ok";
 };

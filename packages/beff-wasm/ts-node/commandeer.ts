@@ -53,6 +53,12 @@ const getProjectPath = (projectPath: string | undefined): string => {
   return path.join(process.cwd(), projectPath);
 };
 
+const logTiming = (verbose: boolean, label: string, start: number) => {
+  if (verbose) {
+    console.log(`JS: Timing ${label} ${Date.now() - start}ms`);
+  }
+};
+
 const watching: Record<string, boolean> = {};
 export const commanderExec = () => {
   const program = new Command();
@@ -66,10 +72,14 @@ export const commanderExec = () => {
     .option("-w, --watch", "Watch for file changes")
     .parse();
   const options = command.opts();
+  const verbose = options.verbose ?? false;
+  const configStart = Date.now();
   const projectPath = getProjectPath(options.project);
   const projectJson = readProjectJson(projectPath);
-  const verbose = options.verbose ?? false;
+  logTiming(verbose, "project/config read", configStart);
+  const bundlerStart = Date.now();
   const bundler = new Bundler(verbose);
+  logTiming(verbose, "bundler init", bundlerStart);
 
   const exec = () => execProject(bundler, projectPath, projectJson, verbose);
 

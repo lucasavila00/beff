@@ -1876,6 +1876,48 @@ mod tests {
         "#);
     }
     #[test]
+    fn ok_jsdoc_metadata_uses_nearest_comment() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        /** Old payload. */
+        /** New payload. */
+        export type Alias = string;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const direct_hoist_1 = new TypeofRuntype({
+            "description": "New payload."
+        }, "string");
+        const namedRuntypes = {
+            "Alias": direct_hoist_1
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+    #[test]
+    fn ok_jsdoc_metadata_ignores_non_adjacent_comment() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        /** Not the payload. */
+        const unrelated = 1;
+        export type Alias = string;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const namedRuntypes = {
+            "Alias": direct_hoist_1
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+    #[test]
     fn ok_union_decoder() {
         insta::assert_snapshot!(print_cgen(
             r#"

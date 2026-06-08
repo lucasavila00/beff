@@ -17,7 +17,7 @@ use crate::{
 use anyhow::{Result, anyhow};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
-use swc_common::comments::{CommentKind, Comments};
+use swc_common::comments::CommentKind;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Lit, MemberProp, Prop, PropName, PropOrSpread, TruePlusMinus, TsArrayType,
@@ -63,6 +63,136 @@ fn clean_jsdoc_comment(text: &str) -> Option<String> {
     }
 }
 
+#[derive(Debug)]
+struct JsdocCandidate {
+    key_pos: u32,
+    end_pos: u32,
+    description: String,
+}
+
+#[derive(Debug, Default)]
+struct JsdocFileCache {
+    candidates: Vec<JsdocCandidate>,
+    direct_descriptions_by_key: BTreeMap<u32, Vec<String>>,
+    resolved_by_span_lo: BTreeMap<u32, Option<String>>,
+}
+
+fn is_jsdoc_comment(comment: &swc_common::comments::Comment) -> bool {
+    comment.kind == CommentKind::Block && comment.text.trim_start().starts_with('*')
+}
+
+fn byte_pos_to_source_offset(pos: u32, source_start: u32) -> Option<usize> {
+    pos.checked_sub(source_start).map(|it| it as usize)
+}
+
+fn jsdoc_candidate_matches_declaration(
+    candidate: &JsdocCandidate,
+    source: &str,
+    source_start: u32,
+    declaration_pos: u32,
+) -> bool {
+    let Some(comment_end) = byte_pos_to_source_offset(candidate.end_pos, source_start) else {
+        return false;
+    };
+    let Some(declaration_start) = byte_pos_to_source_offset(declaration_pos, source_start) else {
+        return false;
+    };
+
+    let directly_before = source
+        .get(comment_end..declaration_start)
+        .is_some_and(|between| between.trim().is_empty());
+    if directly_before {
+        return true;
+    }
+
+    let Some(comment_key) = byte_pos_to_source_offset(candidate.key_pos, source_start) else {
+        return false;
+    };
+    let Some(before_key) = source.get(comment_end..comment_key) else {
+        return false;
+    };
+    let Some(before_declaration) = source.get(comment_key..declaration_start) else {
+        return false;
+    };
+
+    before_key.trim().is_empty()
+        && matches!(
+            before_declaration
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .as_str(),
+            "export" | "export declare"
+        )
+}
+
+fn build_jsdoc_file_cache(parsed: &ParsedModule) -> JsdocFileCache {
+    let mut candidates = vec![];
+    let mut direct_descriptions_by_key = BTreeMap::new();
+
+    for entry in parsed.comments.leading.iter() {
+        let key_pos = entry.key().0;
+        for comment in entry.value().iter() {
+            if !is_jsdoc_comment(comment) {
+                continue;
+            }
+            let Some(description) = clean_jsdoc_comment(&comment.text) else {
+                continue;
+            };
+            direct_descriptions_by_key
+                .entry(key_pos)
+                .or_insert_with(Vec::new)
+                .push(description.clone());
+            candidates.push(JsdocCandidate {
+                key_pos,
+                end_pos: comment.span.hi.0,
+                description,
+            });
+        }
+    }
+
+    candidates.sort_by_key(|it| (it.end_pos, it.key_pos));
+
+    JsdocFileCache {
+        candidates,
+        direct_descriptions_by_key,
+        resolved_by_span_lo: BTreeMap::new(),
+    }
+}
+
+fn find_cached_jsdoc_description(
+    cache: &JsdocFileCache,
+    source: &str,
+    source_start: u32,
+    declaration_pos: u32,
+) -> Option<String> {
+    if let Some(descriptions) = cache.direct_descriptions_by_key.get(&declaration_pos)
+        && let Some(description) = descriptions.last()
+    {
+        return Some(description.clone());
+    }
+
+    let mut low = 0;
+    let mut high = cache.candidates.len();
+    while low < high {
+        let mid = (low + high) / 2;
+        if cache.candidates[mid].end_pos <= declaration_pos {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+    }
+
+    let candidate = low
+        .checked_sub(1)
+        .and_then(|index| cache.candidates.get(index))?;
+    if jsdoc_candidate_matches_declaration(candidate, source, source_start, declaration_pos) {
+        Some(candidate.description.clone())
+    } else {
+        None
+    }
+}
+
 pub struct FrontendCtx<'a, R: FileManager> {
     pub files: &'a mut R,
     pub settings: &'a BeffUserSettings,
@@ -75,6 +205,7 @@ pub struct FrontendCtx<'a, R: FileManager> {
     pub counter: usize,
 
     pub type_application_stack: Vec<(String, Runtype)>,
+    jsdoc_cache_by_file: BTreeMap<BffFileName, JsdocFileCache>,
 }
 
 #[derive(Debug)]
@@ -890,6 +1021,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
             type_application_stack: vec![],
             recursive_generic_uuids: BTreeSet::new(),
+            jsdoc_cache_by_file: BTreeMap::new(),
         }
     }
 
@@ -934,71 +1066,39 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(parsed_module)
     }
 
-    fn jsdoc_description(&self, file: &BffFileName, span: Span) -> Option<String> {
+    fn jsdoc_description(&mut self, file: &BffFileName, span: Span) -> Option<String> {
+        let span_lo = span.lo.0;
+        if let Some(cached) = self
+            .jsdoc_cache_by_file
+            .get(file)
+            .and_then(|cache| cache.resolved_by_span_lo.get(&span_lo))
+        {
+            return cached.clone();
+        }
+
         let parsed = self.files.get_existing_file(file)?;
-        let is_jsdoc = |comment: &swc_common::comments::Comment| {
-            comment.kind == CommentKind::Block && comment.text.trim_start().starts_with('*')
-        };
-        let direct = parsed.comments.get_leading(span.lo).and_then(|comments| {
-            comments
-                .iter()
-                .rev()
-                .find(|comment| is_jsdoc(comment))
-                .and_then(|comment| clean_jsdoc_comment(&comment.text))
-        });
-        if direct.is_some() {
-            return direct;
+        if !self.jsdoc_cache_by_file.contains_key(file) {
+            self.jsdoc_cache_by_file
+                .insert(file.clone(), build_jsdoc_file_cache(&parsed));
         }
 
         let source_start = parsed.module.fm.start_pos.0;
         let source = parsed.module.fm.src.as_str();
-        parsed
-            .comments
-            .leading
-            .iter()
-            .flat_map(|entry| {
-                entry
-                    .value()
-                    .clone()
-                    .into_iter()
-                    .map(move |comment| (*entry.key(), comment))
-            })
-            .filter(|(comment_key, comment)| {
-                if !is_jsdoc(comment) || comment.span.hi > span.lo {
-                    return false;
-                }
+        let description = self
+            .jsdoc_cache_by_file
+            .get(file)
+            .and_then(|cache| find_cached_jsdoc_description(cache, source, source_start, span_lo));
 
-                let comment_end = (comment.span.hi.0 - source_start) as usize;
-                let declaration_start = (span.lo.0 - source_start) as usize;
-                let directly_before = source
-                    .get(comment_end..declaration_start)
-                    .is_some_and(|between| between.trim().is_empty());
-                if directly_before {
-                    return true;
-                }
+        if let Some(cache) = self.jsdoc_cache_by_file.get_mut(file) {
+            cache
+                .resolved_by_span_lo
+                .insert(span_lo, description.clone());
+        }
 
-                let comment_key = (comment_key.0 - source_start) as usize;
-                let Some(before_key) = source.get(comment_end..comment_key) else {
-                    return false;
-                };
-                let Some(before_declaration) = source.get(comment_key..declaration_start) else {
-                    return false;
-                };
-                before_key.trim().is_empty()
-                    && matches!(
-                        before_declaration
-                            .split_whitespace()
-                            .collect::<Vec<_>>()
-                            .join(" ")
-                            .as_str(),
-                        "export" | "export declare"
-                    )
-            })
-            .max_by_key(|(_, comment)| comment.span.hi)
-            .and_then(|(_, comment)| clean_jsdoc_comment(&comment.text))
+        description
     }
 
-    fn with_jsdoc(&self, file: &BffFileName, span: Span, runtype: Runtype) -> Runtype {
+    fn with_jsdoc(&mut self, file: &BffFileName, span: Span, runtype: Runtype) -> Runtype {
         match self.jsdoc_description(file, span) {
             Some(description) => runtype.with_description(description),
             None => runtype,
