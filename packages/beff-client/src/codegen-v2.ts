@@ -568,7 +568,11 @@ function renderTypeAlias(name: string, description: TypeDescription): string {
     : `${jsdocDescription(description.docText)}\n${declaration}`;
 }
 
-function describeObjectMember(ctx: DescribeContext, key: string, value: Runtype): { docText?: string; member: string } {
+function describeObjectMember(
+  ctx: DescribeContext,
+  key: string,
+  value: Runtype,
+): { docText?: string; member: string } {
   const optionalMark = value instanceof OptionalFieldRuntype ? "?" : "";
   const description = value.describe(ctx);
 
@@ -643,7 +647,6 @@ export class TypeofRuntype extends BaseRuntype {
 }
 
 export class AnyRuntype extends BaseRuntype {
-
   constructor(metadata: RuntypeMetadata | undefined) {
     super(metadata);
   }
@@ -702,7 +705,6 @@ export class NullishRuntype extends BaseRuntype {
 }
 
 export class NeverRuntype extends BaseRuntype {
-
   constructor(metadata: RuntypeMetadata | undefined) {
     super(metadata);
   }
@@ -871,7 +873,6 @@ export class RegexRuntype extends BaseRuntype {
 }
 
 export class DateRuntype extends BaseRuntype {
-
   constructor(metadata: RuntypeMetadata | undefined) {
     super(metadata);
   }
@@ -900,7 +901,6 @@ export class DateRuntype extends BaseRuntype {
 }
 
 export class BigIntRuntype extends BaseRuntype {
-
   constructor(metadata: RuntypeMetadata | undefined) {
     super(metadata);
   }
