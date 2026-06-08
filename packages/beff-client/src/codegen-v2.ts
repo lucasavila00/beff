@@ -378,9 +378,10 @@ type TypeDescription = {
 };
 
 type DescribeContext = {
-  measure: boolean;
-  deps: Record<string, true | TypeDescription>;
-  deps_counter: Record<string, number>;
+  activeRefs: Set<string>;
+  definitions: Record<string, TypeDescription>;
+  refCounts: Record<string, number>;
+  visitedRefs: Set<string>;
 };
 
 export type SchemaPrintingMode = "flat" | "contextual";
@@ -486,6 +487,7 @@ type Hash256Context = {
 
 export interface Runtype {
   describe(ctx: DescribeContext): TypeDescription;
+  describeChildren(): Runtype[];
   schema(ctx: SchemaContext): JSONSchema7;
   hash(ctx: HashContext): number;
   hash256(ctx: Hash256Context): void;
@@ -517,18 +519,36 @@ function jsdocDescription(description: string): string {
   return ["/**", ...lines.map((line) => ` * ${line}`), " */"].join("\n");
 }
 
-function describeWithMetadata(metadata: RuntypeMetadata | undefined, typeExpr: string): TypeDescription {
-  if (metadata?.description == null) {
+function typeDescription(typeExpr: string, docText?: string): TypeDescription {
+  if (docText == null) {
     return { typeExpr };
   }
-  return { typeExpr, docText: metadata.description };
+  return { typeExpr, docText };
 }
 
-function overrideDescription(metadata: RuntypeMetadata | undefined, description: TypeDescription): TypeDescription {
-  if (metadata?.description == null) {
-    return description;
+abstract class BaseRuntype implements Runtype {
+  protected metadata: RuntypeMetadata | undefined;
+
+  constructor(metadata: RuntypeMetadata | undefined) {
+    this.metadata = metadata;
   }
-  return { ...description, docText: metadata.description };
+
+  describe(ctx: DescribeContext): TypeDescription {
+    return typeDescription(this.describeTypeExpr(ctx), this.metadata?.description);
+  }
+
+  describeChildren(): Runtype[] {
+    return [];
+  }
+
+  protected abstract describeTypeExpr(ctx: DescribeContext): string;
+
+  abstract schema(ctx: SchemaContext): JSONSchema7;
+  abstract hash(ctx: HashContext): number;
+  abstract hash256(ctx: Hash256Context): void;
+  abstract validate(ctx: ValidateContext, input: unknown): boolean;
+  abstract parseAfterValidation(ctx: ParseContext, input: any): unknown;
+  abstract reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
 }
 
 function describeTypeExpr(ctx: DescribeContext, runtype: Runtype): string {
@@ -571,18 +591,28 @@ function renderObjectMember(member: { docText?: string; member: string }): strin
   return member.docText == null ? renderedMember : `${jsdocDescription(member.docText)}\n${renderedMember}`;
 }
 
+function collectDescribeRefs(runtype: Runtype, ctx: DescribeContext): void {
+  if (runtype instanceof BaseRefRuntype) {
+    runtype.collectDescribeRefs(ctx);
+    return;
+  }
+
+  for (const child of runtype.describeChildren()) {
+    collectDescribeRefs(child, ctx);
+  }
+}
+
 type TypeOfSupported = "string" | "number" | "boolean";
-export class TypeofRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class TypeofRuntype extends BaseRuntype {
   private typeName: TypeOfSupported;
 
   constructor(metadata: RuntypeMetadata | undefined, typeName: TypeOfSupported) {
-    this.metadata = metadata;
+    super(metadata);
     this.typeName = typeName;
   }
 
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, this.typeName);
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return this.typeName;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { type: this.typeName });
@@ -612,15 +642,14 @@ export class TypeofRuntype implements Runtype {
   }
 }
 
-export class AnyRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class AnyRuntype extends BaseRuntype {
 
   constructor(metadata: RuntypeMetadata | undefined) {
-    this.metadata = metadata;
+    super(metadata);
   }
 
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, "any");
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return "any";
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, {});
@@ -642,16 +671,15 @@ export class AnyRuntype implements Runtype {
   }
 }
 
-export class NullishRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class NullishRuntype extends BaseRuntype {
   description: string;
   constructor(metadata: RuntypeMetadata | undefined, description: "undefined" | "null" | "void") {
-    this.metadata = metadata;
+    super(metadata);
     this.description = description;
   }
 
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, this.description);
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return this.description;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { type: "null" });
@@ -673,15 +701,14 @@ export class NullishRuntype implements Runtype {
   }
 }
 
-export class NeverRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class NeverRuntype extends BaseRuntype {
 
   constructor(metadata: RuntypeMetadata | undefined) {
-    this.metadata = metadata;
+    super(metadata);
   }
 
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, "never");
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return "never";
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { anyOf: [] });
@@ -735,15 +762,14 @@ function hash256Const(ctx: Hash256Context, value: Const): void {
   }
 }
 
-export class ConstRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class ConstRuntype extends BaseRuntype {
   private value: Const;
   constructor(metadata: RuntypeMetadata | undefined, value: Const) {
-    this.metadata = metadata;
+    super(metadata);
     this.value = value ?? null;
   }
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, JSON.stringify(this.value));
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return JSON.stringify(this.value);
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     if (ctx.mode == "contextual") {
@@ -807,19 +833,18 @@ export class ConstRuntype implements Runtype {
   }
 }
 
-export class RegexRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class RegexRuntype extends BaseRuntype {
   private regex: RegExp;
   private description: string;
 
   constructor(metadata: RuntypeMetadata | undefined, regex: RegExp, description: string) {
-    this.metadata = metadata;
+    super(metadata);
     this.regex = regex;
     this.description = description;
   }
 
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, this.description);
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return this.description;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { type: "string", pattern: this.description });
@@ -845,15 +870,14 @@ export class RegexRuntype implements Runtype {
   }
 }
 
-export class DateRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class DateRuntype extends BaseRuntype {
 
   constructor(metadata: RuntypeMetadata | undefined) {
-    this.metadata = metadata;
+    super(metadata);
   }
 
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, "Date");
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return "Date";
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Date"));
@@ -875,15 +899,14 @@ export class DateRuntype implements Runtype {
   }
 }
 
-export class BigIntRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class BigIntRuntype extends BaseRuntype {
 
   constructor(metadata: RuntypeMetadata | undefined) {
-    this.metadata = metadata;
+    super(metadata);
   }
 
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, "BigInt");
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return "BigInt";
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for BigInt"));
@@ -905,21 +928,20 @@ export class BigIntRuntype implements Runtype {
   }
 }
 
-export class TypedArrayRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class TypedArrayRuntype extends BaseRuntype {
   private ctorName: string;
   private hashValue: number;
 
   constructor(metadata: RuntypeMetadata | undefined, ctorName: string) {
-    this.metadata = metadata;
+    super(metadata);
     this.ctorName = ctorName;
     this.hashValue = generateHashFromString(ctorName.toLowerCase());
   }
   private getCtor(): (new (...args: any[]) => ArrayBufferView) | undefined {
     return (globalThis as any)[this.ctorName];
   }
-  describe(_ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, this.ctorName);
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return this.ctorName;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${this.ctorName}`));
@@ -944,15 +966,14 @@ export class TypedArrayRuntype implements Runtype {
   }
 }
 
-export class StringWithFormatRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class StringWithFormatRuntype extends BaseRuntype {
   private formats: string[];
 
   constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
-    this.metadata = metadata;
+    super(metadata);
     this.formats = formats;
   }
-  describe(_ctx: DescribeContext): TypeDescription {
+  protected describeTypeExpr(_ctx: DescribeContext): string {
     if (this.formats.length === 0) {
       throw new Error("INTERNAL ERROR: No formats provided");
     }
@@ -961,7 +982,7 @@ export class StringWithFormatRuntype implements Runtype {
     for (const r of rest) {
       acc = `StringFormatExtends<${acc}, "${r}">`;
     }
-    return describeWithMetadata(this.metadata, acc);
+    return acc;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, {
@@ -1019,14 +1040,13 @@ export class StringWithFormatRuntype implements Runtype {
   }
 }
 
-export class NumberWithFormatRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class NumberWithFormatRuntype extends BaseRuntype {
   private formats: string[];
   constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
-    this.metadata = metadata;
+    super(metadata);
     this.formats = formats;
   }
-  describe(_ctx: DescribeContext): TypeDescription {
+  protected describeTypeExpr(_ctx: DescribeContext): string {
     if (this.formats.length === 0) {
       throw new Error("INTERNAL ERROR: No formats provided");
     }
@@ -1035,7 +1055,7 @@ export class NumberWithFormatRuntype implements Runtype {
     for (const r of rest) {
       acc = `NumberFormatExtends<${acc}, "${r}">`;
     }
-    return describeWithMetadata(this.metadata, acc);
+    return acc;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, {
@@ -1093,17 +1113,16 @@ export class NumberWithFormatRuntype implements Runtype {
   }
 }
 
-export class AnyOfConstsRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class AnyOfConstsRuntype extends BaseRuntype {
   private values: Const[];
   constructor(metadata: RuntypeMetadata | undefined, values: Const[]) {
-    this.metadata = metadata;
+    super(metadata);
     this.values = values;
   }
-  describe(_ctx: DescribeContext): TypeDescription {
+  protected describeTypeExpr(_ctx: DescribeContext): string {
     const parts = this.values.map((it) => JSON.stringify(it));
     const inner = parts.join(" | ");
-    return describeWithMetadata(this.metadata, `(${inner})`);
+    return `(${inner})`;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     const isSingleTypeof =
@@ -1167,21 +1186,23 @@ export class AnyOfConstsRuntype implements Runtype {
   }
 }
 
-export class TupleRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class TupleRuntype extends BaseRuntype {
   private prefix: Runtype[];
   private rest: Runtype | null;
   constructor(metadata: RuntypeMetadata | undefined, prefix: Runtype[], rest: Runtype | null) {
-    this.metadata = metadata;
+    super(metadata);
     this.prefix = prefix;
     this.rest = rest;
   }
-  describe(ctx: DescribeContext): TypeDescription {
+  protected describeTypeExpr(ctx: DescribeContext): string {
     const prefix = this.prefix.map((it) => describeTypeExpr(ctx, it)).join(", ");
     const rest = this.rest != null ? `...Array<${describeTypeExpr(ctx, this.rest)}>` : null;
 
     const inner = [prefix, rest].filter((it) => it != null && it.length > 0).join(", ");
-    return describeWithMetadata(this.metadata, `[${inner}]`);
+    return `[${inner}]`;
+  }
+  override describeChildren(): Runtype[] {
+    return [...this.prefix, ...(this.rest == null ? [] : [this.rest])];
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     pushPath(ctx, "[]");
@@ -1293,15 +1314,17 @@ export class TupleRuntype implements Runtype {
   }
 }
 
-export class AllOfRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class AllOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
   constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[]) {
-    this.metadata = metadata;
+    super(metadata);
     this.schemas = schemas;
   }
-  describe(ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" & ")})`);
+  protected describeTypeExpr(ctx: DescribeContext): string {
+    return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" & ")})`;
+  }
+  override describeChildren(): Runtype[] {
+    return this.schemas;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     const schemas = this.schemas.map((it) => it.schema(ctx));
@@ -1433,11 +1456,10 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
     .join(",")}}`;
 }
 
-export class AnyOfRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class AnyOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
   constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[]) {
-    this.metadata = metadata;
+    super(metadata);
     this.schemas = schemas;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -1479,8 +1501,11 @@ export class AnyOfRuntype implements Runtype {
 
     return buildUnionError(ctx, filtered, input);
   }
-  describe(ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`);
+  protected describeTypeExpr(ctx: DescribeContext): string {
+    return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`;
+  }
+  override describeChildren(): Runtype[] {
+    return this.schemas;
   }
   hash(ctx: HashContext): number {
     let acc: number[] = [anyOfHash];
@@ -1498,11 +1523,10 @@ export class AnyOfRuntype implements Runtype {
   }
 }
 
-export class ArrayRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class ArrayRuntype extends BaseRuntype {
   private itemParser: Runtype;
   constructor(metadata: RuntypeMetadata | undefined, itemParser: Runtype) {
-    this.metadata = metadata;
+    super(metadata);
     this.itemParser = itemParser;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -1549,8 +1573,11 @@ export class ArrayRuntype implements Runtype {
 
     return acc;
   }
-  describe(ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, `Array<${describeTypeExpr(ctx, this.itemParser)}>`);
+  protected describeTypeExpr(ctx: DescribeContext): string {
+    return `Array<${describeTypeExpr(ctx, this.itemParser)}>`;
+  }
+  override describeChildren(): Runtype[] {
+    return [this.itemParser];
   }
   hash(_ctx: HashContext): number {
     return generateHashFromNumbers([arrayHash, this.itemParser.hash(_ctx)]);
@@ -1561,20 +1588,19 @@ export class ArrayRuntype implements Runtype {
   }
 }
 
-export class MapRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class MapRuntype extends BaseRuntype {
   private keyParser: Runtype;
   private valueParser: Runtype;
   constructor(metadata: RuntypeMetadata | undefined, keyParser: Runtype, valueParser: Runtype) {
-    this.metadata = metadata;
+    super(metadata);
     this.keyParser = keyParser;
     this.valueParser = valueParser;
   }
-  describe(ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(
-      this.metadata,
-      `Map<${describeTypeExpr(ctx, this.keyParser)}, ${describeTypeExpr(ctx, this.valueParser)}>`,
-    );
+  protected describeTypeExpr(ctx: DescribeContext): string {
+    return `Map<${describeTypeExpr(ctx, this.keyParser)}, ${describeTypeExpr(ctx, this.valueParser)}>`;
+  }
+  override describeChildren(): Runtype[] {
+    return [this.keyParser, this.valueParser];
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Map"));
@@ -1626,15 +1652,17 @@ export class MapRuntype implements Runtype {
   }
 }
 
-export class SetRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class SetRuntype extends BaseRuntype {
   private itemParser: Runtype;
   constructor(metadata: RuntypeMetadata | undefined, itemParser: Runtype) {
-    this.metadata = metadata;
+    super(metadata);
     this.itemParser = itemParser;
   }
-  describe(ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, `Set<${describeTypeExpr(ctx, this.itemParser)}>`);
+  protected describeTypeExpr(ctx: DescribeContext): string {
+    return `Set<${describeTypeExpr(ctx, this.itemParser)}>`;
+  }
+  override describeChildren(): Runtype[] {
+    return [this.itemParser];
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Set"));
@@ -1680,8 +1708,7 @@ export class SetRuntype implements Runtype {
   }
 }
 
-export class AnyOfDiscriminatedRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class AnyOfDiscriminatedRuntype extends BaseRuntype {
   private schemas: Runtype[];
   private discriminator: string;
   private mapping: Record<string, Runtype>;
@@ -1693,7 +1720,7 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
     mapping: Record<string, Runtype>,
     schemaMapping: Record<string, Runtype>,
   ) {
-    this.metadata = metadata;
+    super(metadata);
     this.schemas = schemas;
     this.discriminator = discriminator;
     this.mapping = mapping;
@@ -1849,8 +1876,11 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
     }
     return v.reportDecodeError(ctx, input);
   }
-  describe(ctx: DescribeContext): TypeDescription {
-    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`);
+  protected describeTypeExpr(ctx: DescribeContext): string {
+    return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`;
+  }
+  override describeChildren(): Runtype[] {
+    return this.schemas;
   }
   hash(ctx: HashContext): number {
     let acc: number[] = [anyOfHash];
@@ -1909,6 +1939,9 @@ export class OptionalFieldRuntype implements Runtype {
   describe(ctx: DescribeContext): TypeDescription {
     return this.t.describe(ctx);
   }
+  describeChildren(): Runtype[] {
+    return [this.t];
+  }
   hash(ctx: HashContext): number {
     let acc = [optionalFieldHash, this.t.hash(ctx)];
     return generateHashFromNumbers(acc);
@@ -1919,8 +1952,7 @@ export class OptionalFieldRuntype implements Runtype {
   }
 }
 
-export class ObjectRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export class ObjectRuntype extends BaseRuntype {
   private properties: Record<string, Runtype>;
   private indexedPropertiesParser: Array<{
     key: Runtype;
@@ -1934,11 +1966,11 @@ export class ObjectRuntype implements Runtype {
       value: Runtype;
     }>,
   ) {
-    this.metadata = metadata;
+    super(metadata);
     this.properties = properties;
     this.indexedPropertiesParser = indexedPropertiesParser;
   }
-  describe(ctx: DescribeContext): TypeDescription {
+  protected describeTypeExpr(ctx: DescribeContext): string {
     const sortedKeys = Object.keys(this.properties).sort();
     const props = sortedKeys.map((k) => {
       const it = this.properties[k];
@@ -1951,16 +1983,22 @@ export class ObjectRuntype implements Runtype {
 
     const members = [...props, ...indexProps];
     const hasMemberDescriptions = members.some((it) => it.docText != null);
-    if (this.metadata?.description != null || hasMemberDescriptions) {
+    if (hasMemberDescriptions) {
       if (members.length === 0) {
-        return describeWithMetadata(this.metadata, "{}");
+        return "{}";
       }
       const content = members.map(renderObjectMember).join(" ");
-      return describeWithMetadata(this.metadata, `{ ${content} }`);
+      return `{ ${content} }`;
     }
 
     const content = members.map((it) => it.member).join(", ");
-    return describeWithMetadata(undefined, `{ ${content} }`);
+    return `{ ${content} }`;
+  }
+  override describeChildren(): Runtype[] {
+    return [
+      ...Object.values(this.properties),
+      ...this.indexedPropertiesParser.flatMap(({ key, value }) => [key, value]),
+    ];
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     const properties: Record<string, JSONSchema7Definition> = {};
@@ -2216,37 +2254,50 @@ export class ObjectRuntype implements Runtype {
     }
   }
 }
-export abstract class BaseRefRuntype implements Runtype {
-  private metadata: RuntypeMetadata | undefined;
+export abstract class BaseRefRuntype extends BaseRuntype {
   refName: string;
   constructor(metadata: RuntypeMetadata | undefined, refName: string) {
-    this.metadata = metadata;
+    super(metadata);
     this.refName = refName;
   }
   abstract getNamedRuntypes(): Record<string, Runtype>;
-  describe(ctx: DescribeContext): TypeDescription {
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return this.refName;
+  }
+  collectDescribeRefs(ctx: DescribeContext): void {
+    const name = this.refName;
+    ctx.refCounts[name] = (ctx.refCounts[name] || 0) + 1;
+    if (ctx.activeRefs.has(name)) {
+      return;
+    }
+    if (ctx.visitedRefs.has(name)) {
+      return;
+    }
+
+    ctx.visitedRefs.add(name);
+    ctx.activeRefs.add(name);
+    collectDescribeRefs(this.getNamedRuntypes()[name], ctx);
+    ctx.activeRefs.delete(name);
+  }
+  override describe(ctx: DescribeContext): TypeDescription {
     const name = this.refName;
     const to = this.getNamedRuntypes()[this.refName];
-    const refDescription = () => describeWithMetadata(this.metadata, name);
-    if (ctx.measure) {
-      ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
-      if (ctx.deps[name]) {
+    const refDescription = () => typeDescription(name, this.metadata?.description);
+    if (ctx.refCounts[name] > 1) {
+      if (ctx.activeRefs.has(name)) {
         return refDescription();
       }
-      ctx.deps[name] = true;
-      ctx.deps[name] = to.describe(ctx);
+      if (ctx.definitions[name] == null) {
+        ctx.activeRefs.add(name);
+        ctx.definitions[name] = to.describe(ctx);
+        ctx.activeRefs.delete(name);
+      }
       return refDescription();
-    } else {
-      if (ctx.deps_counter[name] > 1) {
-        if (!ctx.deps[name]) {
-          ctx.deps[name] = true;
-          ctx.deps[name] = to.describe(ctx);
-        }
-        return refDescription();
-      } else {
-        return overrideDescription(this.metadata, to.describe(ctx));
-      }
     }
+    const target = to.describe(ctx);
+    return this.metadata?.description == null
+      ? target
+      : typeDescription(target.typeExpr, this.metadata.description);
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     const name = this.refName;
@@ -2410,31 +2461,22 @@ class ParserFromRuntype implements BeffParser<any> {
   }
   describe(): string {
     const ctx: DescribeContext = {
-      deps: {},
-      deps_counter: {},
-      measure: true,
+      activeRefs: new Set(),
+      definitions: {},
+      refCounts: {},
+      visitedRefs: new Set(),
     };
-    let out = this._runtype.describe(ctx);
-    ctx["deps"] = {};
-    ctx["measure"] = false;
-    out = this._runtype.describe(ctx);
-    let sortedDepsKeys = Object.keys(ctx.deps).sort();
-    // if sorted deps includes k, make it last
-    // if (sortedDepsKeys.includes(k)) {
-    //   sortedDepsKeys = sortedDepsKeys.filter(it => it !== k).concat([k]);
-    // }
+    collectDescribeRefs(this._runtype, ctx);
+    const out = this._runtype.describe(ctx);
+    let sortedDepsKeys = Object.keys(ctx.definitions).sort();
     const depsPart = sortedDepsKeys
-      .map((key): [string, true | TypeDescription] => [key, ctx.deps[key]])
-      .filter((entry): entry is [string, TypeDescription] => entry[1] !== true)
+      .map((key): [string, TypeDescription] => [key, ctx.definitions[key]])
       .map(([key, description]) => renderTypeAlias(key, description))
       .join("\n\n");
 
     if (this.hideTypeNameInDescribe) {
       return [depsPart, renderTypeDescription(out)].filter((it) => it != null && it.length > 0).join("\n\n");
     }
-    // if (k in ctx.deps) {
-    //   return depsPart;
-    // }
     const outPart = renderTypeAlias(`Codec${this.name}`, out);
     return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
   }

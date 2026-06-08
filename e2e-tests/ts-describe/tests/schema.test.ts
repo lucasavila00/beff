@@ -46,7 +46,7 @@ it("works", () => {
   `);
   expect(Codecs.HierarchySelection.describe()).toMatchInlineSnapshot(`
     "/** A selectable hierarchy entry that resolves to a list of target entities. */
-    type CodecHierarchySelection = { _tag: \\"entityId\\"; entityId: string; };"
+    type CodecHierarchySelection = { _tag: \\"entityId\\", entityId: string };"
   `);
 
   expect(Codecs.RecursiveTree.describe()).toMatchInlineSnapshot(`
