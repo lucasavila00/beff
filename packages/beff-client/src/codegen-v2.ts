@@ -372,9 +372,14 @@ function resolveNumberFormatErrorMessage(formats: string[], input: number): stri
   return undefined;
 }
 
+type TypeDescription = {
+  typeExpr: string;
+  docText?: string;
+};
+
 type DescribeContext = {
   measure: boolean;
-  deps: Record<string, boolean | string>;
+  deps: Record<string, true | TypeDescription>;
   deps_counter: Record<string, number>;
 };
 
@@ -480,7 +485,7 @@ type Hash256Context = {
 };
 
 export interface Runtype {
-  describe(ctx: DescribeContext): string;
+  describe(ctx: DescribeContext): TypeDescription;
   schema(ctx: SchemaContext): JSONSchema7;
   hash(ctx: HashContext): number;
   hash256(ctx: Hash256Context): void;
@@ -512,39 +517,58 @@ function jsdocDescription(description: string): string {
   return ["/**", ...lines.map((line) => ` * ${line}`), " */"].join("\n");
 }
 
-function describeWithMetadata(metadata: RuntypeMetadata | undefined, description: string): string {
+function describeWithMetadata(metadata: RuntypeMetadata | undefined, typeExpr: string): TypeDescription {
+  if (metadata?.description == null) {
+    return { typeExpr };
+  }
+  return { typeExpr, docText: metadata.description };
+}
+
+function overrideDescription(metadata: RuntypeMetadata | undefined, description: TypeDescription): TypeDescription {
   if (metadata?.description == null) {
     return description;
   }
-  return `${jsdocDescription(metadata.description)}\n${description}`;
+  return { ...description, docText: metadata.description };
 }
 
-function runtypeMetadata(runtype: Runtype): RuntypeMetadata | undefined {
-  if (runtype instanceof OptionalFieldRuntype) {
-    return runtypeMetadata(runtype.t);
-  }
-  return (runtype as { metadata?: RuntypeMetadata }).metadata;
+function describeTypeExpr(ctx: DescribeContext, runtype: Runtype): string {
+  return runtype.describe(ctx).typeExpr;
 }
 
-function describeMemberType(ctx: DescribeContext, runtype: Runtype): string {
-  const described = runtype.describe(ctx);
-  const metadata = runtypeMetadata(runtype);
-  if (metadata?.description == null) {
-    return described;
-  }
-
-  const prefix = `${jsdocDescription(metadata.description)}\n`;
-  return described.startsWith(prefix) ? described.slice(prefix.length) : described;
+function renderTypeDescription(description: TypeDescription): string {
+  return description.docText == null
+    ? description.typeExpr
+    : `${jsdocDescription(description.docText)}\n${description.typeExpr}`;
 }
 
-function describeObjectMember(ctx: DescribeContext, key: string, value: Runtype): string {
+function renderTypeAlias(name: string, description: TypeDescription): string {
+  const declaration = `type ${name} = ${description.typeExpr};`;
+  return description.docText == null
+    ? declaration
+    : `${jsdocDescription(description.docText)}\n${declaration}`;
+}
+
+function describeObjectMember(ctx: DescribeContext, key: string, value: Runtype): { docText?: string; member: string } {
   const optionalMark = value instanceof OptionalFieldRuntype ? "?" : "";
-  const metadata = runtypeMetadata(value);
-  const member = `${key}${optionalMark}: ${describeMemberType(ctx, value)}`;
-  if (metadata?.description == null) {
-    return member;
-  }
-  return `${jsdocDescription(metadata.description)}\n${member}`;
+  const description = value.describe(ctx);
+
+  return {
+    docText: description.docText,
+    member: `${key}${optionalMark}: ${description.typeExpr}`,
+  };
+}
+
+function describeIndexObjectMember(
+  ctx: DescribeContext,
+  key: Runtype,
+  value: Runtype,
+): { docText?: string; member: string } {
+  return describeObjectMember(ctx, `[K in ${describeTypeExpr(ctx, key)}]`, value);
+}
+
+function renderObjectMember(member: { docText?: string; member: string }): string {
+  const renderedMember = `${member.member};`;
+  return member.docText == null ? renderedMember : `${jsdocDescription(member.docText)}\n${renderedMember}`;
 }
 
 type TypeOfSupported = "string" | "number" | "boolean";
@@ -557,7 +581,7 @@ export class TypeofRuntype implements Runtype {
     this.typeName = typeName;
   }
 
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, this.typeName);
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
@@ -595,7 +619,7 @@ export class AnyRuntype implements Runtype {
     this.metadata = metadata;
   }
 
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, "any");
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
@@ -626,7 +650,7 @@ export class NullishRuntype implements Runtype {
     this.description = description;
   }
 
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, this.description);
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
@@ -656,7 +680,7 @@ export class NeverRuntype implements Runtype {
     this.metadata = metadata;
   }
 
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, "never");
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
@@ -718,7 +742,7 @@ export class ConstRuntype implements Runtype {
     this.metadata = metadata;
     this.value = value ?? null;
   }
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, JSON.stringify(this.value));
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -794,7 +818,7 @@ export class RegexRuntype implements Runtype {
     this.description = description;
   }
 
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, this.description);
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
@@ -828,7 +852,7 @@ export class DateRuntype implements Runtype {
     this.metadata = metadata;
   }
 
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, "Date");
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -858,7 +882,7 @@ export class BigIntRuntype implements Runtype {
     this.metadata = metadata;
   }
 
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, "BigInt");
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -894,7 +918,7 @@ export class TypedArrayRuntype implements Runtype {
   private getCtor(): (new (...args: any[]) => ArrayBufferView) | undefined {
     return (globalThis as any)[this.ctorName];
   }
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(this.metadata, this.ctorName);
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -928,7 +952,7 @@ export class StringWithFormatRuntype implements Runtype {
     this.metadata = metadata;
     this.formats = formats;
   }
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     if (this.formats.length === 0) {
       throw new Error("INTERNAL ERROR: No formats provided");
     }
@@ -1002,7 +1026,7 @@ export class NumberWithFormatRuntype implements Runtype {
     this.metadata = metadata;
     this.formats = formats;
   }
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     if (this.formats.length === 0) {
       throw new Error("INTERNAL ERROR: No formats provided");
     }
@@ -1076,7 +1100,7 @@ export class AnyOfConstsRuntype implements Runtype {
     this.metadata = metadata;
     this.values = values;
   }
-  describe(_ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): TypeDescription {
     const parts = this.values.map((it) => JSON.stringify(it));
     const inner = parts.join(" | ");
     return describeWithMetadata(this.metadata, `(${inner})`);
@@ -1152,9 +1176,9 @@ export class TupleRuntype implements Runtype {
     this.prefix = prefix;
     this.rest = rest;
   }
-  describe(ctx: DescribeContext): string {
-    const prefix = this.prefix.map((it) => it.describe(ctx)).join(", ");
-    const rest = this.rest != null ? `...Array<${this.rest.describe(ctx)}>` : null;
+  describe(ctx: DescribeContext): TypeDescription {
+    const prefix = this.prefix.map((it) => describeTypeExpr(ctx, it)).join(", ");
+    const rest = this.rest != null ? `...Array<${describeTypeExpr(ctx, this.rest)}>` : null;
 
     const inner = [prefix, rest].filter((it) => it != null && it.length > 0).join(", ");
     return describeWithMetadata(this.metadata, `[${inner}]`);
@@ -1276,8 +1300,8 @@ export class AllOfRuntype implements Runtype {
     this.metadata = metadata;
     this.schemas = schemas;
   }
-  describe(ctx: DescribeContext): string {
-    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => it.describe(ctx)).join(" & ")})`);
+  describe(ctx: DescribeContext): TypeDescription {
+    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" & ")})`);
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     const schemas = this.schemas.map((it) => it.schema(ctx));
@@ -1455,8 +1479,8 @@ export class AnyOfRuntype implements Runtype {
 
     return buildUnionError(ctx, filtered, input);
   }
-  describe(ctx: DescribeContext): string {
-    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`);
+  describe(ctx: DescribeContext): TypeDescription {
+    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`);
   }
   hash(ctx: HashContext): number {
     let acc: number[] = [anyOfHash];
@@ -1525,8 +1549,8 @@ export class ArrayRuntype implements Runtype {
 
     return acc;
   }
-  describe(ctx: DescribeContext): string {
-    return describeWithMetadata(this.metadata, `Array<${this.itemParser.describe(ctx)}>`);
+  describe(ctx: DescribeContext): TypeDescription {
+    return describeWithMetadata(this.metadata, `Array<${describeTypeExpr(ctx, this.itemParser)}>`);
   }
   hash(_ctx: HashContext): number {
     return generateHashFromNumbers([arrayHash, this.itemParser.hash(_ctx)]);
@@ -1546,10 +1570,10 @@ export class MapRuntype implements Runtype {
     this.keyParser = keyParser;
     this.valueParser = valueParser;
   }
-  describe(ctx: DescribeContext): string {
+  describe(ctx: DescribeContext): TypeDescription {
     return describeWithMetadata(
       this.metadata,
-      `Map<${this.keyParser.describe(ctx)}, ${this.valueParser.describe(ctx)}>`,
+      `Map<${describeTypeExpr(ctx, this.keyParser)}, ${describeTypeExpr(ctx, this.valueParser)}>`,
     );
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -1609,8 +1633,8 @@ export class SetRuntype implements Runtype {
     this.metadata = metadata;
     this.itemParser = itemParser;
   }
-  describe(ctx: DescribeContext): string {
-    return describeWithMetadata(this.metadata, `Set<${this.itemParser.describe(ctx)}>`);
+  describe(ctx: DescribeContext): TypeDescription {
+    return describeWithMetadata(this.metadata, `Set<${describeTypeExpr(ctx, this.itemParser)}>`);
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Set"));
@@ -1825,8 +1849,8 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
     }
     return v.reportDecodeError(ctx, input);
   }
-  describe(ctx: DescribeContext): string {
-    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`);
+  describe(ctx: DescribeContext): TypeDescription {
+    return describeWithMetadata(this.metadata, `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`);
   }
   hash(ctx: HashContext): number {
     let acc: number[] = [anyOfHash];
@@ -1882,7 +1906,7 @@ export class OptionalFieldRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return this.t.reportDecodeError(ctx, input);
   }
-  describe(ctx: DescribeContext): string {
+  describe(ctx: DescribeContext): TypeDescription {
     return this.t.describe(ctx);
   }
   hash(ctx: HashContext): number {
@@ -1914,28 +1938,29 @@ export class ObjectRuntype implements Runtype {
     this.properties = properties;
     this.indexedPropertiesParser = indexedPropertiesParser;
   }
-  describe(ctx: DescribeContext): string {
+  describe(ctx: DescribeContext): TypeDescription {
     const sortedKeys = Object.keys(this.properties).sort();
-    const props = sortedKeys
-      .map((k) => {
-        const it = this.properties[k];
-        return describeObjectMember(ctx, k, it);
-      })
-      .join(", ");
-
-    const indexPropsParats = this.indexedPropertiesParser.map(({ key, value }) => {
-      const optionalMark = value instanceof OptionalFieldRuntype ? "?" : "";
-      const member = `[K in ${describeMemberType(ctx, key)}]${optionalMark}: ${describeMemberType(ctx, value)}`;
-      const metadata = runtypeMetadata(value);
-      if (metadata?.description == null) {
-        return member;
-      }
-      return `${jsdocDescription(metadata.description)}\n${member}`;
+    const props = sortedKeys.map((k) => {
+      const it = this.properties[k];
+      return describeObjectMember(ctx, k, it);
     });
-    const rest = indexPropsParats.join(", ");
 
-    const content = [props, rest].filter((it) => it != null && it.length > 0).join(", ");
-    return describeWithMetadata(this.metadata, `{ ${content} }`);
+    const indexProps = this.indexedPropertiesParser.map(({ key, value }) =>
+      describeIndexObjectMember(ctx, key, value),
+    );
+
+    const members = [...props, ...indexProps];
+    const hasMemberDescriptions = members.some((it) => it.docText != null);
+    if (this.metadata?.description != null || hasMemberDescriptions) {
+      if (members.length === 0) {
+        return describeWithMetadata(this.metadata, "{}");
+      }
+      const content = members.map(renderObjectMember).join(" ");
+      return describeWithMetadata(this.metadata, `{ ${content} }`);
+    }
+
+    const content = members.map((it) => it.member).join(", ");
+    return describeWithMetadata(undefined, `{ ${content} }`);
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     const properties: Record<string, JSONSchema7Definition> = {};
@@ -2199,28 +2224,27 @@ export abstract class BaseRefRuntype implements Runtype {
     this.refName = refName;
   }
   abstract getNamedRuntypes(): Record<string, Runtype>;
-  describe(ctx: DescribeContext): string {
+  describe(ctx: DescribeContext): TypeDescription {
     const name = this.refName;
     const to = this.getNamedRuntypes()[this.refName];
+    const refDescription = () => describeWithMetadata(this.metadata, name);
     if (ctx.measure) {
       ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
       if (ctx.deps[name]) {
-        // TODO: if it is string, we need ot check if the string is the same as we would describe now
-        // to prevent different concrete RefRuntypes to conflict!
-        return name;
+        return refDescription();
       }
       ctx.deps[name] = true;
       ctx.deps[name] = to.describe(ctx);
-      return name;
+      return refDescription();
     } else {
       if (ctx.deps_counter[name] > 1) {
         if (!ctx.deps[name]) {
           ctx.deps[name] = true;
           ctx.deps[name] = to.describe(ctx);
         }
-        return name;
+        return refDescription();
       } else {
-        return to.describe(ctx);
+        return overrideDescription(this.metadata, to.describe(ctx));
       }
     }
   }
@@ -2400,18 +2424,18 @@ class ParserFromRuntype implements BeffParser<any> {
     //   sortedDepsKeys = sortedDepsKeys.filter(it => it !== k).concat([k]);
     // }
     const depsPart = sortedDepsKeys
-      .map((key) => {
-        return `type ${key} = ${ctx.deps[key]};`;
-      })
+      .map((key): [string, true | TypeDescription] => [key, ctx.deps[key]])
+      .filter((entry): entry is [string, TypeDescription] => entry[1] !== true)
+      .map(([key, description]) => renderTypeAlias(key, description))
       .join("\n\n");
 
     if (this.hideTypeNameInDescribe) {
-      return [depsPart, out].filter((it) => it != null && it.length > 0).join("\n\n");
+      return [depsPart, renderTypeDescription(out)].filter((it) => it != null && it.length > 0).join("\n\n");
     }
     // if (k in ctx.deps) {
     //   return depsPart;
     // }
-    const outPart = `type Codec${this.name} = ${out};`;
+    const outPart = renderTypeAlias(`Codec${this.name}`, out);
     return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
   }
   hash(): number {

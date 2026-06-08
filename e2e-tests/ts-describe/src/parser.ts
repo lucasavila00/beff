@@ -3,6 +3,23 @@ import { StringFormat } from "@beff/client";
 
 export type ValidCurrency = StringFormat<"ValidCurrency">;
 
+/**
+ * CompactId represents a formatted identifier
+ * while keeping generated schemas small.
+ */
+type CompactId = StringFormat<"CompactId">;
+
+type DocumentedSearchInput = {
+  item: CompactId;
+  /** Optional numeric cursor for paged lookup. */
+  cursor: undefined | number;
+};
+
+type EntityId = string;
+
+/** A selectable hierarchy entry that resolves to a list of target entities. */
+type HierarchySelection = { _tag: "entityId"; entityId: EntityId };
+
 type T1 = {
   a: string;
   b: number;
@@ -119,6 +136,8 @@ export const Codecs = parse.buildParsers<{
   NonEmptyString: NonEmptyString;
   //
   ValidCurrency: ValidCurrency;
+  DocumentedSearchInput: DocumentedSearchInput;
+  HierarchySelection: HierarchySelection;
   ReusesRef: ReusesRef;
   UsesGenericWrapper: UsesGenericWrapper;
   StringWrapped: StringWrapped;
@@ -134,5 +153,6 @@ export const Codecs = parse.buildParsers<{
       }
       return false;
     },
+    CompactId: (_input: string) => true,
   },
 });
