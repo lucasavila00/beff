@@ -13,6 +13,12 @@ it("works", () => {
   expect(Codecs.any.describe()).toMatchInlineSnapshot('"type Codecany = any;"');
 
   expect(Codecs.T1.describe()).toMatchInlineSnapshot('"type CodecT1 = { a: string, b: number };"');
+  expect(Codecs.DocumentedPayload.describe()).toMatchInlineSnapshot(`
+    "type CodecDocumentedPayload = /** Documented payload for TypeScript descriptions. */
+    { /** Stable payload id. */
+    id: string, /** Optional retry count. */
+    retries?: number };"
+  `);
   expect(Codecs.T2.describe()).toMatchInlineSnapshot('"type CodecT2 = { t1: { a: string, b: number } };"');
   expect(Codecs.T3.describe()).toMatchInlineSnapshot(
     '"type CodecT3 = { t2Array: Array<{ t1: { a: string, b: number } }> };"',

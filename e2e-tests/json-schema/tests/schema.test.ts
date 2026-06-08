@@ -81,6 +81,26 @@ it("works3", () => {
       "type": "object",
     }
   `);
+  expect(Codecs.DocumentedPayload.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
+      "description": "Documented payload for flat JSON Schema.",
+      "properties": {
+        "id": {
+          "description": "Stable payload id.",
+          "type": "string",
+        },
+        "retries": {
+          "description": "Optional retry count.",
+          "type": "number",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    }
+  `);
   expect(Codecs.T2.schema()).toMatchInlineSnapshot(`
     {
       "additionalProperties": false,

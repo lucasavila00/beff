@@ -68,31 +68,31 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype("UsesGenericWrapper");
-const direct_hoist_1 = new RefRuntype("GenericWrapper_string");
-const direct_hoist_2 = new TypeofRuntype("string");
-const direct_hoist_3 = new TypeofRuntype("boolean");
-const direct_hoist_4 = new AnyOfRuntype([
+const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper");
+const direct_hoist_1 = new RefRuntype(undefined, "GenericWrapper_string");
+const direct_hoist_2 = new TypeofRuntype(undefined, "string");
+const direct_hoist_3 = new TypeofRuntype(undefined, "boolean");
+const direct_hoist_4 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_2
 ]);
-const direct_hoist_5 = new ObjectRuntype({
+const direct_hoist_5 = new ObjectRuntype(undefined, {
     "other": direct_hoist_1,
     "value": direct_hoist_2,
     "value2": direct_hoist_4
 }, []);
-const direct_hoist_6 = new RefRuntype("GenericWrapper_number");
-const direct_hoist_7 = new TypeofRuntype("number");
-const direct_hoist_8 = new AnyOfRuntype([
+const direct_hoist_6 = new RefRuntype(undefined, "GenericWrapper_number");
+const direct_hoist_7 = new TypeofRuntype(undefined, "number");
+const direct_hoist_8 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_7
 ]);
-const direct_hoist_9 = new ObjectRuntype({
+const direct_hoist_9 = new ObjectRuntype(undefined, {
     "other": direct_hoist_6,
     "value": direct_hoist_7,
     "value2": direct_hoist_8
 }, []);
-const direct_hoist_10 = new ObjectRuntype({
+const direct_hoist_10 = new ObjectRuntype(undefined, {
     "wrappedNumber": direct_hoist_6,
     "wrappedString": direct_hoist_1
 }, []);

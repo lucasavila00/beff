@@ -123,6 +123,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     Rc::new(SymbolExport::TsInterfaceDecl {
                         decl: Rc::new(*n.clone()),
                         original_file: self.current_file.clone(),
+                        span: n.span,
                     }),
                 );
             }
@@ -150,6 +151,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                         decl: Rc::new(*alias.clone()),
                         original_file: self.current_file.clone(),
                         name: alias.id.sym.to_string(),
+                        span: n.span,
                     }),
                 );
             }
@@ -331,6 +333,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                     decl: ts_type.clone(),
                     original_file: file_name.clone(),
                     name: k,
+                    span: ts_type.span,
                 }),
             );
             continue;
@@ -353,6 +356,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 Rc::new(SymbolExport::TsInterfaceDecl {
                     decl: intf.clone(),
                     original_file: file_name.clone(),
+                    span: intf.span,
                 }),
             );
             continue;

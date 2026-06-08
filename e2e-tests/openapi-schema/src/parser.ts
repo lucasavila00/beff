@@ -13,6 +13,14 @@ type User = {
   };
 };
 
+/** Documented payload for contextual JSON Schema. */
+type DocumentedPayload = {
+  /** Stable payload id. */
+  id: string;
+  /** Optional retry count. */
+  retries?: number;
+};
+
 type CreateUserRequest = {
   user: User;
   metadata: {
@@ -129,6 +137,7 @@ export type WorkflowSource = CronWorkflowSource | EventWorkflowSource;
 export const Codecs = parse.buildParsers<{
   Address: Address;
   User: User;
+  DocumentedPayload: DocumentedPayload;
   CreateUserRequest: CreateUserRequest;
   CreateUserResponse: CreateUserResponse;
   UpdateUserRequest: UpdateUserRequest;

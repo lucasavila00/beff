@@ -345,6 +345,41 @@ it("uses generic json schema refs by default", () => {
   `);
 });
 
+it("prints jsdoc descriptions in contextual schemas", () => {
+  const ctx = new SchemaPrintingContext({
+    refPathTemplate: "#/components/schemas/{name}",
+    definitionContainerKey: null,
+  });
+
+  expect(Codecs.DocumentedPayload.schemaWithContext(ctx)).toMatchInlineSnapshot(`
+    {
+      "$ref": "#/components/schemas/DocumentedPayload",
+    }
+  `);
+  expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
+    {
+      "DocumentedPayload": {
+        "additionalProperties": false,
+        "description": "Documented payload for contextual JSON Schema.",
+        "properties": {
+          "id": {
+            "description": "Stable payload id.",
+            "type": "string",
+          },
+          "retries": {
+            "description": "Optional retry count.",
+            "type": "number",
+          },
+        },
+        "required": [
+          "id",
+        ],
+        "type": "object",
+      },
+    }
+  `);
+});
+
 it("prints primitive literal consts in an OpenAPI-friendly way", () => {
   const ctx = new SchemaPrintingContext({
     refPathTemplate: "#/components/schemas/{name}",

@@ -15,10 +15,12 @@ pub enum SymbolExport {
         decl: Rc<TsTypeAliasDecl>,
         original_file: BffFileName,
         name: String,
+        span: Span,
     },
     TsInterfaceDecl {
         decl: Rc<TsInterfaceDecl>,
         original_file: BffFileName,
+        span: Span,
     },
     TsEnumDecl {
         decl: Rc<TsEnumDecl>,

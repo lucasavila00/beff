@@ -8,6 +8,14 @@ type T1 = {
   b: number;
 };
 
+/** Documented payload for TypeScript descriptions. */
+type DocumentedPayload = {
+  /** Stable payload id. */
+  id: string;
+  /** Optional retry count. */
+  retries?: number;
+};
+
 type T2 = {
   t1: T1;
 };
@@ -100,6 +108,7 @@ export const Codecs = parse.buildParsers<{
   any: any;
   //
   T1: T1;
+  DocumentedPayload: DocumentedPayload;
   T2: T2;
   T3: T3;
   InvalidSchemaWithDate: InvalidSchemaWithDate;

@@ -68,18 +68,18 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype("User");
-const direct_hoist_1 = new AnyOfConstsRuntype([
+const direct_hoist_0 = new RefRuntype(undefined, "User");
+const direct_hoist_1 = new AnyOfConstsRuntype(undefined, [
     "ADMIN",
     "USER"
 ]);
-const direct_hoist_2 = new RegexRuntype(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "`${number}x${number}`");
-const direct_hoist_3 = new RefRuntype("AccessLevel");
-const direct_hoist_4 = new RefRuntype("AvatarSize");
-const direct_hoist_5 = new TypeofRuntype("function");
-const direct_hoist_6 = new ArrayRuntype(direct_hoist_0);
-const direct_hoist_7 = new TypeofRuntype("string");
-const direct_hoist_8 = new ObjectRuntype({
+const direct_hoist_2 = new RegexRuntype(undefined, /(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "`${number}x${number}`");
+const direct_hoist_3 = new RefRuntype(undefined, "AccessLevel");
+const direct_hoist_4 = new RefRuntype(undefined, "AvatarSize");
+const direct_hoist_5 = new TypeofRuntype(undefined, "function");
+const direct_hoist_6 = new ArrayRuntype(undefined, direct_hoist_0);
+const direct_hoist_7 = new TypeofRuntype(undefined, "string");
+const direct_hoist_8 = new ObjectRuntype(undefined, {
     "accessLevel": direct_hoist_3,
     "avatarSize": direct_hoist_4,
     "extra": direct_hoist_5,
