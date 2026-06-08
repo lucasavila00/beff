@@ -6,8 +6,8 @@ use super::{
 use crate::{
     NamedSchema, RuntypeName, RuntypeUUID,
     ast::runtype::{
-        CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
-        TypedArrayKind,
+        CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, RuntypeKind,
+        TplLitTypeItem, TypedArrayKind,
     },
     subtyping::{
         bdd::MappingAtomicType,
@@ -74,10 +74,10 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             indexed_properties_acc = Some(Box::new(IndexedProperty { key: k, value: ty }));
         }
 
-        Ok(Runtype::Object {
+        Ok(Runtype::new(RuntypeKind::Object {
             vs: BTreeMap::from_iter(acc),
             indexed_properties: indexed_properties_acc,
-        })
+        }))
     }
 
     fn mapping_conjunction_to_schema(&mut self, clause: &Conjunction) -> anyhow::Result<Runtype> {
@@ -97,7 +97,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 _ => unreachable!(),
             };
             let explained_sts = self.mapping_atom_schema(&mt)?;
-            acc.push(Runtype::StNot(Box::new(explained_sts)));
+            acc.push(Runtype::st_not(Box::new(explained_sts)));
         }
 
         Ok(Runtype::all_of(acc.into_iter().collect()))
@@ -120,9 +120,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         if let Some(it) = &mt.indexed_properties {
             let k = self.convert_to_schema(&it.key, None)?;
             let v = self.convert_to_schema(&it.value, None)?;
-            return Ok(Runtype::Map(Box::new(k), Box::new(v)));
+            return Ok(Runtype::map(Box::new(k), Box::new(v)));
         }
-        Ok(Runtype::Map(Box::new(Runtype::Any), Box::new(Runtype::Any)))
+        Ok(Runtype::map(
+            Box::new(Runtype::any()),
+            Box::new(Runtype::any()),
+        ))
     }
 
     fn map_conjunction_to_schema(&mut self, clause: &Conjunction) -> anyhow::Result<Runtype> {
@@ -142,7 +145,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 _ => unreachable!(),
             };
             let explained_sts = self.map_atom_schema(&mt)?;
-            acc.push(Runtype::StNot(Box::new(explained_sts)));
+            acc.push(Runtype::st_not(Box::new(explained_sts)));
         }
 
         Ok(Runtype::all_of(acc.into_iter().collect()))
@@ -163,9 +166,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<Runtype> {
         if mt.prefix_items.is_empty() {
             if mt.items.is_any() {
-                return Ok(Runtype::AnyArrayLike);
+                return Ok(Runtype::any_array_like());
             }
-            return Ok(Runtype::Array(Box::new(
+            return Ok(Runtype::array(Box::new(
                 self.convert_to_schema(&mt.items, None)?,
             )));
         }
@@ -181,10 +184,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         } else {
             Some(Box::new(self.convert_to_schema(&mt.items, None)?))
         };
-        Ok(Runtype::Tuple {
-            prefix_items,
-            items,
-        })
+        Ok(Runtype::tuple(prefix_items, items))
     }
 
     fn list_conjunction_to_schema(&mut self, clause: &Conjunction) -> anyhow::Result<Runtype> {
@@ -206,7 +206,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             };
 
             let explained_sts = self.list_atom_schema(&lt)?;
-            acc.push(Runtype::StNot(Box::new(explained_sts)));
+            acc.push(Runtype::st_not(Box::new(explained_sts)));
         }
 
         Ok(Runtype::all_of(acc.into_iter().collect()))
@@ -227,7 +227,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
     fn set_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<Runtype> {
         let v = self.convert_to_schema(&mt.items, None)?;
-        Ok(Runtype::Set(Box::new(v)))
+        Ok(Runtype::set(Box::new(v)))
     }
 
     fn set_conjunction_to_schema(&mut self, clause: &Conjunction) -> anyhow::Result<Runtype> {
@@ -249,7 +249,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             };
 
             let explained_sts = self.set_atom_schema(&lt)?;
-            acc.push(Runtype::StNot(Box::new(explained_sts)));
+            acc.push(Runtype::st_not(Box::new(explained_sts)));
         }
 
         Ok(Runtype::all_of(acc.into_iter().collect()))
@@ -269,7 +269,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
     fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<Runtype> {
         if ty.all == 0 && ty.subtype_data.is_empty() {
-            return Ok(Runtype::Never);
+            return Ok(Runtype::never());
         }
 
         let mut acc = BTreeSet::new();
@@ -278,45 +278,48 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             if (ty.all & t.code()) != 0 {
                 match t {
                     SubTypeTag::Null => {
-                        acc.insert(Runtype::Null);
+                        acc.insert(Runtype::null());
                     }
                     SubTypeTag::Boolean => {
-                        acc.insert(Runtype::Boolean);
+                        acc.insert(Runtype::boolean());
                     }
                     SubTypeTag::Number => {
-                        acc.insert(Runtype::Number);
+                        acc.insert(Runtype::number());
                     }
                     SubTypeTag::String => {
-                        acc.insert(Runtype::String);
+                        acc.insert(Runtype::string());
                     }
                     SubTypeTag::OptionalProp => {
-                        acc.insert(Runtype::Undefined);
+                        acc.insert(Runtype::undefined());
                     }
                     SubTypeTag::Mapping => {
                         acc.insert(Runtype::any_object());
                     }
                     SubTypeTag::List => {
-                        acc.insert(Runtype::AnyArrayLike);
+                        acc.insert(Runtype::any_array_like());
                     }
                     SubTypeTag::BigInt => {
-                        acc.insert(Runtype::BigInt);
+                        acc.insert(Runtype::bigint());
                     }
                     SubTypeTag::Date => {
-                        acc.insert(Runtype::Date);
+                        acc.insert(Runtype::date());
                     }
                     SubTypeTag::VoidUndefined => {
-                        acc.insert(Runtype::Undefined);
+                        acc.insert(Runtype::undefined());
                     }
                     SubTypeTag::TypedArray => {
                         for kind in TypedArrayKind::all() {
-                            acc.insert(Runtype::TypedArray(kind));
+                            acc.insert(Runtype::typed_array(kind));
                         }
                     }
                     SubTypeTag::Map => {
-                        acc.insert(Runtype::Map(Box::new(Runtype::Any), Box::new(Runtype::Any)));
+                        acc.insert(Runtype::map(
+                            Box::new(Runtype::any()),
+                            Box::new(Runtype::any()),
+                        ));
                     }
                     SubTypeTag::Set => {
-                        acc.insert(Runtype::Set(Box::new(Runtype::Any)));
+                        acc.insert(Runtype::set(Box::new(Runtype::any())));
                     }
                 };
             }
@@ -325,20 +328,20 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         for s in &ty.subtype_data {
             match s.as_ref() {
                 ProperSubtype::Boolean(v) => {
-                    acc.insert(Runtype::Const(RuntypeConst::Bool(*v)));
+                    acc.insert(Runtype::const_(RuntypeConst::Bool(*v)));
                 }
                 ProperSubtype::Number { allowed, values } => {
                     for h in values {
                         match h {
                             NumberRepresentationOrFormat::Lit(n) => {
                                 acc.insert(maybe_not(
-                                    Runtype::Const(RuntypeConst::Number(n.clone())),
+                                    Runtype::const_(RuntypeConst::Number(n.clone())),
                                     !allowed,
                                 ));
                             }
                             NumberRepresentationOrFormat::Format(CustomFormat(first, rest)) => {
                                 acc.insert(maybe_not(
-                                    Runtype::NumberWithFormat(CustomFormat(
+                                    Runtype::number_with_format(CustomFormat(
                                         first.clone(),
                                         rest.clone(),
                                     )),
@@ -353,7 +356,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         match h {
                             StringLitOrFormat::Format(CustomFormat(first, rest)) => {
                                 acc.insert(maybe_not(
-                                    Runtype::StringWithFormat(CustomFormat(
+                                    Runtype::string_with_format(CustomFormat(
                                         first.clone(),
                                         rest.clone(),
                                     )),
@@ -368,7 +371,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                         !allowed,
                                     )),
                                     _ => acc.insert(maybe_not(
-                                        Runtype::TplLitType(items.clone()),
+                                        Runtype::tpl_lit_type(items.clone()),
                                         !allowed,
                                     )),
                                 };
@@ -390,17 +393,17 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     for v in value {
                         match v {
                             VoidUndefinedSubtype::Void => {
-                                acc.insert(maybe_not(Runtype::Void, !allowed));
+                                acc.insert(maybe_not(Runtype::void(), !allowed));
                             }
                             VoidUndefinedSubtype::Undefined => {
-                                acc.insert(maybe_not(Runtype::Undefined, !allowed));
+                                acc.insert(maybe_not(Runtype::undefined(), !allowed));
                             }
                         }
                     }
                 }
                 ProperSubtype::TypedArray { allowed, values } => {
                     for kind in values {
-                        acc.insert(maybe_not(Runtype::TypedArray(*kind), !allowed));
+                        acc.insert(maybe_not(Runtype::typed_array(*kind), !allowed));
                     }
                 }
                 ProperSubtype::Map(bdd) => {
@@ -434,7 +437,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 SchemaMemo::Schema(mater) => return Ok(mater.clone()),
                 SchemaMemo::Undefined(ref_name) => {
                     self.recursive_validators.insert(ref_name.clone());
-                    return Ok(Runtype::Ref(ref_name.clone()));
+                    return Ok(Runtype::ref_(ref_name.clone()));
                 }
             }
         } else {
@@ -478,7 +481,7 @@ pub fn semtype_to_runtypes(
 }
 fn maybe_not(it: Runtype, add_not: bool) -> Runtype {
     if add_not {
-        Runtype::StNot(Box::new(it))
+        Runtype::st_not(Box::new(it))
     } else {
         it
     }

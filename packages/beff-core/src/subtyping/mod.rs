@@ -2,7 +2,7 @@ use self::bdd::ListAtomic;
 use self::semtype::{ComplexSemType, SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
 use crate::RuntypeUUID;
-use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst};
+use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst, RuntypeKind};
 use crate::subtyping::bdd::{IndexedPropertiesAtomic, MappingAtomicType};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
 use crate::{NamedSchema, ast::runtype::Runtype};
@@ -56,15 +56,15 @@ impl<'a> ToSemTypeConverter<'a> {
         schema: &Runtype,
         builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
-        match schema {
-            Runtype::Ref(name) => {
+        match &schema.kind {
+            RuntypeKind::Ref(name) => {
                 let schema = self.get_reference(name)?.clone();
 
                 // handle recursive types
-                if let Runtype::Tuple {
+                if let RuntypeKind::Tuple {
                     prefix_items,
                     items,
-                } = schema
+                } = &schema.kind
                 {
                     match builder.list_runtype_ref_memo.get(name) {
                         Some(idx) => {
@@ -98,10 +98,10 @@ impl<'a> ToSemTypeConverter<'a> {
                     }
                 }
                 // handle recursive types
-                if let Runtype::Object {
+                if let RuntypeKind::Object {
                     vs,
                     indexed_properties,
-                } = schema
+                } = &schema.kind
                 {
                     match builder.mapping_runtype_ref_memo.get(name) {
                         Some(idx) => {
@@ -151,7 +151,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 };
 
                 // handle recursive types
-                if let Runtype::Map(k, v) = schema {
+                if let RuntypeKind::Map(k, v) = &schema.kind {
                     match builder.map_runtype_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::map_definition_from_idx(*idx));
@@ -178,7 +178,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 }
 
                 // handle recursive types
-                if let Runtype::Set(v) = schema {
+                if let RuntypeKind::Set(v) = &schema.kind {
                     match builder.set_runtype_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::set_definition_from_idx(*idx));
@@ -209,14 +209,14 @@ impl<'a> ToSemTypeConverter<'a> {
                 self.seen_refs.remove(name);
                 Ok(ty?)
             }
-            Runtype::AnyOf(vs) => {
+            RuntypeKind::AnyOf(vs) => {
                 let mut acc = Rc::new(SemTypeContext::never());
                 for v in vs {
                     acc = acc.union(&self.convert_to_sem_type(v, builder)?)?;
                 }
                 Ok(acc)
             }
-            Runtype::AllOf(vs) => {
+            RuntypeKind::AllOf(vs) => {
                 let mut acc = Rc::new(SemTypeContext::unknown());
                 for v in vs {
                     let ty = self.convert_to_sem_type(v, builder)?;
@@ -224,29 +224,29 @@ impl<'a> ToSemTypeConverter<'a> {
                 }
                 Ok(acc)
             }
-            Runtype::Null => Ok(SemTypeContext::null().into()),
-            Runtype::Boolean => Ok(SemTypeContext::boolean().into()),
-            Runtype::String => Ok(SemTypeContext::string().into()),
-            Runtype::Number => Ok(SemTypeContext::number().into()),
-            Runtype::Any => Ok(SemTypeContext::unknown().into()),
-            Runtype::StringWithFormat(CustomFormat(first, rest)) => Ok(
+            RuntypeKind::Null => Ok(SemTypeContext::null().into()),
+            RuntypeKind::Boolean => Ok(SemTypeContext::boolean().into()),
+            RuntypeKind::String => Ok(SemTypeContext::string().into()),
+            RuntypeKind::Number => Ok(SemTypeContext::number().into()),
+            RuntypeKind::Any => Ok(SemTypeContext::unknown().into()),
+            RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => Ok(
                 SemTypeContext::string_const(StringLitOrFormat::Format(CustomFormat(
                     first.clone(),
                     rest.clone(),
                 )))
                 .into(),
             ),
-            Runtype::NumberWithFormat(CustomFormat(first, rest)) => Ok(
+            RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => Ok(
                 SemTypeContext::number_const(NumberRepresentationOrFormat::Format(CustomFormat(
                     first.clone(),
                     rest.clone(),
                 )))
                 .into(),
             ),
-            Runtype::TplLitType(tpl) => {
+            RuntypeKind::TplLitType(tpl) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Tpl(tpl.clone())).into())
             }
-            Runtype::Object {
+            RuntypeKind::Object {
                 vs,
                 indexed_properties,
             } => {
@@ -276,11 +276,11 @@ impl<'a> ToSemTypeConverter<'a> {
 
                 Ok(builder.mapping_definition(vs, indexed_props_acc).into())
             }
-            Runtype::Array(items) => {
+            RuntypeKind::Array(items) => {
                 let items = self.convert_to_sem_type(items, builder)?;
                 Ok(builder.array(items).into())
             }
-            Runtype::Tuple {
+            RuntypeKind::Tuple {
                 prefix_items,
                 items,
             } => {
@@ -294,38 +294,38 @@ impl<'a> ToSemTypeConverter<'a> {
                     .collect::<Result<_>>()?;
                 Ok(builder.tuple(prefix_items, items).into())
             }
-            Runtype::Map(k, v) => {
+            RuntypeKind::Map(k, v) => {
                 let k = self.convert_to_sem_type(k, builder)?;
                 let v = self.convert_to_sem_type(v, builder)?;
                 Ok(builder.map(k, v).into())
             }
-            Runtype::Set(v) => {
+            RuntypeKind::Set(v) => {
                 let v = self.convert_to_sem_type(v, builder)?;
                 Ok(builder.set(v).into())
             }
-            Runtype::Const(cons) => match cons {
+            RuntypeKind::Const(cons) => match cons {
                 RuntypeConst::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),
                 RuntypeConst::Number(n) => Ok(SemTypeContext::number_const(
                     NumberRepresentationOrFormat::Lit(n.clone()),
                 )
                 .into()),
             },
-            Runtype::AnyArrayLike => {
-                self.convert_to_sem_type(&Runtype::Array(Runtype::Any.into()), builder)
+            RuntypeKind::AnyArrayLike => {
+                self.convert_to_sem_type(&Runtype::array(Runtype::any().into()), builder)
             }
-            Runtype::Date => Ok(SemTypeContext::date().into()),
-            Runtype::BigInt => Ok(SemTypeContext::bigint().into()),
-            Runtype::TypedArray(kind) => Ok(SemTypeContext::typed_array(*kind).into()),
-            Runtype::Never => Ok(SemTypeContext::never().into()),
-            Runtype::StNot(it) => {
+            RuntypeKind::Date => Ok(SemTypeContext::date().into()),
+            RuntypeKind::BigInt => Ok(SemTypeContext::bigint().into()),
+            RuntypeKind::TypedArray(kind) => Ok(SemTypeContext::typed_array(*kind).into()),
+            RuntypeKind::Never => Ok(SemTypeContext::never().into()),
+            RuntypeKind::StNot(it) => {
                 let chd = self.convert_to_sem_type(it, builder)?;
                 Ok(chd.complement()?)
             }
-            Runtype::Function => {
+            RuntypeKind::Function => {
                 bail!("function runtype cannot be converted to semtype")
             }
-            Runtype::Undefined => Ok(SemTypeContext::undefined().into()),
-            Runtype::Void => Ok(SemTypeContext::void().into()),
+            RuntypeKind::Undefined => Ok(SemTypeContext::undefined().into()),
+            RuntypeKind::Void => Ok(SemTypeContext::void().into()),
         }
     }
 }

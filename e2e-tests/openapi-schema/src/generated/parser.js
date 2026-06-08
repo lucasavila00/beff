@@ -72,78 +72,78 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype("Address");
-const direct_hoist_1 = new RefRuntype("User");
-const direct_hoist_2 = new RefRuntype("CreateUserRequest");
-const direct_hoist_3 = new RefRuntype("CreateUserResponse");
-const direct_hoist_4 = new RefRuntype("UpdateUserRequest");
-const direct_hoist_5 = new RefRuntype("SearchUsersResponse");
-const direct_hoist_6 = new RefRuntype("RecursiveTree");
-const direct_hoist_7 = new RefRuntype("RecursiveEnvelope");
-const direct_hoist_8 = new RefRuntype("OpenApiCompatConstPayload");
-const direct_hoist_9 = new RefRuntype("OpenApiCompatEnumPayload");
-const direct_hoist_10 = new RefRuntype("OpenApiCompatRecordPayload");
-const direct_hoist_11 = new RefRuntype("OpenApiCompatEmptyRecordPayload");
-const direct_hoist_12 = new RefRuntype("OpenApiCompatOptionalizedPayload");
-const direct_hoist_13 = new RefRuntype("OpenApiCompatOptinal");
-const direct_hoist_14 = new RefRuntype("OpenApiCompatOptionalNullishPayload");
-const direct_hoist_15 = new RefRuntype("OpenApiCompatDiscUnion");
-const direct_hoist_16 = new RefRuntype("OpenApiCompatDiscUnionCron");
-const direct_hoist_17 = new RefRuntype("OpenApiCompatDiscUnionEvent");
-const direct_hoist_18 = new RefRuntype("OpenApiCompatDiscUnionAndNamedTypes");
-const direct_hoist_19 = new RefRuntype("WorkflowSource");
-const direct_hoist_20 = new TypeofRuntype("string");
-const direct_hoist_21 = new ObjectRuntype({
+const direct_hoist_0 = new RefRuntype(undefined, "Address");
+const direct_hoist_1 = new RefRuntype(undefined, "User");
+const direct_hoist_2 = new RefRuntype(undefined, "CreateUserRequest");
+const direct_hoist_3 = new RefRuntype(undefined, "CreateUserResponse");
+const direct_hoist_4 = new RefRuntype(undefined, "UpdateUserRequest");
+const direct_hoist_5 = new RefRuntype(undefined, "SearchUsersResponse");
+const direct_hoist_6 = new RefRuntype(undefined, "RecursiveTree");
+const direct_hoist_7 = new RefRuntype(undefined, "RecursiveEnvelope");
+const direct_hoist_8 = new RefRuntype(undefined, "OpenApiCompatConstPayload");
+const direct_hoist_9 = new RefRuntype(undefined, "OpenApiCompatEnumPayload");
+const direct_hoist_10 = new RefRuntype(undefined, "OpenApiCompatRecordPayload");
+const direct_hoist_11 = new RefRuntype(undefined, "OpenApiCompatEmptyRecordPayload");
+const direct_hoist_12 = new RefRuntype(undefined, "OpenApiCompatOptionalizedPayload");
+const direct_hoist_13 = new RefRuntype(undefined, "OpenApiCompatOptinal");
+const direct_hoist_14 = new RefRuntype(undefined, "OpenApiCompatOptionalNullishPayload");
+const direct_hoist_15 = new RefRuntype(undefined, "OpenApiCompatDiscUnion");
+const direct_hoist_16 = new RefRuntype(undefined, "OpenApiCompatDiscUnionCron");
+const direct_hoist_17 = new RefRuntype(undefined, "OpenApiCompatDiscUnionEvent");
+const direct_hoist_18 = new RefRuntype(undefined, "OpenApiCompatDiscUnionAndNamedTypes");
+const direct_hoist_19 = new RefRuntype(undefined, "WorkflowSource");
+const direct_hoist_20 = new TypeofRuntype(undefined, "string");
+const direct_hoist_21 = new ObjectRuntype(undefined, {
     "city": direct_hoist_20,
     "street": direct_hoist_20
 }, []);
-const direct_hoist_22 = new ObjectRuntype({
+const direct_hoist_22 = new ObjectRuntype(undefined, {
     "source": direct_hoist_20
 }, []);
-const direct_hoist_23 = new ObjectRuntype({
+const direct_hoist_23 = new ObjectRuntype(undefined, {
     "metadata": direct_hoist_22,
     "user": direct_hoist_1
 }, []);
-const direct_hoist_24 = new ObjectRuntype({
+const direct_hoist_24 = new ObjectRuntype(undefined, {
     "user": direct_hoist_1
 }, []);
-const direct_hoist_25 = new NullishRuntype("undefined");
-const direct_hoist_26 = new AnyOfRuntype([
+const direct_hoist_25 = new NullishRuntype(undefined, "undefined");
+const direct_hoist_26 = new AnyOfRuntype(undefined, [
     direct_hoist_25,
     direct_hoist_20
 ]);
-const direct_hoist_27 = new ConstRuntype("CRON");
-const direct_hoist_28 = new ObjectRuntype({
+const direct_hoist_27 = new ConstRuntype(undefined, "CRON");
+const direct_hoist_28 = new ObjectRuntype(undefined, {
     "cronExpression": direct_hoist_20,
     "eventName": direct_hoist_26,
     "type": direct_hoist_27
 }, []);
-const direct_hoist_29 = new RefRuntype("WorkflowSourceBase");
-const direct_hoist_30 = new AllOfRuntype([
+const direct_hoist_29 = new RefRuntype(undefined, "WorkflowSourceBase");
+const direct_hoist_30 = new AllOfRuntype(undefined, [
     direct_hoist_28,
     direct_hoist_29
 ]);
-const direct_hoist_31 = new ConstRuntype("EVENT");
-const direct_hoist_32 = new ObjectRuntype({
+const direct_hoist_31 = new ConstRuntype(undefined, "EVENT");
+const direct_hoist_32 = new ObjectRuntype(undefined, {
     "cronExpression": direct_hoist_26,
     "eventName": direct_hoist_20,
     "type": direct_hoist_31
 }, []);
-const direct_hoist_33 = new AllOfRuntype([
+const direct_hoist_33 = new AllOfRuntype(undefined, [
     direct_hoist_32,
     direct_hoist_29
 ]);
-const direct_hoist_34 = new ConstRuntype(true);
-const direct_hoist_35 = new NullishRuntype("null");
-const direct_hoist_36 = new ConstRuntype(3);
-const direct_hoist_37 = new ConstRuntype("ok");
-const direct_hoist_38 = new ObjectRuntype({
+const direct_hoist_34 = new ConstRuntype(undefined, true);
+const direct_hoist_35 = new NullishRuntype(undefined, "null");
+const direct_hoist_36 = new ConstRuntype(undefined, 3);
+const direct_hoist_37 = new ConstRuntype(undefined, "ok");
+const direct_hoist_38 = new ObjectRuntype(undefined, {
     "enabled": direct_hoist_34,
     "nullable": direct_hoist_35,
     "retries": direct_hoist_36,
     "status": direct_hoist_37
 }, []);
-const direct_hoist_39 = new AnyOfDiscriminatedRuntype([
+const direct_hoist_39 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_17,
     direct_hoist_16
 ], "type", {
@@ -153,7 +153,7 @@ const direct_hoist_39 = new AnyOfDiscriminatedRuntype([
     "CRON": direct_hoist_16,
     "EVENT": direct_hoist_17
 });
-const direct_hoist_40 = new AnyOfDiscriminatedRuntype([
+const direct_hoist_40 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_17,
     direct_hoist_16
 ], "type", {
@@ -163,121 +163,121 @@ const direct_hoist_40 = new AnyOfDiscriminatedRuntype([
     "CRON": direct_hoist_16,
     "EVENT": direct_hoist_17
 });
-const direct_hoist_41 = new ObjectRuntype({
+const direct_hoist_41 = new ObjectRuntype(undefined, {
     "schedule": direct_hoist_20,
     "type": direct_hoist_27
 }, []);
-const direct_hoist_42 = new ObjectRuntype({
+const direct_hoist_42 = new ObjectRuntype(undefined, {
     "eventName": direct_hoist_20,
     "type": direct_hoist_31
 }, []);
-const direct_hoist_43 = new NeverRuntype();
-const direct_hoist_44 = new ObjectRuntype({}, [
+const direct_hoist_43 = new NeverRuntype(undefined);
+const direct_hoist_44 = new ObjectRuntype(undefined, {}, [
     {
         "key": direct_hoist_20,
         "value": direct_hoist_43
     }
 ]);
-const direct_hoist_45 = new ObjectRuntype({
+const direct_hoist_45 = new ObjectRuntype(undefined, {
     "payload": direct_hoist_44
 }, []);
-const direct_hoist_46 = new AnyOfConstsRuntype([
+const direct_hoist_46 = new AnyOfConstsRuntype(undefined, [
     200,
     201
 ]);
-const direct_hoist_47 = new AnyOfConstsRuntype([
+const direct_hoist_47 = new AnyOfConstsRuntype(undefined, [
     false,
     true
 ]);
-const direct_hoist_48 = new ConstRuntype("fallback");
-const direct_hoist_49 = new ConstRuntype(0);
-const direct_hoist_50 = new AnyOfRuntype([
+const direct_hoist_48 = new ConstRuntype(undefined, "fallback");
+const direct_hoist_49 = new ConstRuntype(undefined, 0);
+const direct_hoist_50 = new AnyOfRuntype(undefined, [
     direct_hoist_35,
     direct_hoist_48,
     direct_hoist_49
 ]);
-const direct_hoist_51 = new AnyOfConstsRuntype([
+const direct_hoist_51 = new AnyOfConstsRuntype(undefined, [
     "admin",
     "member"
 ]);
-const direct_hoist_52 = new ObjectRuntype({
+const direct_hoist_52 = new ObjectRuntype(undefined, {
     "code": direct_hoist_46,
     "enabled": direct_hoist_47,
     "mixed": direct_hoist_50,
     "role": direct_hoist_51
 }, []);
-const direct_hoist_53 = new ObjectRuntype({
+const direct_hoist_53 = new ObjectRuntype(undefined, {
     "it": new OptionalFieldRuntype(direct_hoist_20)
 }, []);
-const direct_hoist_54 = new TypeofRuntype("number");
-const direct_hoist_55 = new AnyOfRuntype([
+const direct_hoist_54 = new TypeofRuntype(undefined, "number");
+const direct_hoist_55 = new AnyOfRuntype(undefined, [
     direct_hoist_35,
     direct_hoist_25,
     direct_hoist_54
 ]);
-const direct_hoist_56 = new AnyOfRuntype([
+const direct_hoist_56 = new AnyOfRuntype(undefined, [
     direct_hoist_35,
     direct_hoist_25,
     direct_hoist_20
 ]);
-const direct_hoist_57 = new ObjectRuntype({
+const direct_hoist_57 = new ObjectRuntype(undefined, {
     "limit": new OptionalFieldRuntype(direct_hoist_55),
     "value": new OptionalFieldRuntype(direct_hoist_56)
 }, []);
-const direct_hoist_58 = new ConstRuntype("primary");
-const direct_hoist_59 = new AnyOfRuntype([
+const direct_hoist_58 = new ConstRuntype(undefined, "primary");
+const direct_hoist_59 = new AnyOfRuntype(undefined, [
     direct_hoist_35,
     direct_hoist_48,
     direct_hoist_58
 ]);
-const direct_hoist_60 = new AnyOfRuntype([
+const direct_hoist_60 = new AnyOfRuntype(undefined, [
     direct_hoist_35,
     direct_hoist_20
 ]);
-const direct_hoist_61 = new ObjectRuntype({
+const direct_hoist_61 = new ObjectRuntype(undefined, {
     "maybeEnum": direct_hoist_59,
     "maybeText": direct_hoist_60,
     "onlyNull": direct_hoist_35,
     "optional": new OptionalFieldRuntype(direct_hoist_20),
     "orUndefined": direct_hoist_26
 }, []);
-const direct_hoist_62 = new AnyRuntype();
-const direct_hoist_63 = new ObjectRuntype({}, [
+const direct_hoist_62 = new AnyRuntype(undefined);
+const direct_hoist_63 = new ObjectRuntype(undefined, {}, [
     {
         "key": direct_hoist_20,
         "value": direct_hoist_62
     }
 ]);
-const direct_hoist_64 = new ObjectRuntype({
+const direct_hoist_64 = new ObjectRuntype(undefined, {
     "payload": direct_hoist_63
 }, []);
-const direct_hoist_65 = new ObjectRuntype({
+const direct_hoist_65 = new ObjectRuntype(undefined, {
     "previous": new OptionalFieldRuntype(direct_hoist_7),
     "root": direct_hoist_6
 }, []);
-const direct_hoist_66 = new ArrayRuntype(direct_hoist_6);
-const direct_hoist_67 = new ObjectRuntype({
+const direct_hoist_66 = new ArrayRuntype(undefined, direct_hoist_6);
+const direct_hoist_67 = new ObjectRuntype(undefined, {
     "children": direct_hoist_66,
     "value": direct_hoist_20
 }, []);
-const direct_hoist_68 = new ArrayRuntype(direct_hoist_1);
-const direct_hoist_69 = new ObjectRuntype({
+const direct_hoist_68 = new ArrayRuntype(undefined, direct_hoist_1);
+const direct_hoist_69 = new ObjectRuntype(undefined, {
     "items": direct_hoist_68,
     "primaryAddress": direct_hoist_0
 }, []);
-const direct_hoist_70 = new ObjectRuntype({
+const direct_hoist_70 = new ObjectRuntype(undefined, {
     "address": direct_hoist_0,
     "id": direct_hoist_20
 }, []);
-const direct_hoist_71 = new ObjectRuntype({
+const direct_hoist_71 = new ObjectRuntype(undefined, {
     "displayName": direct_hoist_20
 }, []);
-const direct_hoist_72 = new ObjectRuntype({
+const direct_hoist_72 = new ObjectRuntype(undefined, {
     "address": direct_hoist_0,
     "id": direct_hoist_20,
     "profile": direct_hoist_71
 }, []);
-const direct_hoist_73 = new ObjectRuntype({
+const direct_hoist_73 = new ObjectRuntype(undefined, {
     "createdAt": direct_hoist_20,
     "cronExpression": direct_hoist_20,
     "eventName": direct_hoist_26,
@@ -287,7 +287,7 @@ const direct_hoist_73 = new ObjectRuntype({
     "updatedAt": direct_hoist_20,
     "workflowID": direct_hoist_20
 }, []);
-const direct_hoist_74 = new ObjectRuntype({
+const direct_hoist_74 = new ObjectRuntype(undefined, {
     "createdAt": direct_hoist_20,
     "cronExpression": direct_hoist_26,
     "eventName": direct_hoist_20,
@@ -297,9 +297,9 @@ const direct_hoist_74 = new ObjectRuntype({
     "updatedAt": direct_hoist_20,
     "workflowID": direct_hoist_20
 }, []);
-const direct_hoist_75 = new RefRuntype("EventWorkflowSource");
-const direct_hoist_76 = new RefRuntype("CronWorkflowSource");
-const direct_hoist_77 = new AnyOfDiscriminatedRuntype([
+const direct_hoist_75 = new RefRuntype(undefined, "EventWorkflowSource");
+const direct_hoist_76 = new RefRuntype(undefined, "CronWorkflowSource");
+const direct_hoist_77 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_75,
     direct_hoist_76
 ], "type", {
@@ -309,11 +309,11 @@ const direct_hoist_77 = new AnyOfDiscriminatedRuntype([
     "CRON": direct_hoist_73,
     "EVENT": direct_hoist_74
 });
-const direct_hoist_78 = new AnyOfConstsRuntype([
+const direct_hoist_78 = new AnyOfConstsRuntype(undefined, [
     "CRON",
     "EVENT"
 ]);
-const direct_hoist_79 = new ObjectRuntype({
+const direct_hoist_79 = new ObjectRuntype(undefined, {
     "createdAt": direct_hoist_20,
     "id": direct_hoist_20,
     "metadata": direct_hoist_63,

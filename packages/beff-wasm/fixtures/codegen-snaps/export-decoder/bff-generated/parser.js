@@ -68,41 +68,41 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype("User");
-const direct_hoist_1 = new ArrayRuntype(direct_hoist_0);
-const direct_hoist_2 = new RefRuntype("NotPublic");
-const direct_hoist_3 = new RefRuntype("StartsWithA");
-const direct_hoist_4 = new RefRuntype("Password");
-const direct_hoist_5 = new ConstRuntype(123.456);
-const direct_hoist_6 = new ConstRuntype(123);
-const direct_hoist_7 = new RefRuntype("UnionNested");
-const direct_hoist_8 = new AnyOfConstsRuntype([
+const direct_hoist_0 = new RefRuntype(undefined, "User");
+const direct_hoist_1 = new ArrayRuntype(undefined, direct_hoist_0);
+const direct_hoist_2 = new RefRuntype(undefined, "NotPublic");
+const direct_hoist_3 = new RefRuntype(undefined, "StartsWithA");
+const direct_hoist_4 = new RefRuntype(undefined, "Password");
+const direct_hoist_5 = new ConstRuntype(undefined, 123.456);
+const direct_hoist_6 = new ConstRuntype(undefined, 123);
+const direct_hoist_7 = new RefRuntype(undefined, "UnionNested");
+const direct_hoist_8 = new AnyOfConstsRuntype(undefined, [
     1,
     2
 ]);
-const direct_hoist_9 = new AnyOfConstsRuntype([
+const direct_hoist_9 = new AnyOfConstsRuntype(undefined, [
     2,
     3
 ]);
-const direct_hoist_10 = new AnyOfConstsRuntype([
+const direct_hoist_10 = new AnyOfConstsRuntype(undefined, [
     4,
     5
 ]);
-const direct_hoist_11 = new AnyOfConstsRuntype([
+const direct_hoist_11 = new AnyOfConstsRuntype(undefined, [
     5,
     6
 ]);
-const direct_hoist_12 = new TypeofRuntype("string");
-const direct_hoist_13 = new ObjectRuntype({
+const direct_hoist_12 = new TypeofRuntype(undefined, "string");
+const direct_hoist_13 = new ObjectRuntype(undefined, {
     "a": direct_hoist_12
 }, []);
-const direct_hoist_14 = new StringWithFormatRuntype([
+const direct_hoist_14 = new StringWithFormatRuntype(undefined, [
     "password"
 ]);
-const direct_hoist_15 = new StringWithFormatRuntype([
+const direct_hoist_15 = new StringWithFormatRuntype(undefined, [
     "StartsWithA"
 ]);
-const direct_hoist_16 = new AnyOfConstsRuntype([
+const direct_hoist_16 = new AnyOfConstsRuntype(undefined, [
     1,
     2,
     3,
@@ -110,8 +110,8 @@ const direct_hoist_16 = new AnyOfConstsRuntype([
     5,
     6
 ]);
-const direct_hoist_17 = new TypeofRuntype("number");
-const direct_hoist_18 = new ObjectRuntype({
+const direct_hoist_17 = new TypeofRuntype(undefined, "number");
+const direct_hoist_18 = new ObjectRuntype(undefined, {
     "age": direct_hoist_17,
     "name": direct_hoist_12
 }, []);

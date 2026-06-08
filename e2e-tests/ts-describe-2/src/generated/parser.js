@@ -68,43 +68,43 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype("BeforeRequired");
-const direct_hoist_1 = new RefRuntype("KeyofBeforeRequired");
-const direct_hoist_2 = new RefRuntype("AfterRequired");
-const direct_hoist_3 = new RefRuntype("KeyofAfterRequired");
-const direct_hoist_4 = new RefRuntype("SomeString");
-const direct_hoist_5 = new RefRuntype("SomeChar");
-const direct_hoist_6 = new TypeofRuntype("string");
-const direct_hoist_7 = new NullishRuntype("undefined");
-const direct_hoist_8 = new AnyOfRuntype([
+const direct_hoist_0 = new RefRuntype(undefined, "BeforeRequired");
+const direct_hoist_1 = new RefRuntype(undefined, "KeyofBeforeRequired");
+const direct_hoist_2 = new RefRuntype(undefined, "AfterRequired");
+const direct_hoist_3 = new RefRuntype(undefined, "KeyofAfterRequired");
+const direct_hoist_4 = new RefRuntype(undefined, "SomeString");
+const direct_hoist_5 = new RefRuntype(undefined, "SomeChar");
+const direct_hoist_6 = new TypeofRuntype(undefined, "string");
+const direct_hoist_7 = new NullishRuntype(undefined, "undefined");
+const direct_hoist_8 = new AnyOfRuntype(undefined, [
     direct_hoist_7,
     direct_hoist_6
 ]);
-const direct_hoist_9 = new NullishRuntype("void");
-const direct_hoist_10 = new AnyOfRuntype([
+const direct_hoist_9 = new NullishRuntype(undefined, "void");
+const direct_hoist_10 = new AnyOfRuntype(undefined, [
     direct_hoist_9,
     direct_hoist_6
 ]);
-const direct_hoist_11 = new NullishRuntype("null");
-const direct_hoist_12 = new AnyOfRuntype([
+const direct_hoist_11 = new NullishRuntype(undefined, "null");
+const direct_hoist_12 = new AnyOfRuntype(undefined, [
     direct_hoist_11,
     direct_hoist_6
 ]);
-const direct_hoist_13 = new ObjectRuntype({
+const direct_hoist_13 = new ObjectRuntype(undefined, {
     "a": direct_hoist_6,
     "b": direct_hoist_8,
     "c": direct_hoist_10,
     "d": direct_hoist_12,
     "e": direct_hoist_6
 }, []);
-const direct_hoist_14 = new ObjectRuntype({
+const direct_hoist_14 = new ObjectRuntype(undefined, {
     "a": direct_hoist_6,
     "b": direct_hoist_8,
     "c": direct_hoist_10,
     "d": direct_hoist_12,
     "e": new OptionalFieldRuntype(direct_hoist_6)
 }, []);
-const direct_hoist_15 = new AnyOfConstsRuntype([
+const direct_hoist_15 = new AnyOfConstsRuntype(undefined, [
     "a",
     "b",
     "c",

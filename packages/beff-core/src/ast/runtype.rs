@@ -7,9 +7,11 @@ use crate::subtyping::semtype::SemTypeContext;
 use crate::subtyping::semtype::SemTypeOps;
 use anyhow::Result;
 use anyhow::anyhow;
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::hash::Hash;
+use std::hash::Hasher;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Hash)]
 pub enum Optionality<T> {
@@ -51,8 +53,8 @@ impl<T> Optionality<T> {
 impl Optionality<Runtype> {
     pub fn negated(self) -> Optionality<Runtype> {
         match self {
-            Optionality::Optional(it) => Runtype::StNot(it.into()).optional(),
-            Optionality::Required(it) => Runtype::StNot(it.into()).required(),
+            Optionality::Optional(it) => Runtype::st_not(it.into()).optional(),
+            Optionality::Required(it) => Runtype::st_not(it.into()).required(),
         }
     }
 }
@@ -248,6 +250,43 @@ impl TypedArrayKind {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct RuntypeMetadata {
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Runtype {
+    pub kind: RuntypeKind,
+    pub metadata: RuntypeMetadata,
+}
+
+impl PartialEq for Runtype {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+    }
+}
+
+impl Eq for Runtype {}
+
+impl PartialOrd for Runtype {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Runtype {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.kind.cmp(&other.kind)
+    }
+}
+
+impl Hash for Runtype {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.kind.hash(state);
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexedProperty {
     pub key: Runtype,
@@ -255,7 +294,7 @@ pub struct IndexedProperty {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Runtype {
+pub enum RuntypeKind {
     Null,
     Undefined,
     Void,
@@ -292,6 +331,111 @@ pub enum Runtype {
     Set(Box<Runtype>),
 }
 
+impl Runtype {
+    pub const fn new(kind: RuntypeKind) -> Self {
+        Self {
+            kind,
+            metadata: RuntypeMetadata { description: None },
+        }
+    }
+
+    pub fn with_description(mut self, description: String) -> Self {
+        self.metadata.description = Some(description);
+        self
+    }
+
+    pub const fn null() -> Self {
+        Self::new(RuntypeKind::Null)
+    }
+    pub const fn undefined() -> Self {
+        Self::new(RuntypeKind::Undefined)
+    }
+    pub const fn void() -> Self {
+        Self::new(RuntypeKind::Void)
+    }
+    pub const fn boolean() -> Self {
+        Self::new(RuntypeKind::Boolean)
+    }
+    pub const fn string() -> Self {
+        Self::new(RuntypeKind::String)
+    }
+    pub const fn number() -> Self {
+        Self::new(RuntypeKind::Number)
+    }
+    pub const fn any() -> Self {
+        Self::new(RuntypeKind::Any)
+    }
+    pub const fn any_array_like() -> Self {
+        Self::new(RuntypeKind::AnyArrayLike)
+    }
+    pub const fn never() -> Self {
+        Self::new(RuntypeKind::Never)
+    }
+    pub const fn function() -> Self {
+        Self::new(RuntypeKind::Function)
+    }
+    pub const fn date() -> Self {
+        Self::new(RuntypeKind::Date)
+    }
+    pub const fn bigint() -> Self {
+        Self::new(RuntypeKind::BigInt)
+    }
+    pub fn string_with_format(format: CustomFormat) -> Self {
+        Self::new(RuntypeKind::StringWithFormat(format))
+    }
+    pub fn number_with_format(format: CustomFormat) -> Self {
+        Self::new(RuntypeKind::NumberWithFormat(format))
+    }
+    pub fn tpl_lit_type(tpl: TplLitType) -> Self {
+        Self::new(RuntypeKind::TplLitType(tpl))
+    }
+    pub fn array(item: Box<Runtype>) -> Self {
+        Self::new(RuntypeKind::Array(item))
+    }
+    pub fn tuple(prefix_items: Vec<Runtype>, items: Option<Box<Runtype>>) -> Self {
+        Self::new(RuntypeKind::Tuple {
+            prefix_items,
+            items,
+        })
+    }
+    pub fn ref_(name: RuntypeUUID) -> Self {
+        Self::new(RuntypeKind::Ref(name))
+    }
+    pub fn const_(value: RuntypeConst) -> Self {
+        Self::new(RuntypeKind::Const(value))
+    }
+    pub fn st_not(inner: Box<Runtype>) -> Self {
+        Self::new(RuntypeKind::StNot(inner))
+    }
+    pub fn typed_array(kind: TypedArrayKind) -> Self {
+        Self::new(RuntypeKind::TypedArray(kind))
+    }
+    pub fn map(key: Box<Runtype>, value: Box<Runtype>) -> Self {
+        Self::new(RuntypeKind::Map(key, value))
+    }
+    pub fn set(value: Box<Runtype>) -> Self {
+        Self::new(RuntypeKind::Set(value))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn runtype_metadata_does_not_affect_semantic_identity() {
+        let left = Runtype::string().with_description("left".to_string());
+        let right = Runtype::string().with_description("right".to_string());
+
+        assert_eq!(left, right);
+
+        let mut set = BTreeSet::new();
+        set.insert(left);
+        set.insert(right);
+        assert_eq!(set.len(), 1);
+    }
+}
+
 struct UnionMerger(BTreeSet<Runtype>);
 
 impl UnionMerger {
@@ -301,9 +445,12 @@ impl UnionMerger {
     fn consume(&mut self, vs: Vec<Runtype>) {
         for it in vs.into_iter() {
             match it {
-                Runtype::AnyOf(vs) => self.consume(vs.into_iter().collect()),
-                _ => {
-                    self.0.insert(it);
+                Runtype {
+                    kind: RuntypeKind::AnyOf(vs),
+                    ..
+                } => self.consume(vs.into_iter().collect()),
+                other => {
+                    self.0.insert(other);
                 }
             }
         }
@@ -312,7 +459,7 @@ impl UnionMerger {
     pub fn schema(vs: Vec<Runtype>) -> Runtype {
         let mut acc = Self::new();
         acc.consume(vs);
-        Runtype::AnyOf(acc.0)
+        Runtype::new(RuntypeKind::AnyOf(acc.0))
     }
 }
 pub struct DebugPrintCtx<'a> {
@@ -321,8 +468,8 @@ pub struct DebugPrintCtx<'a> {
 }
 impl Runtype {
     pub fn as_string_const(&self) -> Option<&str> {
-        match self {
-            Runtype::TplLitType(TplLitType(items)) => match items.as_slice() {
+        match &self.kind {
+            RuntypeKind::TplLitType(TplLitType(items)) => match items.as_slice() {
                 [TplLitTypeItem::StringConst(s)] => Some(s),
                 _ => None,
             },
@@ -330,26 +477,29 @@ impl Runtype {
         }
     }
     pub fn object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
-        Self::Object {
+        Self::new(RuntypeKind::Object {
             vs: vs.into_iter().collect(),
             indexed_properties: None,
-        }
+        })
     }
     pub fn record(key: Runtype, value: Optionality<Runtype>) -> Self {
-        Self::Object {
+        Self::new(RuntypeKind::Object {
             vs: BTreeMap::new(),
             indexed_properties: Some(Box::new(IndexedProperty { key, value })),
-        }
+        })
     }
     pub fn any_object() -> Runtype {
         let mut vs = BTreeSet::new();
-        vs.insert(Runtype::Number);
-        vs.insert(Runtype::String);
-        Runtype::record(Runtype::AnyOf(vs), Optionality::Required(Runtype::Any))
+        vs.insert(Runtype::number());
+        vs.insert(Runtype::string());
+        Runtype::record(
+            Runtype::new(RuntypeKind::AnyOf(vs)),
+            Optionality::Required(Runtype::any()),
+        )
     }
     pub fn extract_single_string_const(&self) -> Option<String> {
-        match self {
-            Runtype::TplLitType(TplLitType(items)) => match items.as_slice() {
+        match &self.kind {
+            RuntypeKind::TplLitType(TplLitType(items)) => match items.as_slice() {
                 [TplLitTypeItem::StringConst(s)] => Some(s.clone()),
                 _ => None,
             },
@@ -358,7 +508,7 @@ impl Runtype {
     }
 
     pub fn single_string_const(it: &str) -> Self {
-        Runtype::TplLitType(TplLitType(vec![TplLitTypeItem::StringConst(
+        Runtype::tpl_lit_type(TplLitType(vec![TplLitTypeItem::StringConst(
             it.to_string(),
         )]))
     }
@@ -372,7 +522,7 @@ impl Runtype {
 
     pub fn any_of(vs: Vec<Runtype>) -> Self {
         match vs.len() {
-            0 => Runtype::Never,
+            0 => Runtype::never(),
             1 => vs.into_iter().next().expect("we just checked len"),
             _ => UnionMerger::schema(vs),
         }
@@ -389,8 +539,8 @@ impl Runtype {
                 let mut rest_is_empty = true;
 
                 for v in all_of_items.iter() {
-                    match v {
-                        Runtype::Object {
+                    match &v.kind {
+                        RuntypeKind::Object {
                             vs,
                             indexed_properties,
                         } => {
@@ -406,7 +556,9 @@ impl Runtype {
                             });
 
                             if has_conflicts {
-                                return Self::AllOf(BTreeSet::from_iter(all_of_items));
+                                return Self::new(RuntypeKind::AllOf(BTreeSet::from_iter(
+                                    all_of_items,
+                                )));
                             }
 
                             obj_kvs.extend(vs.iter().map(|it| (it.0.clone(), it.1.clone())));
@@ -421,7 +573,7 @@ impl Runtype {
                 if rest_is_empty && all_objects && all_of_items.len() > 1 {
                     Runtype::object(obj_kvs)
                 } else {
-                    Self::AllOf(BTreeSet::from_iter(all_of_items))
+                    Self::new(RuntypeKind::AllOf(BTreeSet::from_iter(all_of_items)))
                 }
             }
         }
@@ -432,12 +584,13 @@ impl Runtype {
         validators: &[&NamedSchema],
         ctx: &mut SemTypeContext,
     ) -> anyhow::Result<Runtype> {
-        match self {
-            Runtype::AllOf(vs) => {
-                let semantic = Runtype::AllOf(vs.clone()).to_sem_type(validators, ctx)?;
+        match self.kind {
+            RuntypeKind::AllOf(vs) => {
+                let semantic =
+                    Runtype::new(RuntypeKind::AllOf(vs.clone())).to_sem_type(validators, ctx)?;
                 let is_empty = semantic.is_empty(ctx)?;
                 if is_empty {
-                    return Ok(Runtype::Never);
+                    return Ok(Runtype::never());
                 }
 
                 let vs = vs
@@ -447,11 +600,11 @@ impl Runtype {
 
                 let vs = vs
                     .into_iter()
-                    .filter(|it| !matches!(it, Runtype::StNot(_)))
+                    .filter(|it| !matches!(it.kind, RuntypeKind::StNot(_)))
                     .collect();
                 Ok(Runtype::all_of(vs))
             }
-            Runtype::AnyOf(vs) => {
+            RuntypeKind::AnyOf(vs) => {
                 let vs = vs
                     .into_iter()
                     .map(|it| it.to_sem_type(validators, ctx).map(|r| (it, r)))
@@ -471,21 +624,21 @@ impl Runtype {
                     .collect::<Result<Vec<_>>>()?;
                 Ok(Runtype::any_of(vs))
             }
-            v => Ok(v),
+            v => Ok(Runtype::new(v)),
         }
     }
 
     pub fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
-        match self {
-            Runtype::Undefined => "undefined".to_string(),
-            Runtype::Null => "null".to_string(),
-            Runtype::Boolean => "boolean".to_string(),
-            Runtype::Void => "void".to_string(),
-            Runtype::String => "string".to_string(),
-            Runtype::Number => "number".to_string(),
-            Runtype::Any => "any".to_string(),
-            Runtype::AnyArrayLike => "Array<any>".to_string(),
-            Runtype::StringWithFormat(CustomFormat(first, rest)) => {
+        match &self.kind {
+            RuntypeKind::Undefined => "undefined".to_string(),
+            RuntypeKind::Null => "null".to_string(),
+            RuntypeKind::Boolean => "boolean".to_string(),
+            RuntypeKind::Void => "void".to_string(),
+            RuntypeKind::String => "string".to_string(),
+            RuntypeKind::Number => "number".to_string(),
+            RuntypeKind::Any => "any".to_string(),
+            RuntypeKind::AnyArrayLike => "Array<any>".to_string(),
+            RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => {
                 let mut acc = format!("StringFormat<\"{}\">", first);
 
                 for it in rest.iter() {
@@ -494,7 +647,7 @@ impl Runtype {
 
                 acc
             }
-            Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
+            RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => {
                 let mut acc = format!("NumberFormat<\"{}\">", first);
 
                 for it in rest.iter() {
@@ -503,32 +656,32 @@ impl Runtype {
 
                 acc
             }
-            Runtype::TplLitType(tpl_lit_type_items) => tpl_lit_type_items.describe(),
-            Runtype::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
-            Runtype::Date => "Date".to_string(),
-            Runtype::BigInt => "bigint".to_string(),
-            Runtype::TypedArray(kind) => kind.js_name().to_string(),
-            Runtype::Never => "never".to_string(),
-            Runtype::StNot(runtype) => {
+            RuntypeKind::TplLitType(tpl_lit_type_items) => tpl_lit_type_items.describe(),
+            RuntypeKind::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
+            RuntypeKind::Date => "Date".to_string(),
+            RuntypeKind::BigInt => "bigint".to_string(),
+            RuntypeKind::TypedArray(kind) => kind.js_name().to_string(),
+            RuntypeKind::Never => "never".to_string(),
+            RuntypeKind::StNot(runtype) => {
                 let inner = runtype.debug_print(ctx);
                 format!("Not<{}>", inner)
             }
-            Runtype::Function => "Function".to_string(),
-            Runtype::Ref(r) => r.debug_print(ctx),
-            Runtype::Array(runtype) => {
+            RuntypeKind::Function => "Function".to_string(),
+            RuntypeKind::Ref(r) => r.debug_print(ctx),
+            RuntypeKind::Array(runtype) => {
                 let inner = runtype.debug_print(ctx);
                 format!("Array<{}>", inner)
             }
-            Runtype::Set(runtype) => {
+            RuntypeKind::Set(runtype) => {
                 let inner = runtype.debug_print(ctx);
                 format!("Set<{}>", inner)
             }
-            Runtype::Map(k, v) => {
+            RuntypeKind::Map(k, v) => {
                 let k = k.debug_print(ctx);
                 let v = v.debug_print(ctx);
                 format!("Map<{}, {}>", k, v)
             }
-            Runtype::Tuple {
+            RuntypeKind::Tuple {
                 prefix_items,
                 items,
             } => {
@@ -544,7 +697,7 @@ impl Runtype {
                 let args = acc.join(", ");
                 format!("[{}]", args)
             }
-            Runtype::AnyOf(btree_set) => {
+            RuntypeKind::AnyOf(btree_set) => {
                 let inner = btree_set
                     .iter()
                     .map(|it| it.debug_print(ctx))
@@ -553,7 +706,7 @@ impl Runtype {
 
                 format!("({})", inner)
             }
-            Runtype::AllOf(btree_set) => {
+            RuntypeKind::AllOf(btree_set) => {
                 let inner = btree_set
                     .iter()
                     .map(|it| it.debug_print(ctx))
@@ -562,7 +715,7 @@ impl Runtype {
 
                 format!("({})", inner)
             }
-            Runtype::Object {
+            RuntypeKind::Object {
                 vs,
                 indexed_properties,
             } => {

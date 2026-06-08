@@ -8,13 +8,16 @@ use crate::{Anchor, NamedSchema, RuntypeUUID, TsBuiltIn, TypeAddress};
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
     RuntypeName, Visibility,
-    ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
+    ast::runtype::{
+        CustomFormat, Optionality, Runtype, RuntypeConst, RuntypeKind, TplLitType, TplLitTypeItem,
+    },
     diag::{DiagnosticInfoMessage, DiagnosticInformation, Location},
     parser_extractor::BuiltDecoder,
 };
 use anyhow::{Result, anyhow};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
+use swc_common::comments::{CommentKind, Comments};
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Lit, MemberProp, Prop, PropName, PropOrSpread, TruePlusMinus, TsArrayType,
@@ -29,6 +32,36 @@ use swc_ecma_ast::{
     TsUnionOrIntersectionType, TsUnionType,
 };
 type Res<T> = Result<T, Box<DiagnosticInformation>>;
+
+fn clean_jsdoc_comment(text: &str) -> Option<String> {
+    let text = text.trim_start();
+    let text = text.strip_prefix('*').unwrap_or(text);
+    let mut lines = text
+        .lines()
+        .map(|line| {
+            let line = line.trim_start();
+            let line = line.strip_prefix('*').unwrap_or(line);
+            line.strip_prefix(' ')
+                .unwrap_or(line)
+                .trim_end()
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+
+    while lines.first().is_some_and(|line| line.trim().is_empty()) {
+        lines.remove(0);
+    }
+    while lines.last().is_some_and(|line| line.trim().is_empty()) {
+        lines.pop();
+    }
+
+    let description = lines.join("\n");
+    if description.trim().is_empty() {
+        None
+    } else {
+        Some(description)
+    }
+}
 
 pub struct FrontendCtx<'a, R: FileManager> {
     pub files: &'a mut R,
@@ -49,10 +82,12 @@ enum AddressedType {
     Type {
         t: Rc<TsTypeAliasDecl>,
         local_address: TypeAddress,
+        declaration_span: Span,
     },
     Interface {
         t: Rc<TsInterfaceDecl>,
         local_address: TypeAddress,
+        declaration_span: Span,
     },
     Enum {
         t: Rc<TsEnumDecl>,
@@ -65,10 +100,12 @@ impl AddressedType {
             AddressedType::Type {
                 t: _,
                 local_address: address,
+                declaration_span: _,
             } => address.clone(),
             AddressedType::Interface {
                 t: _,
                 local_address: address,
+                declaration_span: _,
             } => address.clone(),
             AddressedType::Enum {
                 t: _,
@@ -302,22 +339,26 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                 decl,
                 original_file,
                 name,
+                span,
             } => Ok(AddressedType::Type {
                 t: decl.clone(),
                 local_address: TypeAddress {
                     file: original_file.clone(),
                     name: name.clone(),
                 },
+                declaration_span: *span,
             }),
             SymbolExport::TsInterfaceDecl {
                 decl,
                 original_file,
+                span,
             } => Ok(AddressedType::Interface {
                 t: decl.clone(),
                 local_address: TypeAddress {
                     file: original_file.clone(),
                     name: decl.id.sym.to_string(),
                 },
+                declaration_span: *span,
             }),
             SymbolExport::TsEnumDecl {
                 decl,
@@ -357,6 +398,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         Ok(AddressedType::Type {
             t: ts_type.clone(),
             local_address: TypeAddress { file, name },
+            declaration_span: ts_type.span,
         })
     }
 
@@ -393,6 +435,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         Ok(AddressedType::Interface {
             t: ts_interface.clone(),
             local_address: TypeAddress { file, name },
+            declaration_span: ts_interface.span,
         })
     }
 }
@@ -891,6 +934,77 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(parsed_module)
     }
 
+    fn jsdoc_description(&self, file: &BffFileName, span: Span) -> Option<String> {
+        let parsed = self.files.get_existing_file(file)?;
+        let is_jsdoc = |comment: &swc_common::comments::Comment| {
+            comment.kind == CommentKind::Block && comment.text.trim_start().starts_with('*')
+        };
+        let direct = parsed.comments.get_leading(span.lo).and_then(|comments| {
+            comments
+                .iter()
+                .rev()
+                .find(|comment| is_jsdoc(comment))
+                .and_then(|comment| clean_jsdoc_comment(&comment.text))
+        });
+        if direct.is_some() {
+            return direct;
+        }
+
+        let source_start = parsed.module.fm.start_pos.0;
+        let source = parsed.module.fm.src.as_str();
+        parsed
+            .comments
+            .leading
+            .iter()
+            .flat_map(|entry| {
+                entry
+                    .value()
+                    .clone()
+                    .into_iter()
+                    .map(move |comment| (*entry.key(), comment))
+            })
+            .filter(|(comment_key, comment)| {
+                if !is_jsdoc(comment) || comment.span.hi > span.lo {
+                    return false;
+                }
+
+                let comment_end = (comment.span.hi.0 - source_start) as usize;
+                let declaration_start = (span.lo.0 - source_start) as usize;
+                let directly_before = source
+                    .get(comment_end..declaration_start)
+                    .is_some_and(|between| between.trim().is_empty());
+                if directly_before {
+                    return true;
+                }
+
+                let comment_key = (comment_key.0 - source_start) as usize;
+                let Some(before_key) = source.get(comment_end..comment_key) else {
+                    return false;
+                };
+                let Some(before_declaration) = source.get(comment_key..declaration_start) else {
+                    return false;
+                };
+                before_key.trim().is_empty()
+                    && matches!(
+                        before_declaration
+                            .split_whitespace()
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                            .as_str(),
+                        "export" | "export declare"
+                    )
+            })
+            .max_by_key(|(_, comment)| comment.span.hi)
+            .and_then(|(_, comment)| clean_jsdoc_comment(&comment.text))
+    }
+
+    fn with_jsdoc(&self, file: &BffFileName, span: Span, runtype: Runtype) -> Runtype {
+        match self.jsdoc_description(file, span) {
+            Some(description) => runtype.with_description(description),
+            None => runtype,
+        }
+    }
+
     fn get_addressed_type(
         &mut self,
         addr: &ModuleItemAddress,
@@ -953,15 +1067,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         obj: &Runtype,
         anchor: &Anchor,
     ) -> Res<BTreeMap<String, Optionality<Runtype>>> {
-        match obj {
-            Runtype::Object {
+        match &obj.kind {
+            RuntypeKind::Object {
                 vs,
                 indexed_properties,
             } => match indexed_properties.is_none() {
                 true => Ok(vs.clone()),
                 false => self.error(anchor, DiagnosticInfoMessage::RestFoundOnExtractObject),
             },
-            Runtype::Ref(r) => {
+            RuntypeKind::Ref(r) => {
                 let map = self
                     .partial_validators
                     .get(r)
@@ -975,7 +1089,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     ),
                 }
             }
-            Runtype::AllOf(vs) => {
+            RuntypeKind::AllOf(vs) => {
                 let mut acc = BTreeMap::new();
 
                 for v in vs {
@@ -1072,7 +1186,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         let r = inferred;
 
-        if typ.extends.is_empty() {
+        let runtype = if typ.extends.is_empty() {
             r
         } else {
             let ext = self.extract_interface_extends(&typ.extends, file.clone())?;
@@ -1082,7 +1196,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(vs) => Ok(Runtype::object(vs.into_iter().collect())),
                 Err(_) => Ok(merged),
             }
-        }
+        }?;
+
+        Ok(self.with_jsdoc(&file, typ.span, runtype))
     }
 
     fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
@@ -1093,8 +1209,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Runtype::object(acc)
     }
     fn convert_partial(&mut self, obj: &Runtype, anchor: &Anchor) -> Res<Runtype> {
-        match obj {
-            Runtype::Object {
+        match &obj.kind {
+            RuntypeKind::Object {
                 vs,
                 indexed_properties,
             } => {
@@ -1108,12 +1224,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         value: ip.value.clone().to_optional(),
                     })
                 });
-                Ok(Runtype::Object {
+                Ok(Runtype::new(RuntypeKind::Object {
                     vs: new_vs,
                     indexed_properties: new_indexed,
-                })
+                }))
             }
-            Runtype::Ref(r) => {
+            RuntypeKind::Ref(r) => {
                 let map = self
                     .partial_validators
                     .get(r)
@@ -1133,10 +1249,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     .into_iter()
                     .map(|(k, v)| (k, v.to_optional()))
                     .collect();
-                Ok(Runtype::Object {
+                Ok(Runtype::new(RuntypeKind::Object {
                     vs: new_vs,
                     indexed_properties: None,
-                })
+                }))
             }
         }
     }
@@ -1160,16 +1276,16 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     ) -> Res<Runtype> {
         match keys.extract_single_string_const() {
             Some(str) => Ok(Self::convert_pick_keys(obj, vec![str])),
-            None => match keys {
-                Runtype::AnyOf(rms) => {
+            None => match keys.kind {
+                RuntypeKind::AnyOf(rms) => {
                     let mut keys = vec![];
                     for rm in rms {
                         match rm.extract_single_string_const() {
                             Some(str) => {
                                 keys.push(str);
                             }
-                            None => match rm {
-                                Runtype::Ref(n) => {
+                            None => match rm.kind {
+                                RuntypeKind::Ref(n) => {
                                     let map = self
                                         .partial_validators
                                         .get(&n)
@@ -1251,6 +1367,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     AddressedType::Type {
                         t: decl,
                         local_address: address,
+                        declaration_span,
                     } => {
                         let type_params = match &decl.type_params {
                             Some(p) => {
@@ -1271,18 +1388,20 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         for _ in type_args {
                             self.type_application_stack.pop();
                         }
-                        Ok(runtype?)
+                        let runtype = runtype?;
+                        Ok(self.with_jsdoc(&address.file, declaration_span, runtype))
                     }
                     AddressedType::Interface {
                         t,
-                        local_address: _,
+                        local_address: address,
+                        declaration_span,
                     } => {
                         let runtype = self.extract_interface_decl(
                             &t,
                             type_args,
                             module_item_address.file.clone(),
                         )?;
-                        Ok(runtype)
+                        Ok(self.with_jsdoc(&address.file, declaration_span, runtype))
                     }
                     AddressedType::Enum {
                         t,
@@ -1315,10 +1434,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 "SemtypeRecursiveGenerated types are generated only by type queries and cannot be used for runtype extraction"
             ),
             RuntypeName::BuiltIn(ts_built_in) => match ts_built_in {
-                TsBuiltIn::Date => Ok(Runtype::Date),
-                TsBuiltIn::TypedArray(kind) => Ok(Runtype::TypedArray(*kind)),
+                TsBuiltIn::Date => Ok(Runtype::date()),
+                TsBuiltIn::TypedArray(kind) => Ok(Runtype::typed_array(*kind)),
                 TsBuiltIn::Array => match type_args.as_slice() {
-                    [ty] => Ok(Runtype::Array(ty.clone().into())),
+                    [ty] => Ok(Runtype::array(ty.clone().into())),
                     _ => self.error(
                         anchor,
                         DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray,
@@ -1342,10 +1461,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
 
                     let mut key = type_args[0].clone();
-                    let mut is_ref = matches!(key, Runtype::Ref(_));
+                    let mut is_ref = matches!(key.kind, RuntypeKind::Ref(_));
 
                     while is_ref {
-                        if let Runtype::Ref(r) = &type_args[0] {
+                        if let RuntypeKind::Ref(r) = &type_args[0].kind {
                             let map = self
                                 .partial_validators
                                 .get(r)
@@ -1353,7 +1472,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 .cloned();
                             if let Some(schema) = map {
                                 key = schema;
-                                is_ref = matches!(key, Runtype::Ref(_));
+                                is_ref = matches!(key.kind, RuntypeKind::Ref(_));
                             }
                         }
                     }
@@ -1381,12 +1500,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                     value: value.clone().required(),
                                 }))
                             };
-                            Ok(Runtype::Object {
+                            Ok(Runtype::new(RuntypeKind::Object {
                                 vs,
                                 indexed_properties,
-                            })
+                            }))
                         }
-                        Err(_) => Ok(Runtype::Object {
+                        Err(_) => Ok(Runtype::new(RuntypeKind::Object {
                             vs: BTreeMap::new(),
                             indexed_properties: Some(
                                 IndexedProperty {
@@ -1395,7 +1514,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 }
                                 .into(),
                             ),
-                        }),
+                        })),
                     }
                 }
                 TsBuiltIn::Pick => match type_args.as_slice() {
@@ -1499,12 +1618,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 },
                 TsBuiltIn::Map => match type_args.as_slice() {
                     [key, value] => {
-                        Ok(Runtype::Map(Box::new(key.clone()), Box::new(value.clone())))
+                        Ok(Runtype::map(Box::new(key.clone()), Box::new(value.clone())))
                     }
                     _ => self.error(anchor, DiagnosticInfoMessage::MapShouldHaveTwoTypeArguments),
                 },
                 TsBuiltIn::Set => match type_args.as_slice() {
-                    [value] => Ok(Runtype::Set(Box::new(value.clone()))),
+                    [value] => Ok(Runtype::set(Box::new(value.clone()))),
                     _ => self.error(anchor, DiagnosticInfoMessage::SetShouldHaveOneTypeArgument),
                 },
             },
@@ -1640,10 +1759,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn insert_definition(&mut self, addr: RuntypeUUID, schema: Runtype) -> Res<Runtype> {
         if let Some(Some(v)) = self.partial_validators.get(&addr) {
             assert_eq!(v, &schema);
-            return Ok(Runtype::Ref(addr));
+            return Ok(Runtype::ref_(addr));
         }
         self.partial_validators.insert(addr.clone(), Some(schema));
-        Ok(Runtype::Ref(addr))
+        Ok(Runtype::ref_(addr))
     }
 
     fn get_string_with_format(&mut self, type_args: &[Runtype], anchor: &Anchor) -> Res<Runtype> {
@@ -1652,7 +1771,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         {
             let val_str = value.to_string();
             if self.settings.has_string_format(&val_str) {
-                return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
+                return Ok(Runtype::string_with_format(CustomFormat(val_str, vec![])));
             } else {
                 return self.error(anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
             }
@@ -1667,11 +1786,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         schema: &Runtype,
         anchor: &Anchor,
     ) -> Res<(String, Vec<String>)> {
-        match schema {
-            Runtype::StringWithFormat(CustomFormat(first, rest)) => {
+        match &schema.kind {
+            RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => {
                 Ok((first.clone(), rest.clone()))
             }
-            Runtype::Ref(r) => {
+            RuntypeKind::Ref(r) => {
                 let v = self.partial_validators.get(r);
 
                 let v = v.and_then(|it| it.clone());
@@ -1703,7 +1822,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             if self.settings.has_string_format(&next_str) {
                 let (first, mut rest) = self.get_string_format_base_formats(base, anchor)?;
                 rest.push(next_str);
-                return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
+                return Ok(Runtype::string_with_format(CustomFormat(first, rest)));
             } else {
                 return self.error(anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
             }
@@ -1719,7 +1838,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         {
             let val_str = value.to_string();
             if self.settings.has_number_format(&val_str) {
-                return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
+                return Ok(Runtype::number_with_format(CustomFormat(val_str, vec![])));
             } else {
                 return self.error(anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
             }
@@ -1734,11 +1853,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         schema: &Runtype,
         anchor: &Anchor,
     ) -> Res<(String, Vec<String>)> {
-        match schema {
-            Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
+        match &schema.kind {
+            RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => {
                 Ok((first.clone(), rest.clone()))
             }
-            Runtype::Ref(r) => {
+            RuntypeKind::Ref(r) => {
                 let v = self.partial_validators.get(r);
 
                 let v = v.and_then(|it| it.clone());
@@ -1769,7 +1888,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             if self.settings.has_number_format(&next_str) {
                 let (first, mut rest) = self.get_number_format_base_formats(base, anchor)?;
                 rest.push(next_str);
-                return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
+                return Ok(Runtype::number_with_format(CustomFormat(first, rest)));
             } else {
                 return self.error(anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
             }
@@ -1823,7 +1942,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             if ts_type_args.is_some() {
                 self.recursive_generic_uuids.insert(rt_uuid.clone());
             }
-            return Ok(Runtype::Ref(rt_uuid));
+            return Ok(Runtype::ref_(rt_uuid));
         }
         self.partial_validators.insert(rt_uuid.clone(), None);
 
@@ -1831,7 +1950,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match ty {
             Ok(ty) => self.insert_definition(rt_uuid.clone(), ty),
             Err(e) => {
-                self.insert_definition(rt_uuid, Runtype::Any)?;
+                self.insert_definition(rt_uuid, Runtype::any())?;
                 Err(e)
             }
         }
@@ -1864,18 +1983,18 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             s: ty.span,
         };
         match ty.kind {
-            TsKeywordTypeKind::TsStringKeyword => Ok(Runtype::String),
-            TsKeywordTypeKind::TsNumberKeyword => Ok(Runtype::Number),
-            TsKeywordTypeKind::TsAnyKeyword => Ok(Runtype::Any),
-            TsKeywordTypeKind::TsUnknownKeyword => Ok(Runtype::Any),
+            TsKeywordTypeKind::TsStringKeyword => Ok(Runtype::string()),
+            TsKeywordTypeKind::TsNumberKeyword => Ok(Runtype::number()),
+            TsKeywordTypeKind::TsAnyKeyword => Ok(Runtype::any()),
+            TsKeywordTypeKind::TsUnknownKeyword => Ok(Runtype::any()),
             TsKeywordTypeKind::TsObjectKeyword => Ok(Runtype::any_object()),
-            TsKeywordTypeKind::TsBooleanKeyword => Ok(Runtype::Boolean),
-            TsKeywordTypeKind::TsBigIntKeyword => Ok(Runtype::BigInt),
+            TsKeywordTypeKind::TsBooleanKeyword => Ok(Runtype::boolean()),
+            TsKeywordTypeKind::TsBigIntKeyword => Ok(Runtype::bigint()),
 
-            TsKeywordTypeKind::TsVoidKeyword => Ok(Runtype::Void),
-            TsKeywordTypeKind::TsUndefinedKeyword => Ok(Runtype::Undefined),
-            TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
-            TsKeywordTypeKind::TsNeverKeyword => Ok(Runtype::Never),
+            TsKeywordTypeKind::TsVoidKeyword => Ok(Runtype::void()),
+            TsKeywordTypeKind::TsUndefinedKeyword => Ok(Runtype::undefined()),
+            TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::null()),
+            TsKeywordTypeKind::TsNeverKeyword => Ok(Runtype::never()),
             TsKeywordTypeKind::TsSymbolKeyword | TsKeywordTypeKind::TsIntrinsicKeyword => {
                 self.error(&anchor, DiagnosticInfoMessage::KeywordNonSerializable)
             }
@@ -1886,9 +2005,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             f: file.clone(),
             s: span,
         };
-        match arr {
-            Runtype::Array(items) => Ok(*items),
-            Runtype::Ref(n) => {
+        match arr.kind {
+            RuntypeKind::Array(items) => Ok(*items),
+            RuntypeKind::Ref(n) => {
                 let map = self
                     .partial_validators
                     .get(&n)
@@ -1912,8 +2031,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             f: file.clone(),
             s: span,
         };
-        match arr {
-            Runtype::Tuple {
+        match arr.kind {
+            RuntypeKind::Tuple {
                 mut prefix_items,
                 items,
             } => {
@@ -1922,7 +2041,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
                 Ok(prefix_items)
             }
-            Runtype::Ref(n) => {
+            RuntypeKind::Ref(n) => {
                 let map = self
                     .partial_validators
                     .get(&n)
@@ -1949,16 +2068,16 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
                     for it in &s.exprs {
                         let ty = match it.as_ref() {
-                            Expr::Call(_) => Ok(Runtype::String),
+                            Expr::Call(_) => Ok(Runtype::string()),
                             _ => self.typeof_expr(it, as_const, file.clone()),
                         }?;
                         let res = self.runtype_to_tpl_lit(&it.span(), &ty, file.clone())?;
                         acc.push(res);
                     }
 
-                    Ok(Runtype::TplLitType(TplLitType(acc)))
+                    Ok(Runtype::tpl_lit_type(TplLitType(acc)))
                 } else {
-                    Ok(Runtype::String)
+                    Ok(Runtype::string())
                 }
             }
             Expr::TsConstAssertion(e) => self.typeof_expr(&e.expr, true, file),
@@ -1967,25 +2086,25 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     if as_const {
                         Ok(Runtype::single_string_const(&s.value.to_string_lossy()))
                     } else {
-                        Ok(Runtype::String)
+                        Ok(Runtype::string())
                     }
                 }
                 Lit::Bool(b) => {
                     if as_const {
-                        Ok(Runtype::Const(RuntypeConst::Bool(b.value)))
+                        Ok(Runtype::const_(RuntypeConst::Bool(b.value)))
                     } else {
-                        Ok(Runtype::Boolean)
+                        Ok(Runtype::boolean())
                     }
                 }
-                Lit::Null(_) => Ok(Runtype::Null),
+                Lit::Null(_) => Ok(Runtype::null()),
                 Lit::Num(n) => {
                     if as_const {
-                        Ok(Runtype::Const(RuntypeConst::parse_f64(n.value)))
+                        Ok(Runtype::const_(RuntypeConst::parse_f64(n.value)))
                     } else {
-                        Ok(Runtype::Number)
+                        Ok(Runtype::number())
                     }
                 }
-                Lit::BigInt(_) => Ok(Runtype::BigInt),
+                Lit::BigInt(_) => Ok(Runtype::bigint()),
                 Lit::Regex(_) => {
                     self.error(&anchor, DiagnosticInfoMessage::TypeOfRegexNotSupported)
                 }
@@ -2025,10 +2144,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         }
                     }
                 }
-                Ok(Runtype::Tuple {
-                    prefix_items,
-                    items: None,
-                })
+                Ok(Runtype::tuple(prefix_items, None))
             }
             Expr::Object(lit) => {
                 let mut vs = vec![];
@@ -2038,7 +2154,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         PropOrSpread::Spread(sp) => {
                             let spread_ty = self.typeof_expr(&sp.expr, as_const, file.clone())?;
 
-                            if let Runtype::Object { vs: spread_vs, .. } = spread_ty {
+                            if let RuntypeKind::Object { vs: spread_vs, .. } = spread_ty.kind {
                                 for (k, v) in spread_vs {
                                     vs.push((k, v));
                                 }
@@ -2167,14 +2283,18 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 };
                 self.do_indexed_access_on_types(&obj, &key, &anchor)
             }
-            Expr::Arrow(_a) => Ok(Runtype::Function),
+            Expr::Arrow(_a) => Ok(Runtype::function()),
             Expr::Bin(e) => {
                 let left = self.typeof_expr(&e.left, as_const, file.clone())?;
                 let right = self.typeof_expr(&e.right, as_const, file.clone())?;
 
                 match (left, right) {
-                    (Runtype::Number, Runtype::Number) => Ok(Runtype::Number),
-                    (Runtype::String, Runtype::String) => Ok(Runtype::String),
+                    (left, right) if left == Runtype::number() && right == Runtype::number() => {
+                        Ok(Runtype::number())
+                    }
+                    (left, right) if left == Runtype::string() && right == Runtype::string() => {
+                        Ok(Runtype::string())
+                    }
                     _ => self.error(&anchor, DiagnosticInfoMessage::CannotConvertExpr),
                 }
             }
@@ -2564,10 +2684,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
 
-        Ok(Runtype::Object {
+        Ok(Runtype::new(RuntypeKind::Object {
             vs: properties.into_iter().collect(),
             indexed_properties: indexed_property.map(Box::new),
-        })
+        }))
     }
 
     fn extract_ts_type_element(
@@ -2591,6 +2711,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 match &prop.type_ann.as_ref() {
                     Some(val) => {
                         let value = self.extract_type(&val.type_ann, file.clone())?;
+                        let value = self.with_jsdoc(&file, prop.span, value);
                         let value = if prop.optional {
                             value.optional()
                         } else {
@@ -2627,11 +2748,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             f: file_name.clone(),
             s: *span,
         };
-        match schema {
-            Runtype::Boolean => Ok(TplLitTypeItem::Boolean),
-            Runtype::String => Ok(TplLitTypeItem::String),
-            Runtype::Number => Ok(TplLitTypeItem::Number),
-            Runtype::AnyOf(vs) => {
+        match &schema.kind {
+            RuntypeKind::Boolean => Ok(TplLitTypeItem::Boolean),
+            RuntypeKind::String => Ok(TplLitTypeItem::String),
+            RuntypeKind::Number => Ok(TplLitTypeItem::Number),
+            RuntypeKind::AnyOf(vs) => {
                 let mut acc = vec![];
                 for v in vs {
                     let item = self.runtype_to_tpl_lit(span, v, file_name.clone())?;
@@ -2639,7 +2760,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
                 Ok(TplLitTypeItem::one_of(acc))
             }
-            Runtype::Ref(name) => {
+            RuntypeKind::Ref(name) => {
                 let v = self.partial_validators.get(name);
                 let v = v.and_then(|it| it.clone());
                 match v {
@@ -2647,7 +2768,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     None => self.error(&anchor, DiagnosticInfoMessage::CannotResolveRefToTplLit),
                 }
             }
-            Runtype::TplLitType(it) => match it.0.as_slice() {
+            RuntypeKind::TplLitType(it) => match it.0.as_slice() {
                 [single] => Ok(single.clone()),
                 _ => self.error(&anchor, DiagnosticInfoMessage::NestedTplLitToTplLit),
             },
@@ -2686,7 +2807,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
 
-        Ok(Runtype::TplLitType(TplLitType(acc)))
+        Ok(Runtype::tpl_lit_type(TplLitType(acc)))
     }
 
     fn convert_ts_tpl_lit_type(
@@ -2706,8 +2827,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
     fn extract_union(&self, tp: Runtype) -> Result<Vec<Runtype>, DiagnosticInfoMessage> {
-        match tp {
-            Runtype::AnyOf(v) => {
+        match tp.kind {
+            RuntypeKind::AnyOf(v) => {
                 let mut vs = vec![];
                 for item in v {
                     let extracted = self.extract_union(item)?;
@@ -2715,7 +2836,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
                 Ok(vs)
             }
-            Runtype::Ref(r) => {
+            RuntypeKind::Ref(r) => {
                 let v = self.partial_validators.get(&r);
                 let v = v.and_then(|it| it.clone());
                 match v {
@@ -2723,8 +2844,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r)),
                 }
             }
-            Runtype::Never => Ok(vec![]),
-            _ => Ok(vec![tp]),
+            RuntypeKind::Never => Ok(vec![]),
+            kind => Ok(vec![Runtype::new(kind)]),
         }
     }
 
@@ -2737,7 +2858,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         if access_st.is_empty(ctx).map_err(|e| {
             self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })? {
-            return Ok(Runtype::Never);
+            return Ok(Runtype::never());
         }
         let (head, tail) = semtype_to_runtypes(
             ctx,
@@ -2767,8 +2888,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         index: &Runtype,
     ) -> Res<Option<Runtype>> {
         // try to resolve syntatically
-        match (obj, index) {
-            (Runtype::Ref(r), _) => {
+        match (&obj.kind, index) {
+            (RuntypeKind::Ref(r), _) => {
                 let v = self.partial_validators.get(r);
 
                 let v = v.and_then(|it| it.clone());
@@ -2777,7 +2898,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
             }
             (
-                Runtype::Object {
+                RuntypeKind::Object {
                     vs,
                     indexed_properties: _,
                 },
@@ -2796,9 +2917,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             let v = vs.get(&s);
                             if let Some(v) = v {
                                 match v {
-                                    Optionality::Optional(o) => acc.push(Runtype::AnyOf(
-                                        vec![o.clone(), Runtype::Null].into_iter().collect(),
-                                    )),
+                                    Optionality::Optional(o) => {
+                                        acc.push(Runtype::any_of(vec![o.clone(), Runtype::null()]))
+                                    }
                                     Optionality::Required(r) => {
                                         acc.push(r.clone());
                                     }
@@ -2928,7 +3049,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         // Handle `[K in string]: V` as Record<string, V>
         // Handle `[K in number]: V` as Record<number, V>
-        if values.len() == 1 && matches!(values[0], Runtype::String | Runtype::Number) {
+        if values.len() == 1 && (values[0] == Runtype::string() || values[0] == Runtype::number()) {
             let key_type = values.into_iter().next().unwrap();
             let type_ann = match &k.type_ann {
                 Some(type_ann) => type_ann.as_ref(),
@@ -3005,10 +3126,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }))
         };
 
-        Ok(Runtype::Object {
+        Ok(Runtype::new(RuntypeKind::Object {
             vs,
             indexed_properties,
-        })
+        }))
     }
     fn convert_conditional_type(
         &mut self,
@@ -3052,6 +3173,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
 
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
+        let span = ty.span();
+        let runtype = self.extract_type_inner(ty, file.clone())?;
+        Ok(self.with_jsdoc(&file, span, runtype))
+    }
+
+    fn extract_type_inner(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
         let anchor = Anchor {
             f: file.clone(),
             s: ty.span(),
@@ -3068,13 +3195,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 self.extract_ts_import_type(ts_import_type, file)
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
+                TsLit::Number(n) => Ok(Runtype::const_(RuntypeConst::parse_f64(n.value))),
                 TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value.to_string_lossy())),
-                TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
-                TsLit::BigInt(_) => Ok(Runtype::BigInt),
+                TsLit::Bool(b) => Ok(Runtype::const_(RuntypeConst::Bool(b.value))),
+                TsLit::BigInt(_) => Ok(Runtype::bigint()),
                 TsLit::Tpl(it) => self.convert_ts_tpl_lit_type(it, file.clone()),
             },
-            TsType::TsArrayType(TsArrayType { elem_type, .. }) => Ok(Runtype::Array(
+            TsType::TsArrayType(TsArrayType { elem_type, .. }) => Ok(Runtype::array(
                 self.extract_type(elem_type, file.clone())?.into(),
             )),
             TsType::TsUnionOrIntersectionType(it) => match &it {
@@ -3099,8 +3226,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 DiagnosticInfoMessage::DuplicatedRestNonSerializable,
                             );
                         }
-                        let ann = match self.extract_type(type_ann, file.clone())? {
-                            Runtype::Array(items) => *items,
+                        let ann = match self.extract_type(type_ann, file.clone())?.kind {
+                            RuntypeKind::Array(items) => *items,
                             _ => {
                                 return self.error(
                                     &anchor,
@@ -3114,10 +3241,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         prefix_items.push(ty_schema);
                     }
                 }
-                Ok(Runtype::Tuple {
-                    prefix_items,
-                    items,
-                })
+                Ok(Runtype::tuple(prefix_items, items))
             }
             TsType::TsTypeLit(TsTypeLit { members, .. }) => {
                 self.extract_ts_type_lit_members(members, file)
@@ -3151,7 +3275,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsFnOrConstructorType(
                 TsFnOrConstructorType::TsConstructorType(TsConstructorType { .. })
                 | TsFnOrConstructorType::TsFnType(TsFnType { .. }),
-            ) => Ok(Runtype::Function),
+            ) => Ok(Runtype::function()),
             TsType::TsInferType(TsInferType { .. }) => {
                 self.error(&anchor, DiagnosticInfoMessage::TsInferTypeNonSerializable)
             }
@@ -3188,7 +3312,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             Ok(s) => s,
                             Err(diag) => {
                                 self.errors.push(*diag);
-                                Runtype::Any
+                                Runtype::any()
                             }
                         };
 
