@@ -77,7 +77,7 @@ impl<'a> ToSemTypeConverter<'a> {
                             builder.list_definitions.push(None);
 
                             let items = match items {
-                                Some(items) => Some(self.convert_to_sem_type(&items, builder)?),
+                                Some(items) => Some(self.convert_to_sem_type(items, builder)?),
                                 None => None,
                             };
                             let prefix_items: Vec<Rc<ComplexSemType>> = prefix_items
@@ -161,8 +161,8 @@ impl<'a> ToSemTypeConverter<'a> {
                             let idx = builder.map_definitions.len();
                             builder.map_runtype_ref_memo.insert(name.clone(), idx);
                             builder.map_definitions.push(None);
-                            let k = self.convert_to_sem_type(&k, builder)?;
-                            let v = self.convert_to_sem_type(&v, builder)?;
+                            let k = self.convert_to_sem_type(k, builder)?;
+                            let v = self.convert_to_sem_type(v, builder)?;
 
                             builder.map_definitions[idx] = Some(Rc::new(MappingAtomicType {
                                 vs: BTreeMap::new(),
@@ -188,7 +188,7 @@ impl<'a> ToSemTypeConverter<'a> {
                             let idx = builder.set_definitions.len();
                             builder.set_runtype_ref_memo.insert(name.clone(), idx);
                             builder.set_definitions.push(None);
-                            let v = self.convert_to_sem_type(&v, builder)?;
+                            let v = self.convert_to_sem_type(v, builder)?;
 
                             builder.set_definitions[idx] = Some(Rc::new(ListAtomic {
                                 prefix_items: vec![],
