@@ -65,6 +65,10 @@ it("keeps documented members separated when a nullable field precedes another do
 });
 
 it("does not print non-jsdoc or non-adjacent comments as descriptions", () => {
-  expect(Codecs.JsdocIgnoredCommentObject.describe()).toMatchInlineSnapshot('"type CodecJsdocIgnoredCommentObject = { line: number, plain: string };"');
-  expect(Codecs.JsdocAfterUnrelatedValue.describe()).toMatchInlineSnapshot('"type CodecJsdocAfterUnrelatedValue = string;"');
+  expect(Codecs.JsdocIgnoredCommentObject.describe()).toMatchInlineSnapshot(
+    '"type CodecJsdocIgnoredCommentObject = { line: number, plain: string };"',
+  );
+  expect(Codecs.JsdocAfterUnrelatedValue.describe()).toMatchInlineSnapshot(
+    '"type CodecJsdocAfterUnrelatedValue = string;"',
+  );
 });
