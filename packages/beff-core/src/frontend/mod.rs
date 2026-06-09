@@ -63,6 +63,63 @@ fn clean_jsdoc_comment(text: &str) -> Option<String> {
     }
 }
 
+#[cfg(test)]
+mod jsdoc_tests {
+    use super::{clean_jsdoc_comment, is_jsdoc_comment};
+    use swc_common::comments::{Comment, CommentKind};
+    use swc_common::DUMMY_SP;
+
+    fn comment(kind: CommentKind, text: &str) -> Comment {
+        Comment {
+            kind,
+            span: DUMMY_SP,
+            text: text.into(),
+        }
+    }
+
+    #[test]
+    fn clean_jsdoc_comment_normalizes_single_line_text() {
+        assert_eq!(
+            clean_jsdoc_comment("* Single line description."),
+            Some("Single line description.".to_string())
+        );
+    }
+
+    #[test]
+    fn clean_jsdoc_comment_normalizes_multiline_text() {
+        assert_eq!(
+            clean_jsdoc_comment(
+                r#"*
+                 * First line.
+                 *
+                 * Second line.
+                 "#
+            ),
+            Some("First line.\n\nSecond line.".to_string())
+        );
+    }
+
+    #[test]
+    fn clean_jsdoc_comment_ignores_empty_text() {
+        assert_eq!(clean_jsdoc_comment("*"), None);
+        assert_eq!(
+            clean_jsdoc_comment(
+                r#"*
+                 *
+                 "#
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn is_jsdoc_comment_only_accepts_block_jsdoc_comments() {
+        assert!(is_jsdoc_comment(&comment(CommentKind::Block, "* Description.")));
+        assert!(!is_jsdoc_comment(&comment(CommentKind::Block, " Description.")));
+        assert!(!is_jsdoc_comment(&comment(CommentKind::Line, "* Description.")));
+    }
+}
+
 #[derive(Debug)]
 struct JsdocCandidate {
     key_pos: u32,

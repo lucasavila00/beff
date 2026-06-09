@@ -1918,6 +1918,86 @@ mod tests {
         "#);
     }
     #[test]
+    fn ok_jsdoc_metadata_ignores_non_jsdoc_comments() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        /* Plain block comment. */
+        // Plain line comment.
+        export type Alias = string;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const namedRuntypes = {
+            "Alias": direct_hoist_1
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+    #[test]
+    fn ok_jsdoc_metadata_reads_export_declare_declarations() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        /** Declared alias. */
+        export declare type Alias = string;
+
+        /** Declared interface. */
+        export declare interface Wrapper {
+            value: Alias;
+        }
+
+        parse.buildParsers<{ Dec: Wrapper }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "Wrapper");
+        const direct_hoist_1 = new TypeofRuntype({
+            "description": "Declared alias."
+        }, "string");
+        const direct_hoist_2 = new RefRuntype(undefined, "Alias");
+        const direct_hoist_3 = new ObjectRuntype({
+            "description": "Declared interface."
+        }, {
+            "value": direct_hoist_2
+        }, []);
+        const namedRuntypes = {
+            "Alias": direct_hoist_1,
+            "Wrapper": direct_hoist_3
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+    #[test]
+    fn ok_jsdoc_metadata_reads_quoted_property_keys() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        export type Alias = {
+            /** Quoted property. */
+            "quoted-key": string;
+        }
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const direct_hoist_1 = new TypeofRuntype({
+            "description": "Quoted property."
+        }, "string");
+        const direct_hoist_2 = new ObjectRuntype(undefined, {
+            "quoted-key": direct_hoist_1
+        }, []);
+        const namedRuntypes = {
+            "Alias": direct_hoist_2
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+    #[test]
     fn ok_union_decoder() {
         insta::assert_snapshot!(print_cgen(
             r#"

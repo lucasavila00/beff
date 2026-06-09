@@ -116,8 +116,10 @@ describe("discriminated union schemas", () => {
     expect(schema.describe({ measure: false, deps: {}, deps_counter: {} })).toMatchInlineSnapshot(`
       {
         "docText": "User payload.",
-        "typeExpr": "{ /** Stable user id. */
-      id: string; }",
+        "typeExpr": "{
+      /** Stable user id. */
+      id: string;
+      }",
       }
     `);
   });
