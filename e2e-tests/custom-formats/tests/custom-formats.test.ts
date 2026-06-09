@@ -16,6 +16,13 @@ it("uses custom error messages for base string formats", () => {
   `);
 });
 
+it("uses custom JSON Schema format for base string formats", () => {
+  expect(Codecs.ValidCurrency.schema()).toEqual({
+    type: "string",
+    format: "iso-currency-code",
+  });
+});
+
 it("falls back to the default message for function-only string formats", () => {
   expect(Codecs.UserId.safeParse("abc")).toMatchInlineSnapshot(`
     {
@@ -72,6 +79,18 @@ it("uses the most specific custom error message for string format extends", () =
       "success": false,
     }
   `);
+});
+
+it("uses only the final string format to customize JSON Schema format for extends", () => {
+  expect(Codecs.WriteAuthorizedUserId.schema()).toEqual({
+    type: "string",
+    format: "write-authorized-user-id",
+  });
+
+  expect(Codecs.StringChildNoMsg.schema()).toEqual({
+    type: "string",
+    format: "StringParentNoMsg and StringChildNoMsg",
+  });
 });
 
 it("covers all parent-child errorMessage combinations for string extends", () => {
@@ -143,6 +162,13 @@ it("uses custom error messages for base number formats", () => {
   `);
 });
 
+it("uses custom JSON Schema format for base number formats", () => {
+  expect(Codecs.NonInfiniteNumber.schema()).toEqual({
+    type: "number",
+    format: "finite-number",
+  });
+});
+
 it("falls back to the default message for object number formats without errorMessage", () => {
   expect(Codecs.NegativeNumber.safeParse(1)).toMatchInlineSnapshot(`
     {
@@ -184,6 +210,18 @@ it("uses the most specific custom error message for number format extends", () =
       "success": false,
     }
   `);
+});
+
+it("uses only the final number format to customize JSON Schema format for extends", () => {
+  expect(Codecs.Rate.schema()).toEqual({
+    type: "number",
+    format: "rate",
+  });
+
+  expect(Codecs.NumberChildNoMsg.schema()).toEqual({
+    type: "number",
+    format: "NumberParentNoMsg and NumberChildNoMsg",
+  });
 });
 
 it("covers all parent-child errorMessage combinations for number extends", () => {

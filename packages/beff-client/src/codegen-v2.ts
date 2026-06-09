@@ -311,10 +311,12 @@ type UserProvidedStringFormat =
   | {
       validator: UserProvidedStringValidatorFn;
       errorMessage?: UserProvidedStringErrorMessageFn;
+      jsonSchemaFormat?: string;
     };
 type RegisteredStringFormat = {
   validator: UserProvidedStringValidatorFn;
   errorMessage?: UserProvidedStringErrorMessageFn;
+  jsonSchemaFormat?: string;
 };
 const stringFormatters: Record<string, RegisteredStringFormat> = {};
 export function registerStringFormatter(name: string, value: UserProvidedStringFormat) {
@@ -334,10 +336,12 @@ type UserProvidedNumberFormat =
   | {
       validator: UserProvidedNumberValidatorFn;
       errorMessage?: UserProvidedNumberErrorMessageFn;
+      jsonSchemaFormat?: string;
     };
 type RegisteredNumberFormat = {
   validator: UserProvidedNumberValidatorFn;
   errorMessage?: UserProvidedNumberErrorMessageFn;
+  jsonSchemaFormat?: string;
 };
 const numberFormatters: Record<string, RegisteredNumberFormat> = {};
 export function registerNumberFormatter(name: string, value: UserProvidedNumberFormat) {
@@ -985,9 +989,10 @@ export class StringWithFormatRuntype extends BaseRuntype {
     return acc;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
+    const finalFormat = this.formats[this.formats.length - 1];
     return annotateSchema(this.metadata, {
       type: "string",
-      format: this.formats.join(" and "),
+      format: stringFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
     });
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
@@ -1058,9 +1063,10 @@ export class NumberWithFormatRuntype extends BaseRuntype {
     return acc;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
+    const finalFormat = this.formats[this.formats.length - 1];
     return annotateSchema(this.metadata, {
       type: "number",
-      format: this.formats.join(" and "),
+      format: numberFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
     });
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {

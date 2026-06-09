@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.152
+
+### Patch Changes
+
+- improve json schema format string
+
 ## 0.0.151
 
 ### Patch Changes

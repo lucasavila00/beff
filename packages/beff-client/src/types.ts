@@ -56,6 +56,7 @@ export type UserProvidedStringFormat =
   | {
       validator: (input: string) => boolean;
       errorMessage?: (input: string) => string;
+      jsonSchemaFormat?: string;
     };
 
 export type UserProvidedNumberFormat =
@@ -63,6 +64,7 @@ export type UserProvidedNumberFormat =
   | {
       validator: (input: number) => boolean;
       errorMessage?: (input: number) => string;
+      jsonSchemaFormat?: string;
     };
 
 export type BuildParserFunction = <T>(args?: {

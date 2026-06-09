@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.152
+
+### Patch Changes
+
+- improve json schema format string
+- Updated dependencies
+  - @beff/cli@0.0.152
+
 ## 0.0.151
 
 ### Patch Changes
