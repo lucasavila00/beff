@@ -41,6 +41,70 @@ type DocumentedResult = {
   beta: string;
 };
 
+/** Anonymous single-line alias. */
+type JsdocSingleLineAlias = string;
+
+/**
+ * Anonymous multiline object.
+ *
+ * Keeps an intentional blank line.
+ */
+type JsdocMultilineObject = {
+  /** First documented field. */
+  first: string;
+  /** Second documented field. */
+  second: number;
+};
+
+type JsdocMemberOnlyObject = {
+  /** Nullable first field. */
+  alpha: null | string;
+  /** Required second field. */
+  beta: string;
+  /** Optional third field. */
+  gamma?: number;
+};
+
+type JsdocNestedObject = {
+  /** Nested value. */
+  nested: {
+    /** Inner enabled flag. */
+    enabled: boolean;
+  };
+};
+
+/**
+ * Reusable documented token.
+ */
+type JsdocReusableToken = StringFormat<"JsdocReusableToken">;
+
+type JsdocReferencesDocumentedAlias = {
+  token: JsdocReusableToken;
+};
+
+type JsdocUnionVariant =
+  | {
+      kind: "left";
+      /** Left variant value. */
+      value: string;
+    }
+  | {
+      kind: "right";
+      /** Right variant count. */
+      count: number;
+    };
+
+type JsdocIgnoredCommentObject = {
+  /* Plain block comment. */
+  plain: string;
+  // Plain line comment.
+  line: number;
+};
+
+/** Not attached to the next type. */
+const jsdocUnrelatedValue = 1;
+type JsdocAfterUnrelatedValue = string;
+
 type T2 = {
   t1: T1;
 };
@@ -135,6 +199,14 @@ export const Codecs = parse.buildParsers<{
   T1: T1;
   DocumentedPayload: DocumentedPayload;
   DocumentedResult: DocumentedResult;
+  JsdocSingleLineAlias: JsdocSingleLineAlias;
+  JsdocMultilineObject: JsdocMultilineObject;
+  JsdocMemberOnlyObject: JsdocMemberOnlyObject;
+  JsdocNestedObject: JsdocNestedObject;
+  JsdocReferencesDocumentedAlias: JsdocReferencesDocumentedAlias;
+  JsdocUnionVariant: JsdocUnionVariant;
+  JsdocIgnoredCommentObject: JsdocIgnoredCommentObject;
+  JsdocAfterUnrelatedValue: JsdocAfterUnrelatedValue;
   T2: T2;
   T3: T3;
   InvalidSchemaWithDate: InvalidSchemaWithDate;
@@ -163,5 +235,6 @@ export const Codecs = parse.buildParsers<{
       return false;
     },
     CompactId: (_input: string) => true,
+    JsdocReusableToken: (_input: string) => true,
   },
 });
