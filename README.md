@@ -222,6 +222,7 @@ export const Parsers = parse.buildParsers<{
         return false;
       },
       errorMessage: () => "expected a valid ISO currency code",
+      jsonSchemaFormat: "iso-currency-code",
     },
   },
 });
@@ -240,13 +241,15 @@ stringFormats: {
   ValidCurrency: {
     validator: (input: string) => input === "USD",
     errorMessage: (input: string) => `expected ISO currency code, got ${input}`,
+    jsonSchemaFormat: "iso-currency-code",
   },
 }
 ```
 
 `errorMessage` is optional. When provided, failed parses use it instead of the default `expected string with format "..."` message.
+`jsonSchemaFormat` is optional. When provided, generated JSON Schema uses it as the schema `format` instead of the default format name.
 
-This also works with `StringFormatExtends`. If multiple formats in the chain define an `errorMessage`, the upper / more specific one wins:
+This also works with `StringFormatExtends`. If multiple formats in the chain define an `errorMessage`, the upper / more specific one wins. For JSON Schema, only the final / most specific format's `jsonSchemaFormat` is used; if that format does not define one, Beff keeps the default joined format string:
 
 ```ts
 import { StringFormat, StringFormatExtends } from "@beff/client";
@@ -268,9 +271,13 @@ const Parsers = parse.buildParsers({
     WriteAuthorizedUserId: {
       validator: (input: string) => input.includes("_write_"),
       errorMessage: () => "expected user with write permissions",
+      jsonSchemaFormat: "write-authorized-user-id",
     },
   },
 });
+
+Parsers.WriteAuthorizedUserId.schema();
+// { type: "string", format: "write-authorized-user-id" }
 ```
 
 ### Custom Number Formats
@@ -305,6 +312,7 @@ export const Parsers = parse.buildParsers<{
         return input >= 0;
       },
       errorMessage: () => "expected a non-negative number",
+      jsonSchemaFormat: "non-negative-number",
     },
     NegativeNumber: {
       validator: (input: number) => {
@@ -316,6 +324,7 @@ export const Parsers = parse.buildParsers<{
 ```
 
 `errorMessage` also works for number formats. It can be omitted, and with `NumberFormatExtends` the upper / more specific format message wins when multiple formats define one.
+`jsonSchemaFormat` is also supported for number formats. It follows the same rule as strings: generated JSON Schema uses the final / most specific format's `jsonSchemaFormat`, or the default joined format string when that final format does not define one.
 
 ### Ad-hoc Validator Creation
 

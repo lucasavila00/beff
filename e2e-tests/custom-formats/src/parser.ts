@@ -60,6 +60,7 @@ export const Codecs = parse.buildParsers<{
     ValidCurrency: {
       validator: (input: string) => input === "USD",
       errorMessage: () => "expected a valid ISO currency code",
+      jsonSchemaFormat: "iso-currency-code",
     },
     ShortCode: {
       validator: (input: string) => input.length <= 3,
@@ -72,8 +73,12 @@ export const Codecs = parse.buildParsers<{
     WriteAuthorizedUserId: {
       validator: (input: string) => input.includes("_write_"),
       errorMessage: () => "expected user with write permissions",
+      jsonSchemaFormat: "write-authorized-user-id",
     },
-    StringParentNoMsg: (input: string) => input.startsWith("string-parent-"),
+    StringParentNoMsg: {
+      validator: (input: string) => input.startsWith("string-parent-"),
+      jsonSchemaFormat: "string-parent-no-msg",
+    },
     StringChildNoMsg: {
       validator: (input: string) => input.endsWith("-child"),
     },
@@ -102,6 +107,7 @@ export const Codecs = parse.buildParsers<{
     NonInfiniteNumber: {
       validator: (input: number) => Number.isFinite(input),
       errorMessage: () => "expected a finite number",
+      jsonSchemaFormat: "finite-number",
     },
     NegativeNumber: {
       validator: (input: number) => input < 0,
@@ -113,8 +119,12 @@ export const Codecs = parse.buildParsers<{
     Rate: {
       validator: (input: number) => input >= 0 && input <= 1,
       errorMessage: () => "expected a valid rate",
+      jsonSchemaFormat: "rate",
     },
-    NumberParentNoMsg: (input: number) => input > 0,
+    NumberParentNoMsg: {
+      validator: (input: number) => input > 0,
+      jsonSchemaFormat: "positive-number",
+    },
     NumberChildNoMsg: {
       validator: (input: number) => input < 10,
     },
