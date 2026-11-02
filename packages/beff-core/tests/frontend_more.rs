@@ -237,6 +237,40 @@ mod tests {
     }
 
     #[test]
+    fn typeof_object_literal_undefined() {
+        let from = r#"
+            const pebble = { amber: undefined, violet: "sample" };
+            export type Quartz = typeof pebble;
+            parse.buildParsers<{ Quartz: Quartz }>();
+        "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Quartz = { "amber": undefined, "violet": string };
+
+
+        type BuiltParsers = {
+          Quartz: Quartz,
+        }
+        "#);
+    }
+
+    #[test]
+    fn typeof_object_literal_void() {
+        let from = r#"
+            const pebble = { amber: void 0, violet: "sample" };
+            export type Quartz = typeof pebble;
+            parse.buildParsers<{ Quartz: Quartz }>();
+        "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Quartz = { "amber": undefined, "violet": string };
+
+
+        type BuiltParsers = {
+          Quartz: Quartz,
+        }
+        "#);
+    }
+
+    #[test]
     fn typeof_object_literal_key() {
         insta::assert_snapshot!(print_types(r#"
             const obj = { a: "hello" };
