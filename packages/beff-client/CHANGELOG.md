@@ -1,5 +1,12 @@
 # @beff/client
 
+## 0.0.153
+
+### Patch Changes
+
+- Updated dependencies [f74a348]
+  - @beff/cli@0.0.153
+
 ## 0.0.152
 
 ### Patch Changes

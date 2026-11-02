@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.153
+
+### Patch Changes
+
+- f74a348: Fix `typeof` inference for object literals containing `undefined` or `void 0` values.
+
 ## 0.0.152
 
 ### Patch Changes
