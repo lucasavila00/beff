@@ -29,7 +29,7 @@ use swc_ecma_ast::{
     TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType,
     TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
     TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
-    TsUnionOrIntersectionType, TsUnionType,
+    TsUnionOrIntersectionType, TsUnionType, UnaryOp,
 };
 type Res<T> = Result<T, Box<DiagnosticInformation>>;
 
@@ -2269,6 +2269,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     self.error(&anchor, DiagnosticInfoMessage::TypeOfJSXTextNotSupported)
                 }
             },
+            Expr::Ident(i) if i.sym == "undefined" => Ok(Runtype::undefined()),
+            Expr::Unary(e) if e.op == UnaryOp::Void => Ok(Runtype::undefined()),
             Expr::Ident(i) => {
                 let new_addr = ModuleItemAddress {
                     file: file.clone(),
