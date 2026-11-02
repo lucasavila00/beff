@@ -1091,7 +1091,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
 
     fn anyhow_error<T>(&mut self, anchor: &Anchor, msg: DiagnosticInfoMessage) -> Result<T> {
-        let e = anyhow!("{:?}", &msg);
+        let e = anyhow!("{msg:?}");
         self.push_error(anchor, msg);
         Err(e)
     }
