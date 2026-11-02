@@ -2,6 +2,11 @@
   "name": "@beff/cli",
   "version": "0.0.152",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucasavila00/beff.git",
+    "directory": "packages/beff-cli"
+  },
   "bin": {
     "beff": "./bin/index.js"
   },
