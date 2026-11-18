@@ -431,13 +431,6 @@ fn runtype_union_or_intersection(
     ctx: &mut PrintContext,
     original_runtype: &Runtype,
 ) -> Expr {
-    let mut sorted_vs = vs.iter().cloned().collect::<Vec<Runtype>>();
-    let dbg_ctx = DebugPrintCtx {
-        all_names: &ctx.all_names.iter().collect::<Vec<_>>(),
-        type_with_args_names: &mut ctx.type_with_args_names,
-    };
-    sorted_vs.sort_by_key(|it| it.debug_print(&dbg_ctx));
-
     let exprs = vs
         .iter()
         .map(|schema| print_runtype(schema, named_schemas, ctx))
