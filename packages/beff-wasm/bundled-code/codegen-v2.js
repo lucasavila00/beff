@@ -27,6 +27,7 @@ import {
   TypedArrayRuntype,
   MapRuntype,
   SetRuntype,
+  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {

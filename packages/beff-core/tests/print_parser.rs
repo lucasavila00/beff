@@ -1631,15 +1631,14 @@ mod tests {
         ), @r#"
         const direct_hoist_0 = new RefRuntype(undefined, "NumberRecGet");
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
-        const direct_hoist_2 = new TypeofRuntype(undefined, "number");
-        const direct_hoist_3 = new ObjectRuntype(undefined, {}, [
+        const direct_hoist_2 = new ObjectRuntype(undefined, {}, [
             {
-                "key": direct_hoist_2,
+                "key": new NumberKeyRuntype(undefined),
                 "value": direct_hoist_1
             }
         ]);
         const namedRuntypes = {
-            "NumberRec": direct_hoist_3,
+            "NumberRec": direct_hoist_2,
             "NumberRecGet": direct_hoist_1
         };
         const buildParsersInput = {

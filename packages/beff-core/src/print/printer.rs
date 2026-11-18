@@ -395,6 +395,32 @@ fn formats_runtype(
     new_runtype_class(constructor, vec![vs_arr], original_runtype)
 }
 
+// Object keys are always strings. A `number` key is printed as a runtype
+// that accepts numeric strings.
+fn print_index_key(key: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
+    match &key.kind {
+        RuntypeKind::Number => no_args_runtype("NumberKeyRuntype", key),
+        RuntypeKind::AnyOf(vs) if vs.iter().any(|it| matches!(it.kind, RuntypeKind::Number)) => {
+            let exprs = vs
+                .iter()
+                .map(|it| print_index_key(it, named_schemas, ctx))
+                .map(|it| {
+                    Some(ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
+                })
+                .collect();
+            let arr = Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: exprs,
+            });
+            new_runtype_class("AnyOfRuntype", vec![arr], key)
+        }
+        _ => print_runtype(key, named_schemas, ctx),
+    }
+}
+
 fn runtype_union_or_intersection(
     constructor: &str,
     vs: &BTreeSet<Runtype>,
@@ -997,7 +1023,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                                         value: "key".into(),
                                         raw: None,
                                     }),
-                                    value: print_runtype(&it.key, named_schemas, ctx).into(),
+                                    value: print_index_key(&it.key, named_schemas, ctx).into(),
                                 })
                                 .into(),
                             ),
