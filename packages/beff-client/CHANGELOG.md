@@ -1,5 +1,27 @@
 # @beff/client
 
+## 0.0.154
+
+### Patch Changes
+
+- 8affb35: Fix `parse`, `safeParse` and `printErrors` throwing `TypeError: Do not know how to serialize a BigInt` when the input has a `bigint` value. Errors now show the value as `10n`.
+- 016ee7f: Fix `describe()` printing property names such as `my-key` without quotes. Names that are not identifiers or plain numbers are now quoted, so the output is valid TypeScript.
+- 50da924: Fix discriminated unions throwing a `TypeError` when the discriminator value is an `Object.prototype` member name, such as `"toString"` or `"constructor"`. The validator now rejects these values with the usual error.
+- 949d1aa: Fix the return type of `b.Null()`. It is now `BeffParser<null>` instead of `BeffParser<undefined>`.
+- c8f9a26: Fix `Record<number, T>` and number index signatures rejecting all keys. Object keys are strings, so the compiler now emits a `NumberKeyRuntype` key that accepts numeric strings such as `"1"`. The JSON Schema `propertyNames` for a number key is now a string with a numeric pattern.
+- 0c81cf5: Fix `parse` changing the prototype of the result when an object input has an own `"__proto__"` key, for example from `JSON.parse`. The key is now kept as an own property.
+- 20e8f53: Fix `objectKeyOrder: "sorted"` removing index signature keys such as `constructor` and `toString`.
+- 6e718de: Fix the JSON Schema `pattern` of template literal types. It is now the regular expression that the validator uses, not the TypeScript text of the type.
+- c4f5953: Fix a tuple with too many items failing with an empty error list. The error is now `expected tuple with 2 items, got 3`.
+- b182e9d: Fix `parse` of a union type changing `Map` and `Set` values to `{}` and removing keys such as `constructor` and `prototype`.
+- Updated dependencies [4c5dea3]
+- Updated dependencies [5974ebc]
+- Updated dependencies [4695b6c]
+- Updated dependencies [c8f9a26]
+- Updated dependencies [9c37a89]
+- Updated dependencies [1d34662]
+  - @beff/cli@0.0.154
+
 ## 0.0.153
 
 ### Patch Changes
