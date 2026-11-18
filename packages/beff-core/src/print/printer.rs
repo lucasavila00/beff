@@ -556,49 +556,8 @@ fn runtype_any_of_discriminated(
             .collect(),
     });
 
-    let mapping_obj = Expr::Object(ObjectLit {
-        span: DUMMY_SP,
-        props: discriminator_strings
-            .iter()
-            .map(|current_key| {
-                let cases = object_vs
-                    .iter()
-                    .filter(|vs| {
-                        let value = vs
-                            .get(&discriminator)
-                            .expect("we already checked the discriminator exists")
-                            .inner();
-
-                        extract_union(value, named_schemas)
-                            .into_iter()
-                            .filter_map(|it| it.extract_single_string_const())
-                            .any(|it| it == *current_key)
-                    })
-                    .map(|vs| {
-                        Runtype::object(vs.iter().map(|it| (it.0.clone(), it.1.clone())).collect())
-                    })
-                    .collect::<Vec<_>>();
-                let schema = if cases.len() == 1 {
-                    maybe_named_ref(&cases[0], named_schemas, ctx)
-                        .unwrap_or_else(|| cases[0].clone())
-                } else {
-                    Runtype::any_of(cases)
-                };
-
-                PropOrSpread::Prop(
-                    Prop::KeyValue(KeyValueProp {
-                        key: PropName::Str(Str {
-                            span: DUMMY_SP,
-                            value: current_key.clone().into(),
-                            raw: None,
-                        }),
-                        value: print_runtype(&schema, named_schemas, ctx).into(),
-                    })
-                    .into(),
-                )
-            })
-            .collect(),
-    });
+    // The validation mapping is printed from the same cases as the schema mapping.
+    let mapping_obj = schema_mapping_obj.clone();
 
     let flat_values_schema = flat_values
         .iter()
