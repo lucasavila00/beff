@@ -1,4 +1,5 @@
 [workspace]
+resolver = "3"
 members = ["packages/beff-core", "packages/beff-wasm", ]
 
 [profile.release]

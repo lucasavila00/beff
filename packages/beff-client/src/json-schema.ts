@@ -56,7 +56,7 @@ export type JSONSchema7Version = string;
  * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01
  */
 export type JSONSchema7Definition = JSONSchema7 | boolean;
-export interface OpenAPIDiscriminator {
+interface OpenAPIDiscriminator {
   propertyName: string;
   mapping?:
     | {

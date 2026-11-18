@@ -2,13 +2,13 @@
   "name": "beff",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "ts": "pnpm run -r ts",
     "build": "pnpm run -r build",
     "test": "pnpm run -r test",
     "beff": "pnpm run -r beff",
     "all": "pnpm run build && pnpm run beff && pnpm run test",
+    "knip": "knip --treat-config-hints-as-errors",
     "prettier:check": "prettier --check .",
     "prettier:write": "prettier --write ."
   },
@@ -19,6 +19,7 @@
     "prettier": "^3.6.2"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.2"
+    "@changesets/cli": "^2.26.2",
+    "knip": "^6.46.1"
   }
 }

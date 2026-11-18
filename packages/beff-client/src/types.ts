@@ -51,7 +51,7 @@ type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;
 };
 
-export type UserProvidedStringFormat =
+type UserProvidedStringFormat =
   | ((input: string) => boolean)
   | {
       validator: (input: string) => boolean;
@@ -59,7 +59,7 @@ export type UserProvidedStringFormat =
       jsonSchemaFormat?: string;
     };
 
-export type UserProvidedNumberFormat =
+type UserProvidedNumberFormat =
   | ((input: number) => boolean)
   | {
       validator: (input: number) => boolean;

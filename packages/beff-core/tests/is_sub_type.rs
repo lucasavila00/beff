@@ -39,7 +39,7 @@ mod tests {
         RuntypeUUID {
             ty: RuntypeName::Address(TypeAddress {
                 file: BffFileName::new("any_file.bff".into()),
-                name: name,
+                name,
             }),
             type_arguments: vec![],
         }
@@ -211,11 +211,11 @@ mod tests {
         let t1 = Runtype::object(vec![
             (
                 "a".into(),
-                Runtype::single_string_const("abc".into()).required(),
+                Runtype::single_string_const("abc").required(),
             ),
             (
                 "b".into(),
-                Runtype::single_string_const("def".into()).required(),
+                Runtype::single_string_const("def").required(),
             ),
         ]);
         let t2 = Runtype::object(vec![("a".into(), Runtype::string().required())]);
@@ -231,7 +231,7 @@ mod tests {
 
         let t1 = Runtype::object(vec![(
             "a".into(),
-            Runtype::single_string_const("abc".into()).required(),
+            Runtype::single_string_const("abc").required(),
         )]);
         let t2 = Runtype::object(vec![("a".into(), Runtype::string().required())]);
 
@@ -244,7 +244,7 @@ mod tests {
     fn array2() {
         let definitions = vec![];
 
-        let t1 = Runtype::array(Runtype::single_string_const("abc".into()).into());
+        let t1 = Runtype::array(Runtype::single_string_const("abc").into());
         let t2 = Runtype::array(Runtype::string().into());
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
@@ -327,7 +327,7 @@ mod tests {
     fn strings_repr() {
         let definitions = vec![];
 
-        let t1 = Runtype::single_string_const("a".into());
+        let t1 = Runtype::single_string_const("a");
         let t2 = Runtype::tpl_lit_type(TplLitType(vec![TplLitTypeItem::StringConst("a".into())]));
 
         let mut ctx = SemTypeContext::new();
@@ -391,7 +391,7 @@ mod tests {
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let t1 = Runtype::single_string_const("abc".into());
+        let t1 = Runtype::single_string_const("abc");
         let t2 = Runtype::string();
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -466,7 +466,7 @@ mod tests {
     fn string_const_subtyping() {
         let definitions = vec![];
 
-        let const_a = Runtype::single_string_const("a".into());
+        let const_a = Runtype::single_string_const("a");
         let all_strings = Runtype::string();
         let mut ctx = SemTypeContext::new();
 
@@ -861,8 +861,8 @@ mod tests {
         let mut ctx = SemTypeContext::new();
 
         let format_id = Runtype::string_with_format(CustomFormat("id".into(), vec![]));
-        let literal_abc = Runtype::single_string_const("abc".into());
-        let literal_def = Runtype::single_string_const("def".into());
+        let literal_abc = Runtype::single_string_const("abc");
+        let literal_def = Runtype::single_string_const("def");
 
         let format_sem = format_id
             .to_sem_type(&definitions, &mut ctx)
@@ -1115,8 +1115,8 @@ mod tests {
                 .collect(),
             indexed_properties: Some(
                 IndexedProperty {
-                    key: Runtype::string().into(),
-                    value: Runtype::string().required().into(),
+                    key: Runtype::string(),
+                    value: Runtype::string().required(),
                 }
                 .into(),
             ),
@@ -1594,8 +1594,7 @@ mod tests {
     fn recursive_types_mutual() {
         // type A = { b: B }
         // type B = { a: A }
-        let definitions = vec![
-            NamedSchema {
+        let definitions = [NamedSchema {
                 name: rt_uuid("A".into()),
                 schema: Runtype::object(vec![(
                     "b".into(),
@@ -1608,8 +1607,7 @@ mod tests {
                     "a".into(),
                     Runtype::ref_(rt_uuid("A".into())).required(),
                 )]),
-            },
-        ];
+            }];
         let defs_refs: Vec<&NamedSchema> = definitions.iter().collect();
 
         let ref_a = Runtype::ref_(rt_uuid("A".into()));
@@ -1727,7 +1725,7 @@ mod tests {
         assert!(rt_is_sub_type(&t1, &t2, &definitions, &definitions));
 
         let t3 = Runtype::map(
-            Box::new(Runtype::single_string_const("abc".into())),
+            Box::new(Runtype::single_string_const("abc")),
             Box::new(Runtype::number()),
         );
         // Map<"abc", number> is subtype of Map<string, number>
@@ -1761,7 +1759,7 @@ mod tests {
 
         assert!(rt_is_sub_type(&t1, &t2, &definitions, &definitions));
 
-        let t3 = Runtype::set(Box::new(Runtype::single_string_const("abc".into())));
+        let t3 = Runtype::set(Box::new(Runtype::single_string_const("abc")));
         // Set<"abc"> is subtype of Set<string>
         assert!(rt_is_sub_type(&t3, &t1, &definitions, &definitions));
         assert!(!rt_is_sub_type(&t1, &t3, &definitions, &definitions));

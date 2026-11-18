@@ -16,11 +16,17 @@ jobs:
         with:
           node-version: "22.x"
           registry-url: "https://registry.npmjs.org"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-machete
       - name: Tests
         run: |
           pnpm install
           pnpm prettier:check
+          pnpm knip
+          pnpm ts
+          cargo machete
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-          cargo clippy
+          cargo clippy --all-targets -- -D warnings
           DEBUG=true pnpm all
           git diff --exit-code

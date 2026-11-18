@@ -6,13 +6,10 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-insta = "1.31.0"
-
 swc_atoms = "9.0.0"
 swc_ecma_ast = "19.0.0"
 swc_ecma_codegen = "21.0.0"
 swc_ecma_parser = "28.0.0"
-swc_ecma_transforms_base = "31.0.0"
 swc_ecma_visit = "19.0.0"
 swc_node_comments = "18.0.0"
 
@@ -25,9 +22,5 @@ log = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-
-[dependencies.web-sys]
-version = "0.3"
-features = [
-  "console",
-]
+[dev-dependencies]
+insta = "1.31.0"

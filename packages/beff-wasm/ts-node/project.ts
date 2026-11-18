@@ -1,4 +1,4 @@
-export type BeffCustomFormat = {
+type BeffCustomFormat = {
   name: string;
 };
 

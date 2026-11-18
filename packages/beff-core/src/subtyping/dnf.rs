@@ -180,12 +180,12 @@ mod tests {
         let dnf = bdd_to_dnf(&bdd);
         let out = vec![
             Conjunction {
-                positive: vec![Atom::List(1).into()],
+                positive: vec![Atom::List(1)],
                 negative: vec![],
             },
             Conjunction {
                 positive: vec![],
-                negative: vec![Atom::List(0).into()],
+                negative: vec![Atom::List(0)],
             },
         ];
 

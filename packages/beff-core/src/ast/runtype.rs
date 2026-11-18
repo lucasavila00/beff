@@ -425,24 +425,6 @@ impl Runtype {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn runtype_metadata_does_not_affect_semantic_identity() {
-        let left = Runtype::string().with_description("left".to_string());
-        let right = Runtype::string().with_description("right".to_string());
-
-        assert_eq!(left, right);
-
-        let mut set = BTreeSet::new();
-        set.insert(left);
-        set.insert(right);
-        assert_eq!(set.len(), 1);
-    }
-}
-
 struct UnionMerger(BTreeSet<Runtype>);
 
 impl UnionMerger {
@@ -756,5 +738,23 @@ impl Runtype {
                 format!("{{ {} }}", args)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn runtype_metadata_does_not_affect_semantic_identity() {
+        let left = Runtype::string().with_description("left".to_string());
+        let right = Runtype::string().with_description("right".to_string());
+
+        assert_eq!(left, right);
+
+        let mut set = BTreeSet::new();
+        set.insert(left);
+        set.insert(right);
+        assert_eq!(set.len(), 1);
     }
 }

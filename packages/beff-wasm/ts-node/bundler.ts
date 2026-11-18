@@ -167,7 +167,7 @@ type UnknownFile = {
   message: string;
   current_file: string;
 };
-export type WasmDiagnosticInformation =
+type WasmDiagnosticInformation =
   | { KnownFile: KnownFile; UnknownFile?: never }
   | { UnknownFile: UnknownFile; KnownFile?: never };
 

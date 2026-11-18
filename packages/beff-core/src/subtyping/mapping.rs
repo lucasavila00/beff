@@ -461,7 +461,7 @@ mod tests {
         let idx = ctx.mapping_definitions.len();
         ctx.mapping_definitions.push(Some(
             MappingAtomicType {
-                vs: vec![("a".to_string(), st_string.into())]
+                vs: vec![("a".to_string(), st_string)]
                     .into_iter()
                     .collect(),
                 indexed_properties: None,

@@ -207,14 +207,14 @@ mod tests {
         let json1 = Json::parse_f64(42.0);
         assert_eq!(json1, Json::Number(num1));
 
-        let num2 = N::parse_f64(3.14159);
-        assert_eq!(num2.integral, 3);
-        assert_eq!(num2.fractional, Some(141589999));
+        let num2 = N::parse_f64(7.12345);
+        assert_eq!(num2.integral, 7);
+        assert_eq!(num2.fractional, Some(123450000));
 
-        let json2 = Json::parse_f64(3.14159);
+        let json2 = Json::parse_f64(7.12345);
 
         let f64_value = num2.to_f64();
-        assert!((f64_value - 3.14159).abs() < 1e-6);
+        assert!((f64_value - 7.12345).abs() < 1e-6);
 
         assert_eq!(json2, Json::Number(num2));
 
