@@ -347,7 +347,7 @@ const direct_hoist_103 = new ObjectRuntype(undefined, {
     "a": direct_hoist_21,
     "b": direct_hoist_21
 }, []);
-const direct_hoist_104 = new RegexRuntype(undefined, /(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`");
+const direct_hoist_104 = new RegexRuntype(undefined, /^(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)$/, "`${number}.${number}.${number}`");
 const direct_hoist_105 = new RefRuntype(undefined, "DataWrapper_string");
 const direct_hoist_106 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,

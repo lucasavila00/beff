@@ -192,11 +192,13 @@ impl TplLitType {
         }
     }
     pub fn regex_expr(&self) -> String {
-        let mut regex_exp = String::new();
+        // Anchor the expression: the full string must match, as in TypeScript.
+        let mut regex_exp = String::from("^");
 
         for item in &self.0 {
             regex_exp.push_str(&item.regex_expr());
         }
+        regex_exp.push('$');
         regex_exp
     }
 }

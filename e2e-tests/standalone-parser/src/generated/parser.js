@@ -183,15 +183,15 @@ const direct_hoist_77 = new AnyOfConstsRuntype(undefined, [
     "ADMIN Admin",
     "USER User"
 ]);
-const direct_hoist_78 = new RegexRuntype(undefined, /((ADMIN)|(USER))/, '`("ADMIN" | "USER")`');
-const direct_hoist_79 = new RegexRuntype(undefined, /((ADMIN Admin)|(USER User))/, '`("ADMIN Admin" | "USER User")`');
+const direct_hoist_78 = new RegexRuntype(undefined, /^((ADMIN)|(USER))$/, '`("ADMIN" | "USER")`');
+const direct_hoist_79 = new RegexRuntype(undefined, /^((ADMIN Admin)|(USER User))$/, '`("ADMIN Admin" | "USER User")`');
 const direct_hoist_80 = new AnyOfConstsRuntype(undefined, [
     "LevelAndDSettings",
     "OmitSettings",
     "PartialSettings",
     "RequiredPartialObject"
 ]);
-const direct_hoist_81 = new RegexRuntype(undefined, /(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "`${number}x${number}`");
+const direct_hoist_81 = new RegexRuntype(undefined, /^(\d+(\.\d+)?)(x)(\d+(\.\d+)?)$/, "`${number}x${number}`");
 const direct_hoist_82 = new ConstRuntype(undefined, "b");
 const direct_hoist_83 = new ObjectRuntype(undefined, {
     "tag": direct_hoist_82
@@ -484,8 +484,8 @@ const direct_hoist_156 = new ObjectRuntype(undefined, {
     "friends": direct_hoist_155,
     "name": direct_hoist_7
 }, []);
-const direct_hoist_157 = new RegexRuntype(undefined, /(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`");
-const direct_hoist_158 = new RegexRuntype(undefined, /(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`v${number}.${number}.${number}`");
+const direct_hoist_157 = new RegexRuntype(undefined, /^(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)$/, "`${number}.${number}.${number}`");
+const direct_hoist_158 = new RegexRuntype(undefined, /^(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)$/, "`v${number}.${number}.${number}`");
 const direct_hoist_159 = new ObjectRuntype(undefined, {
     "optional": new OptionalFieldRuntype(direct_hoist_7)
 }, []);

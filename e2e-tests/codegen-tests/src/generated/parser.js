@@ -130,8 +130,8 @@ const direct_hoist_33 = new ObjectRuntype(undefined, {
     "BAZ_VALUES": direct_hoist_32,
     "FOO_VALUE": direct_hoist_0
 }, []);
-const direct_hoist_34 = new RegexRuntype(undefined, /(alpha_entity_)(.*)/, "`alpha_entity_${string}`");
-const direct_hoist_35 = new RegexRuntype(undefined, /(beta-entity-)(.*)/, "`beta-entity-${string}`");
+const direct_hoist_34 = new RegexRuntype(undefined, /^(alpha_entity_)(.*)$/, "`alpha_entity_${string}`");
+const direct_hoist_35 = new RegexRuntype(undefined, /^(beta-entity-)(.*)$/, "`beta-entity-${string}`");
 const direct_hoist_36 = new AnyOfRuntype(undefined, [
     direct_hoist_34,
     direct_hoist_35
@@ -170,7 +170,7 @@ const direct_hoist_43 = new ObjectRuntype(undefined, {
     "label": direct_hoist_0,
     "outer": direct_hoist_42
 }, []);
-const direct_hoist_44 = new RegexRuntype(undefined, /(x_)(.*)/, "`x_${string}`");
+const direct_hoist_44 = new RegexRuntype(undefined, /^(x_)(.*)$/, "`x_${string}`");
 const direct_hoist_45 = new ObjectRuntype(undefined, {
     "a": direct_hoist_29,
     "b": direct_hoist_29

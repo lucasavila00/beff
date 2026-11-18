@@ -1093,3 +1093,15 @@ it("works on sets", () => {
     }
   `);
 });
+
+it("template literal types match the full string", () => {
+  expect(Version.validate("1.2.3")).toBe(true);
+  expect(Version.validate("version 1.2.3")).toBe(false);
+  expect(Version.validate("1.2.3-beta")).toBe(false);
+  expect(Version2.validate("xv1.2.3")).toBe(false);
+  expect(AvatarSize.validate("10x10")).toBe(true);
+  expect(AvatarSize.validate("width: 10x10 px")).toBe(false);
+  expect(AccessLevelTpl.validate("ADMIN")).toBe(true);
+  expect(AccessLevelTpl.validate("ADMINISTRATOR")).toBe(false);
+  expect(AccessLevelTpl.validate("NOT_USER")).toBe(false);
+});
