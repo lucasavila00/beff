@@ -32,8 +32,13 @@ export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
 const JSON_PROTO = Object.getPrototypeOf({});
 
 function deepmergeConstructor(options: any) {
-  function isNotPrototypeKey(value: any) {
-    return value !== "constructor" && value !== "prototype" && value !== "__proto__";
+  // Define keys as own properties. Assigning to "__proto__" would set the prototype.
+  function setKey(result: any, key: any, value: any) {
+    if (key === "__proto__") {
+      Object.defineProperty(result, key, { value, enumerable: true, writable: true, configurable: true });
+    } else {
+      result[key] = value;
+    }
   }
 
   function cloneArray(value: any) {
@@ -56,8 +61,8 @@ function deepmergeConstructor(options: any) {
     const targetKeys = getKeys(target);
     let i, il, key;
     for (i = 0, il = targetKeys.length; i < il; ++i) {
-      //@ts-ignore
-      isNotPrototypeKey((key = targetKeys[i])) && (result[key] = clone(target[key]));
+      key = targetKeys[i];
+      setKey(result, key, clone(target[key]));
     }
     return result;
   }
@@ -98,6 +103,8 @@ function deepmergeConstructor(options: any) {
       value !== null &&
       !(value instanceof RegExp) &&
       !(value instanceof Date) &&
+      !(value instanceof Map) &&
+      !(value instanceof Set) &&
       !ArrayBuffer.isView(value)
     );
   }
@@ -139,34 +146,25 @@ function deepmergeConstructor(options: any) {
     const sourceKeys = getKeys(source);
     let i, il, key;
     for (i = 0, il = targetKeys.length; i < il; ++i) {
-      isNotPrototypeKey((key = targetKeys[i])) &&
-        sourceKeys.indexOf(key) === -1 &&
-        // @ts-ignore
-        (result[key] = clone(target[key]));
+      key = targetKeys[i];
+      sourceKeys.indexOf(key) === -1 && setKey(result, key, clone(target[key]));
     }
 
     for (i = 0, il = sourceKeys.length; i < il; ++i) {
-      if (!isNotPrototypeKey((key = sourceKeys[i]))) {
-        continue;
-      }
+      key = sourceKeys[i];
 
-      if (key in target) {
-        if (targetKeys.indexOf(key) !== -1) {
-          if (
-            cloneProtoObject &&
-            isMergeableObject(source[key]) &&
-            Object.getPrototypeOf(source[key]) !== JSON_PROTO
-          ) {
-            // @ts-ignore
-            result[key] = cloneProtoObject(source[key]);
-          } else {
-            // @ts-ignore
-            result[key] = _deepmerge(target[key], source[key]);
-          }
+      if (targetKeys.indexOf(key) !== -1) {
+        if (
+          cloneProtoObject &&
+          isMergeableObject(source[key]) &&
+          Object.getPrototypeOf(source[key]) !== JSON_PROTO
+        ) {
+          setKey(result, key, cloneProtoObject(source[key]));
+        } else {
+          setKey(result, key, _deepmerge(target[key], source[key]));
         }
       } else {
-        // @ts-ignore
-        result[key] = clone(source[key]);
+        setKey(result, key, clone(source[key]));
       }
     }
     return result;
@@ -176,7 +174,7 @@ function deepmergeConstructor(options: any) {
     const sourceIsArray = Array.isArray(source);
     const targetIsArray = Array.isArray(target);
 
-    if (isPrimitive(source)) {
+    if (isPrimitive(source) || source instanceof Map || source instanceof Set) {
       return source;
     } else if (isPrimitiveOrBuiltIn(target)) {
       return clone(source);
@@ -1487,6 +1485,9 @@ export class AnyOfRuntype extends BaseRuntype {
       if (it.validate(ctx, input)) {
         items.push(it.parseAfterValidation(ctx, input));
       }
+    }
+    if (items.length === 1) {
+      return items[0];
     }
     return deepmerge(...items);
   }
