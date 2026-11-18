@@ -92,201 +92,219 @@ const direct_hoist_19 = new RefRuntype(undefined, "NumberKeys");
 const direct_hoist_20 = new RefRuntype(undefined, "NumberIndex");
 const direct_hoist_21 = new RefRuntype(undefined, "NumberOrTemplateKeys");
 const direct_hoist_22 = new RefRuntype(undefined, "DefaultTypeParams");
-const direct_hoist_23 = new NullishRuntype(undefined, "undefined");
-const direct_hoist_24 = new AnyOfRuntype(undefined, [
-    direct_hoist_23,
+const direct_hoist_23 = new RefRuntype(undefined, "NumberLiteralKeys");
+const direct_hoist_24 = new RefRuntype(undefined, "PartialNumberLiteralKeys");
+const direct_hoist_25 = new RefRuntype(undefined, "MixedLiteralKeys");
+const direct_hoist_26 = new NullishRuntype(undefined, "undefined");
+const direct_hoist_27 = new AnyOfRuntype(undefined, [
+    direct_hoist_26,
     direct_hoist_0
 ]);
-const direct_hoist_25 = new NullishRuntype(undefined, "void");
-const direct_hoist_26 = new AnyOfRuntype(undefined, [
-    direct_hoist_25,
+const direct_hoist_28 = new NullishRuntype(undefined, "void");
+const direct_hoist_29 = new AnyOfRuntype(undefined, [
+    direct_hoist_28,
     direct_hoist_0
 ]);
-const direct_hoist_27 = new NullishRuntype(undefined, "null");
-const direct_hoist_28 = new AnyOfRuntype(undefined, [
-    direct_hoist_27,
+const direct_hoist_30 = new NullishRuntype(undefined, "null");
+const direct_hoist_31 = new AnyOfRuntype(undefined, [
+    direct_hoist_30,
     direct_hoist_0
 ]);
-const direct_hoist_29 = new ObjectRuntype(undefined, {
+const direct_hoist_32 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
-    "b": direct_hoist_24,
-    "c": direct_hoist_26,
-    "d": direct_hoist_28,
+    "b": direct_hoist_27,
+    "c": direct_hoist_29,
+    "d": direct_hoist_31,
     "e": direct_hoist_0
 }, []);
-const direct_hoist_30 = new AnyRuntype(undefined);
-const direct_hoist_31 = new TypeofRuntype(undefined, "boolean");
-const direct_hoist_32 = new ConstRuntype(undefined, "constant value");
-const direct_hoist_33 = new TypeofRuntype(undefined, "number");
-const direct_hoist_34 = new ObjectRuntype(undefined, {
+const direct_hoist_33 = new AnyRuntype(undefined);
+const direct_hoist_34 = new TypeofRuntype(undefined, "boolean");
+const direct_hoist_35 = new ConstRuntype(undefined, "constant value");
+const direct_hoist_36 = new TypeofRuntype(undefined, "number");
+const direct_hoist_37 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
-    "b": direct_hoist_24,
-    "c": direct_hoist_26,
-    "d": direct_hoist_28,
+    "b": direct_hoist_27,
+    "c": direct_hoist_29,
+    "d": direct_hoist_31,
     "e": new OptionalFieldRuntype(direct_hoist_0)
 }, []);
-const direct_hoist_35 = new ObjectRuntype(undefined, {
+const direct_hoist_38 = new ObjectRuntype(undefined, {
     "v": direct_hoist_0
 }, []);
-const direct_hoist_36 = new ObjectRuntype(undefined, {
-    "v": direct_hoist_33
+const direct_hoist_39 = new ObjectRuntype(undefined, {
+    "v": direct_hoist_36
 }, []);
-const direct_hoist_37 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_33,
+const direct_hoist_40 = new ObjectRuntype(undefined, {
+    "a": direct_hoist_36,
     "b": direct_hoist_0
 }, []);
-const direct_hoist_38 = new ArrayRuntype(undefined, direct_hoist_31);
-const direct_hoist_39 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_31,
-    "b": direct_hoist_38
+const direct_hoist_41 = new ArrayRuntype(undefined, direct_hoist_34);
+const direct_hoist_42 = new ObjectRuntype(undefined, {
+    "a": direct_hoist_34,
+    "b": direct_hoist_41
 }, []);
-const direct_hoist_40 = new ArrayRuntype(undefined, direct_hoist_33);
-const direct_hoist_41 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_33,
-    "b": direct_hoist_40
+const direct_hoist_43 = new ArrayRuntype(undefined, direct_hoist_36);
+const direct_hoist_44 = new ObjectRuntype(undefined, {
+    "a": direct_hoist_36,
+    "b": direct_hoist_43
 }, []);
-const direct_hoist_42 = new RefRuntype(undefined, "DefaultG");
-const direct_hoist_43 = new RefRuntype(undefined, "DefaultG_number");
-const direct_hoist_44 = new RefRuntype(undefined, "DefaultH_number");
-const direct_hoist_45 = new RefRuntype(undefined, "DefaultI_boolean");
-const direct_hoist_46 = new RefRuntype(undefined, "DefaultP_number");
-const direct_hoist_47 = new ObjectRuntype(undefined, {
-    "g": direct_hoist_42,
-    "gn": direct_hoist_43,
-    "h": direct_hoist_44,
-    "i": direct_hoist_45,
-    "p": direct_hoist_46
+const direct_hoist_45 = new RefRuntype(undefined, "DefaultG");
+const direct_hoist_46 = new RefRuntype(undefined, "DefaultG_number");
+const direct_hoist_47 = new RefRuntype(undefined, "DefaultH_number");
+const direct_hoist_48 = new RefRuntype(undefined, "DefaultI_boolean");
+const direct_hoist_49 = new RefRuntype(undefined, "DefaultP_number");
+const direct_hoist_50 = new ObjectRuntype(undefined, {
+    "g": direct_hoist_45,
+    "gn": direct_hoist_46,
+    "h": direct_hoist_47,
+    "i": direct_hoist_48,
+    "p": direct_hoist_49
 }, []);
-const direct_hoist_48 = new AnyOfConstsRuntype(undefined, [
+const direct_hoist_51 = new AnyOfConstsRuntype(undefined, [
     "blue",
     "red"
 ]);
-const direct_hoist_49 = new ArrayRuntype(undefined, direct_hoist_0);
-const direct_hoist_50 = new ObjectRuntype(undefined, {
-    "BAR_OPTION": direct_hoist_48,
-    "BAZ_VALUES": direct_hoist_49,
+const direct_hoist_52 = new ArrayRuntype(undefined, direct_hoist_0);
+const direct_hoist_53 = new ObjectRuntype(undefined, {
+    "BAR_OPTION": direct_hoist_51,
+    "BAZ_VALUES": direct_hoist_52,
     "FOO_VALUE": direct_hoist_0
 }, []);
-const direct_hoist_51 = new RegexRuntype(undefined, /^(alpha_entity_)([\s\S]*)$/, "`alpha_entity_${string}`");
-const direct_hoist_52 = new RegexRuntype(undefined, /^(beta-entity-)([\s\S]*)$/, "`beta-entity-${string}`");
-const direct_hoist_53 = new AnyOfRuntype(undefined, [
-    direct_hoist_51,
-    direct_hoist_52
+const direct_hoist_54 = new RegexRuntype(undefined, /^(alpha_entity_)([\s\S]*)$/, "`alpha_entity_${string}`");
+const direct_hoist_55 = new RegexRuntype(undefined, /^(beta-entity-)([\s\S]*)$/, "`beta-entity-${string}`");
+const direct_hoist_56 = new AnyOfRuntype(undefined, [
+    direct_hoist_54,
+    direct_hoist_55
 ]);
-const direct_hoist_54 = new ObjectRuntype(undefined, {
+const direct_hoist_57 = new ObjectRuntype(undefined, {
     "alpha": new OptionalFieldRuntype(direct_hoist_0),
     "beta": new OptionalFieldRuntype(direct_hoist_0)
 }, [
     {
-        "key": direct_hoist_53,
+        "key": direct_hoist_56,
         "value": new OptionalFieldRuntype(direct_hoist_0)
     }
 ]);
-const direct_hoist_55 = new ObjectRuntype(undefined, {
+const direct_hoist_58 = new ObjectRuntype(undefined, {
     "alpha": direct_hoist_0,
     "beta": direct_hoist_0
 }, [
     {
-        "key": direct_hoist_53,
+        "key": direct_hoist_56,
         "value": direct_hoist_0
     }
 ]);
-const direct_hoist_56 = new ConstRuntype(undefined, "alpha");
-const direct_hoist_57 = new ConstRuntype(undefined, "beta");
-const direct_hoist_58 = new AnyOfRuntype(undefined, [
-    direct_hoist_56,
-    direct_hoist_51,
-    direct_hoist_57,
-    direct_hoist_52
+const direct_hoist_59 = new ConstRuntype(undefined, "alpha");
+const direct_hoist_60 = new ConstRuntype(undefined, "beta");
+const direct_hoist_61 = new AnyOfRuntype(undefined, [
+    direct_hoist_59,
+    direct_hoist_54,
+    direct_hoist_60,
+    direct_hoist_55
 ]);
-const direct_hoist_59 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_33,
-    "b": direct_hoist_33
+const direct_hoist_62 = new ObjectRuntype(undefined, {
+    "1": direct_hoist_0,
+    "a": direct_hoist_0
 }, []);
-const direct_hoist_60 = new ObjectRuntype(undefined, {
+const direct_hoist_63 = new ObjectRuntype(undefined, {
+    "a": direct_hoist_36,
+    "b": direct_hoist_36
+}, []);
+const direct_hoist_64 = new ObjectRuntype(undefined, {
     "label": direct_hoist_0,
-    "outer": direct_hoist_59
+    "outer": direct_hoist_63
 }, []);
-const direct_hoist_61 = new ObjectRuntype(undefined, {}, [
+const direct_hoist_65 = new ObjectRuntype(undefined, {}, [
     {
         "key": new NumberKeyRuntype(undefined),
-        "value": direct_hoist_31
+        "value": direct_hoist_34
     }
 ]);
-const direct_hoist_62 = new ObjectRuntype(undefined, {}, [
+const direct_hoist_66 = new ObjectRuntype(undefined, {}, [
     {
         "key": new NumberKeyRuntype(undefined),
         "value": direct_hoist_0
     }
 ]);
-const direct_hoist_63 = new RegexRuntype(undefined, /^(x_)([\s\S]*)$/, "`x_${string}`");
-const direct_hoist_64 = new ObjectRuntype(undefined, {}, [
+const direct_hoist_67 = new ObjectRuntype(undefined, {
+    "1": direct_hoist_0,
+    "2": direct_hoist_0
+}, []);
+const direct_hoist_68 = new RegexRuntype(undefined, /^(x_)([\s\S]*)$/, "`x_${string}`");
+const direct_hoist_69 = new ObjectRuntype(undefined, {}, [
     {
         "key": new AnyOfRuntype(undefined, [
             new NumberKeyRuntype(undefined),
-            direct_hoist_63
+            direct_hoist_68
         ]),
         "value": direct_hoist_0
     }
 ]);
-const direct_hoist_65 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_33,
-    "b": direct_hoist_33
+const direct_hoist_70 = new ObjectRuntype(undefined, {
+    "1": new OptionalFieldRuntype(direct_hoist_0),
+    "2": new OptionalFieldRuntype(direct_hoist_0)
+}, []);
+const direct_hoist_71 = new ObjectRuntype(undefined, {
+    "a": direct_hoist_36,
+    "b": direct_hoist_36
 }, [
     {
-        "key": direct_hoist_63,
-        "value": direct_hoist_33
+        "key": direct_hoist_68,
+        "value": direct_hoist_36
     }
 ]);
-const direct_hoist_66 = new ObjectRuntype(undefined, {
-    "a": new OptionalFieldRuntype(direct_hoist_33),
-    "b": new OptionalFieldRuntype(direct_hoist_33)
+const direct_hoist_72 = new ObjectRuntype(undefined, {
+    "a": new OptionalFieldRuntype(direct_hoist_36),
+    "b": new OptionalFieldRuntype(direct_hoist_36)
 }, []);
-const direct_hoist_67 = new ObjectRuntype(undefined, {}, [
+const direct_hoist_73 = new ObjectRuntype(undefined, {}, [
     {
-        "key": direct_hoist_63,
-        "value": direct_hoist_33
+        "key": direct_hoist_68,
+        "value": direct_hoist_36
     }
 ]);
-const direct_hoist_68 = new ObjectRuntype(undefined, {}, [
+const direct_hoist_74 = new ObjectRuntype(undefined, {}, [
     {
-        "key": direct_hoist_63,
-        "value": new OptionalFieldRuntype(direct_hoist_33)
+        "key": direct_hoist_68,
+        "value": new OptionalFieldRuntype(direct_hoist_36)
     }
 ]);
-const direct_hoist_69 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_49,
-    "b": direct_hoist_49
+const direct_hoist_75 = new ObjectRuntype(undefined, {
+    "a": direct_hoist_52,
+    "b": direct_hoist_52
 }, []);
 const namedRuntypes = {
-    "AfterRequired": direct_hoist_29,
-    "AliasToAny": direct_hoist_30,
-    "AliasToBoolean": direct_hoist_31,
-    "AliasToConst": direct_hoist_32,
-    "AliasToNull": direct_hoist_27,
-    "AliasToNumber": direct_hoist_33,
+    "AfterRequired": direct_hoist_32,
+    "AliasToAny": direct_hoist_33,
+    "AliasToBoolean": direct_hoist_34,
+    "AliasToConst": direct_hoist_35,
+    "AliasToNull": direct_hoist_30,
+    "AliasToNumber": direct_hoist_36,
     "AliasToString": direct_hoist_0,
-    "BeforeRequired": direct_hoist_34,
-    "DefaultG": direct_hoist_35,
-    "DefaultG_number": direct_hoist_36,
-    "DefaultH_number": direct_hoist_37,
-    "DefaultI_boolean": direct_hoist_39,
-    "DefaultP_number": direct_hoist_41,
-    "DefaultTypeParams": direct_hoist_47,
-    "KnownConstants": direct_hoist_50,
-    "Meta": direct_hoist_54,
-    "Meta2": direct_hoist_55,
-    "MetaKey": direct_hoist_58,
-    "NestedOrder": direct_hoist_60,
-    "NumberIndex": direct_hoist_61,
-    "NumberKeys": direct_hoist_62,
-    "NumberOrTemplateKeys": direct_hoist_64,
-    "R": direct_hoist_65,
-    "R2": direct_hoist_59,
-    "R3": direct_hoist_66,
-    "R4": direct_hoist_67,
-    "R5": direct_hoist_68,
-    "TestHoist": direct_hoist_69
+    "BeforeRequired": direct_hoist_37,
+    "DefaultG": direct_hoist_38,
+    "DefaultG_number": direct_hoist_39,
+    "DefaultH_number": direct_hoist_40,
+    "DefaultI_boolean": direct_hoist_42,
+    "DefaultP_number": direct_hoist_44,
+    "DefaultTypeParams": direct_hoist_50,
+    "KnownConstants": direct_hoist_53,
+    "Meta": direct_hoist_57,
+    "Meta2": direct_hoist_58,
+    "MetaKey": direct_hoist_61,
+    "MixedLiteralKeys": direct_hoist_62,
+    "NestedOrder": direct_hoist_64,
+    "NumberIndex": direct_hoist_65,
+    "NumberKeys": direct_hoist_66,
+    "NumberLiteralKeys": direct_hoist_67,
+    "NumberOrTemplateKeys": direct_hoist_69,
+    "PartialNumberLiteralKeys": direct_hoist_70,
+    "R": direct_hoist_71,
+    "R2": direct_hoist_63,
+    "R3": direct_hoist_72,
+    "R4": direct_hoist_73,
+    "R5": direct_hoist_74,
+    "TestHoist": direct_hoist_75
 };
 const buildParsersInput = {
     "Dec": direct_hoist_0,
@@ -311,7 +329,10 @@ const buildParsersInput = {
     "NumberKeys": direct_hoist_19,
     "NumberIndex": direct_hoist_20,
     "NumberOrTemplateKeys": direct_hoist_21,
-    "DefaultTypeParams": direct_hoist_22
+    "DefaultTypeParams": direct_hoist_22,
+    "NumberLiteralKeys": direct_hoist_23,
+    "PartialNumberLiteralKeys": direct_hoist_24,
+    "MixedLiteralKeys": direct_hoist_25
 };
 
 export default { buildParsers };
