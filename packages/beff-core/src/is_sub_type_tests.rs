@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use beff_core::{
+    use crate::{
         BffFileName, NamedSchema, RuntypeName, RuntypeUUID, TypeAddress,
         ast::runtype::{
             CustomFormat, IndexedProperty, Runtype, RuntypeConst, RuntypeKind, TplLitType,
@@ -1048,11 +1048,11 @@ mod tests {
         let mut ctx = SemTypeContext::new();
 
         let format_amount = Runtype::number_with_format(CustomFormat("amount".into(), vec![]));
-        let literal_42 = Runtype::const_(RuntypeConst::Number(beff_core::ast::json::N::parse_f64(
+        let literal_42 = Runtype::const_(RuntypeConst::Number(crate::ast::json::N::parse_f64(
             42.0,
         )));
         let literal_100 = Runtype::const_(RuntypeConst::Number(
-            beff_core::ast::json::N::parse_f64(100.0),
+            crate::ast::json::N::parse_f64(100.0),
         ));
 
         let format_sem = format_amount

@@ -14,7 +14,6 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use swc_common::FileName;
 use swc_common::SourceMap;
-use swc_common::Spanned;
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportAll;
 use swc_ecma_ast::ExportDecl;
@@ -39,7 +38,7 @@ pub trait FsModuleResolver {
         module_specifier: &str,
     ) -> Option<BffFileName>;
 }
-pub struct ImportsVisitor<'a, R: FsModuleResolver> {
+pub(crate) struct ImportsVisitor<'a, R: FsModuleResolver> {
     pub resolver: &'a mut R,
     pub imports: HashMap<String, Rc<ImportReference>>,
     pub symbol_exports: SymbolsExportsModule,
@@ -47,7 +46,7 @@ pub struct ImportsVisitor<'a, R: FsModuleResolver> {
     pub unresolved_exports: Vec<UnresolvedExport>,
 }
 impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
-    pub fn from_file(current_file: BffFileName, resolver: &'a mut R) -> ImportsVisitor<'a, R> {
+    pub(crate) fn from_file(current_file: BffFileName, resolver: &'a mut R) -> ImportsVisitor<'a, R> {
         ImportsVisitor {
             imports: HashMap::new(),
             symbol_exports: SymbolsExportsModule::new(),
@@ -94,10 +93,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
         if let Some(v) = v {
             self.imports.insert(
                 local.sym.to_string(),
-                Rc::new(ImportReference::Star {
-                    file_name: v,
-                    import_statement_anchor: Anchor::new(self.current_file.clone(), local.span),
-                }),
+                Rc::new(ImportReference::Star { file_name: v }),
             );
         }
     }
@@ -160,22 +156,16 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     if let Pat::Ident(it) = &it.name
                         && let Some(ann) = &it.type_ann
                     {
-                        let name = it.sym.clone();
                         let export = Rc::new(SymbolExport::ExprDecl {
                             ty: Rc::new(*ann.type_ann.clone()),
-                            name: name.to_string(),
-                            span: it.span,
                             original_file: self.current_file.clone(),
                         });
                         self.symbol_exports.insert_value(it.sym.to_string(), export);
                     } else if let Some(expr) = &it.init
                         && let Pat::Ident(it) = &it.name
                     {
-                        let name = it.sym.clone();
                         let export = Rc::new(SymbolExport::ValueExpr {
                             expr: Rc::new(*expr.clone()),
-                            name: name.to_string(),
-                            span: it.span,
                             original_file: self.current_file.clone(),
                         });
                         self.symbol_exports.insert_value(it.sym.to_string(), export);
@@ -204,10 +194,6 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                     Rc::new(SymbolExport::StarOfOtherFile {
                                         reference: ImportReference::Star {
                                             file_name: file_name.clone(),
-                                            import_statement_anchor: Anchor::new(
-                                                self.current_file.clone(),
-                                                id.span,
-                                            ),
                                         }
                                         .into(),
                                     }),
@@ -257,7 +243,6 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                 };
                                 self.unresolved_exports.push(UnresolvedExport {
                                     name: id.sym.to_string(),
-                                    span: id.span,
                                     renamed,
                                 });
                             }
@@ -324,7 +309,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     let mut symbol_exports = v.symbol_exports;
     for unresolved in v.unresolved_exports {
         let renamed = unresolved.renamed;
-        let js_word = unresolved.name.clone();
         let k = unresolved.name.to_string();
         if let Some(ts_type) = locals.content.type_aliases.get(&k) {
             symbol_exports.insert_type(
@@ -367,8 +351,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 renamed.to_string(),
                 Rc::new(SymbolExport::ValueExpr {
                     expr: v.clone(),
-                    name: js_word.clone(),
-                    span: v.span(),
                     original_file: file_name.clone(),
                 }),
             );
@@ -380,8 +362,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 renamed.to_string(),
                 Rc::new(SymbolExport::ExprDecl {
                     ty: v.clone(),
-                    name: js_word.clone(),
-                    span: v.span(),
                     original_file: file_name.clone(),
                 }),
             );

@@ -10,7 +10,7 @@ use anyhow::{Result, bail};
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
-pub fn intersect_mapping(
+pub(crate) fn intersect_mapping(
     m1: Rc<MappingAtomicType>,
     m2: Rc<MappingAtomicType>,
     ctx: &mut SemTypeContext,
@@ -423,7 +423,7 @@ fn check_mapping_empty(
     Ok(true)
 }
 
-pub fn mapping_is_empty_impl(
+pub(crate) fn mapping_is_empty_impl(
     dnf: Rc<Dnf>,
     ctx: &mut SemTypeContext,
     is_map: bool,

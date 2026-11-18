@@ -2,7 +2,7 @@ use crate::diag::{DiagnosticInformation, Location};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub enum WasmDiagnosticInformation {
+pub(crate) enum WasmDiagnosticInformation {
     KnownFile {
         message: String,
         file_name: String,
@@ -19,7 +19,7 @@ pub enum WasmDiagnosticInformation {
 }
 
 impl WasmDiagnosticInformation {
-    pub fn from_diagnostic_info(info: &DiagnosticInformation) -> WasmDiagnosticInformation {
+    pub(crate) fn from_diagnostic_info(info: &DiagnosticInformation) -> WasmDiagnosticInformation {
         match info.loc {
             Location::Full(ref f) => WasmDiagnosticInformation::KnownFile {
                 message: info.message.clone().to_string(),

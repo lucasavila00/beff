@@ -13,7 +13,7 @@ use swc_ecma_ast::{CallExpr, Callee, Expr, MemberExpr, MemberProp};
 use swc_ecma_visit::Visit;
 
 #[derive(Debug)]
-pub struct BuiltDecoder {
+pub(crate) struct BuiltDecoder {
     pub exported_name: String,
     pub schema: Runtype,
 }
@@ -21,11 +21,8 @@ pub struct BuiltDecoder {
 #[derive(Debug)]
 pub struct ParserExtractResult {
     pub errors: Vec<DiagnosticInformation>,
-    pub entry_file_name: BffFileName,
-    pub validators: Vec<NamedSchema>,
-    pub built_decoders: Option<Vec<BuiltDecoder>>,
-    pub counter: usize,
-    pub recursive_generic_uuids: BTreeSet<RuntypeUUID>,
+    pub(crate) validators: Vec<NamedSchema>,
+    pub(crate) built_decoders: Option<Vec<BuiltDecoder>>,
 }
 
 struct ExtractParserVisitor<'a, R: FileManager> {
@@ -35,7 +32,6 @@ struct ExtractParserVisitor<'a, R: FileManager> {
     errors: Vec<DiagnosticInformation>,
     built_decoders: Option<Vec<BuiltDecoder>>,
     settings: &'a BeffUserSettings,
-    counter: usize,
     recursive_generic_uuids: BTreeSet<RuntypeUUID>,
 }
 impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
@@ -51,7 +47,6 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             errors: vec![],
             built_decoders: None,
             settings,
-            counter: 0,
             recursive_generic_uuids: BTreeSet::new(),
         }
     }
@@ -60,7 +55,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
 impl<R: FileManager> ExtractParserVisitor<'_, R> {
     fn build_error(&self, span: &Span, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
         let file = self.files.get_existing_file(&self.current_file);
-        Location::build(file, span, &self.current_file).to_info(msg)
+        Location::build(file, span, &self.current_file).into_info(msg)
     }
     fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) {
         self.errors.push(self.build_error(span, msg));
@@ -176,29 +171,16 @@ impl<R: FileManager> Visit for ExtractParserVisitor<'_, R> {
     }
 }
 
-pub fn extract_parser<R: FileManager>(
+pub(crate) fn extract_parser<R: FileManager>(
     files: &mut R,
     entry_file_name: BffFileName,
     settings: &BeffUserSettings,
 ) -> ParserExtractResult {
-    let (errors, validators, built_decoders, counter, recursive_generic_uuids) = {
-        let mut visitor = ExtractParserVisitor::new(files, entry_file_name.clone(), settings);
-        let _ = visitor.visit_current_file();
-        (
-            visitor.errors,
-            visitor.validators,
-            visitor.built_decoders,
-            visitor.counter,
-            visitor.recursive_generic_uuids,
-        )
-    };
-
+    let mut visitor = ExtractParserVisitor::new(files, entry_file_name, settings);
+    let _ = visitor.visit_current_file();
     ParserExtractResult {
-        errors,
-        entry_file_name,
-        validators,
-        built_decoders,
-        counter,
-        recursive_generic_uuids,
+        errors: visitor.errors,
+        validators: visitor.validators,
+        built_decoders: visitor.built_decoders,
     }
 }

@@ -6,7 +6,7 @@ use swc_ecma_ast::{
 use swc_ecma_visit::Visit;
 
 #[derive(Debug)]
-pub struct ParsedModuleLocals {
+pub(crate) struct ParsedModuleLocals {
     pub type_aliases: HashMap<String, Rc<TsTypeAliasDecl>>,
     pub interfaces: HashMap<String, Rc<TsInterfaceDecl>>,
     pub enums: HashMap<String, Rc<TsEnumDecl>>,
@@ -15,7 +15,7 @@ pub struct ParsedModuleLocals {
     pub exprs_decls: HashMap<String, Rc<TsType>>,
 }
 impl ParsedModuleLocals {
-    pub fn new() -> ParsedModuleLocals {
+    pub(crate) fn new() -> ParsedModuleLocals {
         ParsedModuleLocals {
             type_aliases: HashMap::new(),
             interfaces: HashMap::new(),
@@ -31,7 +31,7 @@ impl Default for ParsedModuleLocals {
         Self::new()
     }
 }
-pub struct ParserOfModuleLocals {
+pub(crate) struct ParserOfModuleLocals {
     pub content: ParsedModuleLocals,
 }
 impl Default for ParserOfModuleLocals {
@@ -40,13 +40,13 @@ impl Default for ParserOfModuleLocals {
     }
 }
 impl ParserOfModuleLocals {
-    pub fn new() -> ParserOfModuleLocals {
+    pub(crate) fn new() -> ParserOfModuleLocals {
         ParserOfModuleLocals {
             content: ParsedModuleLocals::new(),
         }
     }
 
-    pub fn visit_module_item_list(&mut self, it: &[ModuleItem]) {
+    pub(crate) fn visit_module_item_list(&mut self, it: &[ModuleItem]) {
         for it in it {
             match it {
                 ModuleItem::Stmt(Stmt::Decl(decl)) => {
