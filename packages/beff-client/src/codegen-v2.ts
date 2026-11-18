@@ -1317,6 +1317,8 @@ export class TupleRuntype extends BaseRuntype {
           popPath(ctx);
         }
       }
+    } else if (input.length > idx) {
+      acc.push(...buildError(ctx, `expected tuple with ${idx} items, got ${input.length}`, input));
     }
 
     return acc;
