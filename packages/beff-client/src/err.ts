@@ -10,6 +10,9 @@ const prettyPrintValue = (it: unknown): string => {
   if (typeof it === "boolean") {
     return `${it}`;
   }
+  if (typeof it === "bigint") {
+    return `${it}n`;
+  }
   if (it === null) {
     return "null";
   }
