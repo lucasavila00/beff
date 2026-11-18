@@ -24,9 +24,9 @@ jobs:
           pnpm install
           pnpm prettier:check
           pnpm knip
-          pnpm ts
           cargo machete
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           cargo clippy --all-targets -- -D warnings
           DEBUG=true pnpm all
+          pnpm ts
           git diff --exit-code
