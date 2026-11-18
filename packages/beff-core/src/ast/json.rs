@@ -100,19 +100,15 @@ mod tests {
         assert_eq!(num1.integral, 42);
         assert_eq!(num1.fractional, None);
 
-
         let num2 = N::parse_f64(7.12345);
         assert_eq!(num2.integral, 7);
         assert_eq!(num2.fractional, Some(123450000));
 
-
         let f64_value = num2.to_f64();
         assert!((f64_value - 7.12345).abs() < 1e-6);
-
 
         let num3 = N::parse_int(100);
         assert_eq!(num3.integral, 100);
         assert_eq!(num3.fractional, None);
-
     }
 }

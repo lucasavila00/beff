@@ -13,7 +13,7 @@ mod tests {
         },
     };
 
-    pub fn is_sub_type(
+    fn is_sub_type(
         a: &Runtype,
         b: &Runtype,
         a_validators: &[&NamedSchema],
