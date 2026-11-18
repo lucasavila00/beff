@@ -514,6 +514,14 @@ impl Runtype {
         }
     }
 
+    /// A string or number literal used as an object key, in its JS string form (`1` -> `"1"`).
+    pub fn extract_single_property_key_const(&self) -> Option<String> {
+        match &self.kind {
+            RuntypeKind::Const(RuntypeConst::Number(n)) => Some(n.to_js_string()),
+            _ => self.extract_single_string_const(),
+        }
+    }
+
     pub fn single_string_const(it: &str) -> Self {
         Runtype::tpl_lit_type(TplLitType(vec![TplLitTypeItem::StringConst(
             it.to_string(),

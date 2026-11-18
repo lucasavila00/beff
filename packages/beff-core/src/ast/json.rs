@@ -27,6 +27,14 @@ impl N {
         serde_json::Value::Number(v)
     }
 
+    /// The number as JavaScript's `String(n)` prints it, e.g. `1` or `1.5`.
+    pub fn to_js_string(&self) -> String {
+        match self.fractional {
+            None => self.integral.to_string(),
+            Some(_) => self.to_f64().to_string(),
+        }
+    }
+
     pub fn parse_f64(it: f64) -> Self {
         if it.fract() == 0.0 {
             return Self::parse_int(it.trunc() as i64);

@@ -705,3 +705,18 @@ it("number index keys accept numeric strings", () => {
   expect(Codecs.NumberOrTemplateKeys.validate({ 1: "a", x_y: "b" })).toBe(true);
   expect(Codecs.NumberOrTemplateKeys.validate({ y: "a" })).toBe(false);
 });
+
+it("Record with number literal keys", () => {
+  expect(Codecs.NumberLiteralKeys.validate({ 1: "a", 2: "b" })).toBe(true);
+  expect(Codecs.NumberLiteralKeys.validate({})).toBe(false);
+  expect(Codecs.NumberLiteralKeys.validate({ 1: "a" })).toBe(false);
+  expect(Codecs.NumberLiteralKeys.validate({ 1: "a", 2: 2 })).toBe(false);
+
+  expect(Codecs.PartialNumberLiteralKeys.validate({})).toBe(true);
+  expect(Codecs.PartialNumberLiteralKeys.validate({ 1: "a" })).toBe(true);
+  expect(Codecs.PartialNumberLiteralKeys.validate({ 2: 2 })).toBe(false);
+
+  expect(Codecs.MixedLiteralKeys.validate({ 1: "a", a: "b" })).toBe(true);
+  expect(Codecs.MixedLiteralKeys.validate({ a: "b" })).toBe(false);
+  expect(Codecs.MixedLiteralKeys.validate({ 1: "a" })).toBe(false);
+});

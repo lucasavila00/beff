@@ -79,6 +79,38 @@ mod tests {
     }
 
     #[test]
+    fn record_number_literal_keys() {
+        let from = r#"
+    type A = Record<1 | 2, string>;
+    type B = Partial<Record<1 | 2, string>>;
+    type C = Record<1 | "a", string>;
+    type D = Record<1.5 | -3, string>;
+    type E = { [K in 1 | 2]: K };
+    parse.buildParsers<{ A: A, B: B, C: C, D: D, E: E }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type A = { "1": string, "2": string };
+
+        type B = { "1"?: string, "2"?: string };
+
+        type C = { "1": string, "a": string };
+
+        type D = { "-3": string, "1.5": string };
+
+        type E = { "1": 1, "2": 2 };
+
+
+        type BuiltParsers = {
+          A: A,
+          B: B,
+          C: C,
+          D: D,
+          E: E,
+        }
+        "#);
+    }
+
+    #[test]
     fn keyof_mixed_index_signature() {
         let from = r#"
     type T = { a: string, [k: string]: any };

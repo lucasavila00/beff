@@ -1659,7 +1659,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             let mut consts: Vec<String> = vec![];
                             let mut indexed_parts: Vec<Runtype> = vec![];
                             for part in parts {
-                                match part.extract_single_string_const() {
+                                match part.extract_single_property_key_const() {
                                     Some(s) => consts.push(s),
                                     None => indexed_parts.push(part),
                                 }
@@ -3251,12 +3251,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             return Ok(Runtype::record(key_type, opt_ty));
         }
 
-        let mut string_keys: Vec<String> = vec![];
+        let mut string_keys: Vec<(String, Runtype)> = vec![];
         let mut infinite_keys: Vec<Runtype> = vec![];
 
         for v in values {
-            match v.extract_single_string_const() {
-                Some(s) => string_keys.push(s),
+            match v.extract_single_property_key_const() {
+                Some(s) => string_keys.push((s, v)),
                 None => infinite_keys.push(v),
             }
         }
@@ -3279,9 +3279,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         };
 
         let mut vs: BTreeMap<String, Optionality<Runtype>> = BTreeMap::new();
-        for key in string_keys.into_iter() {
-            self.type_application_stack
-                .push((name.clone(), Runtype::single_string_const(&key)));
+        for (key, key_runtype) in string_keys.into_iter() {
+            self.type_application_stack.push((name.clone(), key_runtype));
 
             let ty = self.extract_type(type_ann, file_name.clone());
             self.type_application_stack.pop();
