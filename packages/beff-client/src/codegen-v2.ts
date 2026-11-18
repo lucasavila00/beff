@@ -357,9 +357,13 @@ export function registerNumberFormatter(name: string, value: UserProvidedNumberF
   numberFormatters[name] = value;
 }
 
-function resolveStringFormatErrorMessage(formats: string[], input: string): string | undefined {
+function resolveFormatErrorMessage<T>(
+  formatters: Record<string, { errorMessage?: (input: T) => string }>,
+  formats: string[],
+  input: T,
+): string | undefined {
   for (const f of [...formats].reverse()) {
-    const formatter = stringFormatters[f];
+    const formatter = formatters[f];
     const errorMessage = formatter?.errorMessage;
     if (errorMessage != null) {
       return errorMessage(input);
@@ -368,15 +372,33 @@ function resolveStringFormatErrorMessage(formats: string[], input: string): stri
   return undefined;
 }
 
-function resolveNumberFormatErrorMessage(formats: string[], input: number): string | undefined {
-  for (const f of [...formats].reverse()) {
-    const formatter = numberFormatters[f];
-    const errorMessage = formatter?.errorMessage;
-    if (errorMessage != null) {
-      return errorMessage(input);
-    }
+function describeFormats(typeName: "String" | "Number", formats: string[]): string {
+  if (formats.length === 0) {
+    throw new Error("INTERNAL ERROR: No formats provided");
   }
-  return undefined;
+  const [first, ...rest] = formats;
+  let acc = `${typeName}Format<"${first}">`;
+  for (const r of rest) {
+    acc = `${typeName}FormatExtends<${acc}, "${r}">`;
+  }
+  return acc;
+}
+
+function hashFormats(seed: number, formats: string[]): number {
+  let acc: number[] = [seed];
+  for (const f of [...formats].sort()) {
+    acc.push(generateHashFromString(f));
+  }
+  return generateHashFromNumbers(acc);
+}
+
+function hash256Formats(ctx: Hash256Context, tag: string, formats: string[]): void {
+  ctx.writer.updateTag(tag);
+  const sorted = [...formats].sort();
+  ctx.writer.updateNumber(sorted.length);
+  for (const f of sorted) {
+    ctx.writer.updateString(f);
+  }
 }
 
 type TypeDescription = {
@@ -1019,15 +1041,7 @@ export class StringWithFormatRuntype extends BaseRuntype {
     this.formats = formats;
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
-    if (this.formats.length === 0) {
-      throw new Error("INTERNAL ERROR: No formats provided");
-    }
-    const [first, ...rest] = this.formats;
-    let acc = `StringFormat<"${first}">`;
-    for (const r of rest) {
-      acc = `StringFormatExtends<${acc}, "${r}">`;
-    }
-    return acc;
+    return describeFormats("String", this.formats);
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     const finalFormat = this.formats[this.formats.length - 1];
@@ -1063,26 +1077,17 @@ export class StringWithFormatRuntype extends BaseRuntype {
     return buildError(
       ctx,
       typeof input === "string"
-        ? (resolveStringFormatErrorMessage(this.formats, input) ??
+        ? (resolveFormatErrorMessage(stringFormatters, this.formats, input) ??
             `expected string with format "${this.formats.join(" and ")}"`)
         : `expected string with format "${this.formats.join(" and ")}"`,
       input,
     );
   }
   hash(_ctx: HashContext): number {
-    let acc: number[] = [stringWithFormatHash];
-    for (const f of [...this.formats].sort()) {
-      acc.push(generateHashFromString(f));
-    }
-    return generateHashFromNumbers(acc);
+    return hashFormats(stringWithFormatHash, this.formats);
   }
   hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("stringWithFormat");
-    const formats = [...this.formats].sort();
-    ctx.writer.updateNumber(formats.length);
-    for (const f of formats) {
-      ctx.writer.updateString(f);
-    }
+    hash256Formats(ctx, "stringWithFormat", this.formats);
   }
 }
 
@@ -1093,15 +1098,7 @@ export class NumberWithFormatRuntype extends BaseRuntype {
     this.formats = formats;
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
-    if (this.formats.length === 0) {
-      throw new Error("INTERNAL ERROR: No formats provided");
-    }
-    const [first, ...rest] = this.formats;
-    let acc = `NumberFormat<"${first}">`;
-    for (const r of rest) {
-      acc = `NumberFormatExtends<${acc}, "${r}">`;
-    }
-    return acc;
+    return describeFormats("Number", this.formats);
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     const finalFormat = this.formats[this.formats.length - 1];
@@ -1137,26 +1134,17 @@ export class NumberWithFormatRuntype extends BaseRuntype {
     return buildError(
       ctx,
       typeof input === "number"
-        ? (resolveNumberFormatErrorMessage(this.formats, input) ??
+        ? (resolveFormatErrorMessage(numberFormatters, this.formats, input) ??
             `expected number with format "${this.formats.join(" and ")}"`)
         : `expected number with format "${this.formats.join(" and ")}"`,
       input,
     );
   }
   hash(_ctx: HashContext): number {
-    let acc: number[] = [numberWithFormatHash];
-    for (const f of [...this.formats].sort()) {
-      acc.push(generateHashFromString(f));
-    }
-    return generateHashFromNumbers(acc);
+    return hashFormats(numberWithFormatHash, this.formats);
   }
   hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("numberWithFormat");
-    const formats = [...this.formats].sort();
-    ctx.writer.updateNumber(formats.length);
-    for (const f of formats) {
-      ctx.writer.updateString(f);
-    }
+    hash256Formats(ctx, "numberWithFormat", this.formats);
   }
 }
 
