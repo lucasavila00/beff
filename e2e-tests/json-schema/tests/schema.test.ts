@@ -170,7 +170,7 @@ it("works3", () => {
   `);
   expect(Codecs.SemVer.schema()).toMatchInlineSnapshot(`
     {
-      "pattern": "\`\${number}.\${number}.\${number}\`",
+      "pattern": "^(\\\\d+(\\\\.\\\\d+)?)(\\\\.)(\\\\d+(\\\\.\\\\d+)?)(\\\\.)(\\\\d+(\\\\.\\\\d+)?)$",
       "type": "string",
     }
   `);
@@ -365,4 +365,11 @@ it("works3", () => {
   //     "type": "string",
   //   }
   // `);
+});
+
+it("template literal schema pattern is a regular expression that matches valid values", () => {
+  const pattern = new RegExp(Codecs.SemVer.schema().pattern as string);
+  expect(pattern.test("1.2.3")).toBe(true);
+  expect(pattern.test("1.2")).toBe(false);
+  expect(pattern.test("v1.2.3")).toBe(false);
 });

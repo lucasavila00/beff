@@ -881,7 +881,7 @@ export class RegexRuntype extends BaseRuntype {
     return this.description;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
-    return annotateSchema(this.metadata, { type: "string", pattern: this.description });
+    return annotateSchema(this.metadata, { type: "string", pattern: this.regex.source });
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
     if (typeof input === "string") {

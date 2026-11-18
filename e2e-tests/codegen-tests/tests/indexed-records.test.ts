@@ -28,7 +28,7 @@ it("R: regular syntax with infinite indexed key", () => {
             "type": "number",
           },
           "propertyNames": {
-            "pattern": "\`x_\${string}\`",
+            "pattern": "^(x_)(.*)$",
             "type": "string",
           },
           "type": "object",
@@ -210,7 +210,7 @@ it("R4: mapped infinite required value", () => {
         "type": "number",
       },
       "propertyNames": {
-        "pattern": "\`x_\${string}\`",
+        "pattern": "^(x_)(.*)$",
         "type": "string",
       },
       "type": "object",
@@ -303,7 +303,7 @@ it("R5: mapped infinite optional value", () => {
         ],
       },
       "propertyNames": {
-        "pattern": "\`x_\${string}\`",
+        "pattern": "^(x_)(.*)$",
         "type": "string",
       },
       "type": "object",
@@ -394,11 +394,11 @@ it("Meta: Partial<Record<MixedUnion, V>>", () => {
           "propertyNames": {
             "anyOf": [
               {
-                "pattern": "\`alpha_entity_\${string}\`",
+                "pattern": "^(alpha_entity_)(.*)$",
                 "type": "string",
               },
               {
-                "pattern": "\`beta-entity-\${string}\`",
+                "pattern": "^(beta-entity-)(.*)$",
                 "type": "string",
               },
             ],
@@ -550,11 +550,11 @@ it("Meta2: Record<MixedUnion, V>", () => {
           "propertyNames": {
             "anyOf": [
               {
-                "pattern": "\`alpha_entity_\${string}\`",
+                "pattern": "^(alpha_entity_)(.*)$",
                 "type": "string",
               },
               {
-                "pattern": "\`beta-entity-\${string}\`",
+                "pattern": "^(beta-entity-)(.*)$",
                 "type": "string",
               },
             ],
