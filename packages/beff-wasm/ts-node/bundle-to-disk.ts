@@ -81,7 +81,7 @@ export const execProject = (
 
   const outputDir = path.join(path.dirname(projectPath), projectJson.outputDir);
   if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir);
+    fs.mkdirSync(outputDir, { recursive: true });
   }
 
   const bundleStart = Date.now();
