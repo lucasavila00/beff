@@ -128,8 +128,13 @@ impl TplLitTypeItem {
 
     pub fn regex_expr(&self) -> String {
         match self {
-            TplLitTypeItem::String => "(.*)".to_string(),
-            TplLitTypeItem::Number => r"(\d+(\.\d+)?)".to_string(),
+            // `[\s\S]` also matches line breaks, without relying on the `s` flag.
+            TplLitTypeItem::String => r"([\s\S]*)".to_string(),
+            // Decimal forms of a finite number, as `String(n)` prints them: optional `-`,
+            // digits with an optional fraction or a leading-dot fraction, optional exponent.
+            // "Infinity" and "NaN" are not accepted (TypeScript rejects non-finite values).
+            // Other forms TypeScript accepts, such as "+1" or "0x10", are not accepted.
+            TplLitTypeItem::Number => r"(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)".to_string(),
             TplLitTypeItem::Boolean => "(true|false)".to_string(),
             TplLitTypeItem::OneOf(vs) => {
                 let mut vs = vs.iter().collect::<Vec<_>>();

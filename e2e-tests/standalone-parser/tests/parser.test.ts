@@ -49,6 +49,9 @@ import {
   M1Codec,
   S1,
   S1Codec,
+  PrefixedString,
+  KeyedNumber,
+  FlagTpl,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
@@ -1104,4 +1107,33 @@ it("template literal types match the full string", () => {
   expect(AccessLevelTpl.validate("ADMIN")).toBe(true);
   expect(AccessLevelTpl.validate("ADMINISTRATOR")).toBe(false);
   expect(AccessLevelTpl.validate("NOT_USER")).toBe(false);
+});
+
+it("template literal ${number} accepts JS numeric forms", () => {
+  for (const ok of ["0", "-1", "1.5", "-1.5", "1.", ".5", "-.5", "1e3", "1E3", "1e+21", "1e-7", "-1.5e-7"]) {
+    expect(KeyedNumber.validate(`a-${ok}`)).toBe(true);
+  }
+  for (const n of [-1, 0.5, 1e21, 1e-7, 123.456, -0]) {
+    expect(AvatarSize.validate(`${n}x${n}`)).toBe(true);
+  }
+  for (const bad of ["", "-", ".", "e3", "1e", "1e+", "--1", "1x", "Infinity", "NaN"]) {
+    expect(KeyedNumber.validate(`a-${bad}`)).toBe(false);
+  }
+  expect(KeyedNumber.validate("b-2")).toBe(true);
+  expect(KeyedNumber.validate("c-2")).toBe(false);
+  expect(Version.validate("1.2.3")).toBe(true);
+  expect(Version.validate("-1.2e3.3")).toBe(true);
+});
+
+it("template literal ${string} accepts line breaks", () => {
+  expect(PrefixedString.validate("a")).toBe(true);
+  expect(PrefixedString.validate("a\nb")).toBe(true);
+  expect(PrefixedString.validate("a\r\n\u2028b")).toBe(true);
+  expect(PrefixedString.validate("b\na")).toBe(false);
+});
+
+it("template literal ${boolean} matches true or false", () => {
+  expect(FlagTpl.validate("true")).toBe(true);
+  expect(FlagTpl.validate("false")).toBe(true);
+  expect(FlagTpl.validate("truex")).toBe(false);
 });
