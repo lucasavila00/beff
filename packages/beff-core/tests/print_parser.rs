@@ -2534,4 +2534,49 @@ mod tests {
         };
         "#);
     }
+    #[test]
+    fn ok_generic_default_type_params() {
+        let from = r#"
+    type G<T = string> = { v: T };
+    interface I<T = boolean> { v: T }
+    type H<A, B = string> = { a: A, b: B };
+    type P<A, B = A[]> = { a: A, b: B };
+    interface Q<A, B = A[]> { a: A, b: B }
+    parse.buildParsers<{
+        G0: G,
+        G1: G<number>,
+        I0: I,
+        H1: H<number>,
+        H2: H<number, boolean>,
+        P1: P<number>,
+        Q1: Q<string>,
+    }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type G = { "v": string };
+
+        type G__number__ = { "v": number };
+
+        type H__number__ = { "a": number, "b": string };
+
+        type H__number_boolean__ = { "a": number, "b": boolean };
+
+        type I = { "v": boolean };
+
+        type P__number__ = { "a": number, "b": Array<number> };
+
+        type Q__string__ = { "a": string, "b": Array<string> };
+
+
+        type BuiltParsers = {
+          G0: G,
+          G1: G__number__,
+          H1: H__number__,
+          H2: H__number_boolean__,
+          I0: I,
+          P1: P__number__,
+          Q1: Q__string__,
+        }
+        "#);
+    }
 }

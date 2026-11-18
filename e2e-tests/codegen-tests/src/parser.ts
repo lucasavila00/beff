@@ -45,6 +45,21 @@ export type NumberKeys = Record<number, string>;
 export type NumberIndex = { [k: number]: boolean };
 export type NumberOrTemplateKeys = Record<number | `x_${string}`, string>;
 
+type DefaultG<T = string> = { v: T };
+type DefaultH<A, B = string> = { a: A; b: B };
+type DefaultP<A, B = A[]> = { a: A; b: B };
+interface DefaultI<A, B = A[]> {
+  a: A;
+  b: B;
+}
+export type DefaultTypeParams = {
+  g: DefaultG;
+  gn: DefaultG<number>;
+  h: DefaultH<number>;
+  p: DefaultP<number>;
+  i: DefaultI<boolean>;
+};
+
 export const Codecs = parse.buildParsers<{
   Dec: string;
   AliasToString: AliasToString;
@@ -68,4 +83,5 @@ export const Codecs = parse.buildParsers<{
   NumberKeys: NumberKeys;
   NumberIndex: NumberIndex;
   NumberOrTemplateKeys: NumberOrTemplateKeys;
+  DefaultTypeParams: DefaultTypeParams;
 }>();
