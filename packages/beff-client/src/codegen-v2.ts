@@ -1830,6 +1830,10 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
     this.ensureContextualDefinition(syntheticRefName, runtype, ctx);
     return printingContext.getRef(syntheticRefName);
   }
+  private getVariant(d: unknown): Runtype | undefined {
+    const key = String(d);
+    return Object.prototype.hasOwnProperty.call(this.mapping, key) ? this.mapping[key] : undefined;
+  }
   validate(ctx: ValidateContext, input: unknown): boolean {
     if (typeof input !== "object" || input == null) {
       return false;
@@ -1838,7 +1842,7 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
     if (d == null) {
       return false;
     }
-    const v = this.mapping[d];
+    const v = this.getVariant(d);
     if (v == null) {
       return false;
     }
@@ -1846,7 +1850,7 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
     return v.validate(ctx, input);
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const parser = this.mapping[input[this.discriminator]];
+    const parser = this.getVariant(input[this.discriminator]);
     if (parser == null) {
       throw new Error(
         "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[this.discriminator]),
@@ -1866,7 +1870,7 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
     if (d == null) {
       return buildError(ctx, "expected discriminator key " + JSON.stringify(this.discriminator), input);
     }
-    const v = this.mapping[d];
+    const v = this.getVariant(d);
     if (v == null) {
       pushPath(ctx, this.discriminator);
       const errs = buildError(
