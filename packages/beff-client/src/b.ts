@@ -40,7 +40,7 @@ const voidParser = buildParserFromRuntype(new NullishRuntype(undefined, "void"),
 const Void_ = (): BeffParser<void> => voidParser;
 
 const nullParser = buildParserFromRuntype(new NullishRuntype(undefined, "null"), "Null", true);
-const Null_ = (): BeffParser<undefined> => nullParser;
+const Null_ = (): BeffParser<null> => nullParser;
 
 const anyParser = buildParserFromRuntype(new AnyRuntype(undefined), "Any", true);
 const Any_ = (): BeffParser<any> => anyParser;
