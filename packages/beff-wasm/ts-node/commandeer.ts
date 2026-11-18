@@ -60,6 +60,7 @@ const logTiming = (verbose: boolean, label: string, start: number) => {
 };
 
 const watching: Record<string, boolean> = {};
+/** @public Called by packages/beff-cli/bin/index.js through the bundled dist-cli/cli.js. */
 export const commanderExec = () => {
   const program = new Command();
 

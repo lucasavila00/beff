@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "includeEntryExports": true,
+  "workspaces": {
+    ".": {
+      "entry": [],
+      "project": []
+    },
+    "packages/beff-client": {
+      "entry": ["src/index.ts", "src/codegen-v2.ts", "script/*.mjs", "tests/**/*.test.ts"],
+      "project": ["src/**/*.ts", "script/**/*.mjs", "tests/**/*.ts"],
+      "includeEntryExports": false,
+      "ignoreDependencies": ["@beff/cli"]
+    },
+    "packages/beff-wasm": {
+      "entry": ["ts-node/commandeer.ts", "script/*.js", "bundled-code/codegen-v2.js"],
+      "project": ["ts-node/**/*.ts", "script/**/*.js", "bundled-code/**/*.js"],
+      "ignore": ["ts-node/tsc-slim/**"],
+      "ignoreDependencies": ["esbuild"]
+    },
+    "packages/beff-cli": {
+      "entry": ["bin/*.js"],
+      "project": []
+    },
+    "e2e-tests/*": {
+      "entry": ["src/**/*.{ts,tsx}", "tests/**/*.test.ts"],
+      "project": ["src/**/*.{ts,tsx}", "tests/**/*.ts"],
+      "includeEntryExports": false
+    }
+  }
+}

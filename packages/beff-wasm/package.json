@@ -1,15 +1,11 @@
 {
   "name": "beff-wasm",
-  "publisher": "beff",
   "version": "0.0.14",
   "description": "",
-  "main": "./dist-ext/extension.js",
   "scripts": {
     "build": "node script/build.js",
     "test": "node script/e2e.js",
-    "do": "npm run build && node ../beff-cli/bin/index.js -v -p /workspace/packages/beff-wasm/vitest/params/bff.json",
-    "ts": "tsc --noEmit",
-    "publish": "pnpm vsce publish --no-dependencies"
+    "ts": "tsc --noEmit"
   },
   "author": "",
   "license": "ISC",
@@ -18,16 +14,13 @@
   },
   "devDependencies": {
     "@babel/code-frame": "^7.22.13",
-    "@beff/cli": "workspace:^0.0.154",
     "@beff/client": "workspace:^0.0.154",
     "@types/babel__code-frame": "^7.0.4",
     "@types/node": "^20.6.2",
     "chalk": "^4.1.2",
     "commander": "^11.0.0",
     "esbuild": "^0.19.3",
-    "fp-ts": "^2.16.1",
     "p-queue": "^6.6.2",
-    "typescript": "^5.2.2",
-    "vitest": "^0.34.4"
+    "typescript": "^5.2.2"
   }
 }

@@ -2,7 +2,6 @@
   "name": "custom-formats",
   "version": "1.0.22",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "beff": "beff -p beff.json",
     "test": "vitest --run --update"

@@ -2,7 +2,6 @@
   "name": "json-schema-generator",
   "version": "1.0.151",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "beff": "beff -p beff.json",
     "test": "vitest --run --update"
