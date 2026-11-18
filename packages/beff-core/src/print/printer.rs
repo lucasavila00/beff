@@ -337,6 +337,21 @@ fn string_lit(s: &str) -> Expr {
     }))
 }
 
+fn array_lit(elems: Vec<Expr>) -> Expr {
+    Expr::Array(ArrayLit {
+        span: DUMMY_SP,
+        elems: elems
+            .into_iter()
+            .map(|it| {
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: it.into(),
+                })
+            })
+            .collect(),
+    })
+}
+
 fn typeof_runtype(t: &str, original_runtype: &Runtype) -> Expr {
     new_runtype_class(
         "TypeofRuntype",
@@ -375,23 +390,12 @@ fn formats_runtype(
     rest: &[String],
     original_runtype: &Runtype,
 ) -> Expr {
-    let vs_arr = Expr::Array(ArrayLit {
-        span: DUMMY_SP,
-        elems: std::iter::once(first)
+    let vs_arr = array_lit(
+        std::iter::once(first)
             .chain(rest.iter())
-            .map(|it| {
-                Some(ExprOrSpread {
-                    spread: None,
-                    expr: Expr::Lit(Lit::Str(Str {
-                        span: DUMMY_SP,
-                        value: it.clone().into(),
-                        raw: None,
-                    }))
-                    .into(),
-                })
-            })
+            .map(|it| string_lit(it))
             .collect(),
-    });
+    );
     new_runtype_class(constructor, vec![vs_arr], original_runtype)
 }
 
@@ -404,18 +408,8 @@ fn print_index_key(key: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Print
             let exprs = vs
                 .iter()
                 .map(|it| print_index_key(it, named_schemas, ctx))
-                .map(|it| {
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: it.into(),
-                    })
-                })
                 .collect();
-            let arr = Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: exprs,
-            });
-            new_runtype_class("AnyOfRuntype", vec![arr], key)
+            new_runtype_class("AnyOfRuntype", vec![array_lit(exprs)], key)
         }
         _ => print_runtype(key, named_schemas, ctx),
     }
@@ -439,19 +433,7 @@ fn runtype_union_or_intersection(
         .iter()
         .map(|schema| print_runtype(schema, named_schemas, ctx))
         .collect::<Vec<Expr>>();
-    let arr = Expr::Array(ArrayLit {
-        span: DUMMY_SP,
-        elems: exprs
-            .into_iter()
-            .map(|it| {
-                Some(ExprOrSpread {
-                    spread: None,
-                    expr: it.into(),
-                })
-            })
-            .collect(),
-    });
-    new_runtype_class(constructor, vec![arr], original_runtype)
+    new_runtype_class(constructor, vec![array_lit(exprs)], original_runtype)
 }
 
 fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
@@ -506,11 +488,7 @@ fn runtype_any_of_discriminated(
         .collect::<Vec<String>>();
     discriminator_strings.sort();
 
-    let disc = Expr::Lit(Lit::Str(Str {
-        span: DUMMY_SP,
-        value: discriminator.clone().into(),
-        raw: None,
-    }));
+    let disc = string_lit(&discriminator);
 
     let schema_mapping_obj = Expr::Object(ObjectLit {
         span: DUMMY_SP,
@@ -567,18 +545,7 @@ fn runtype_any_of_discriminated(
         })
         .collect::<Vec<_>>();
 
-    let flat_values_schema_arr = Expr::Array(ArrayLit {
-        span: DUMMY_SP,
-        elems: flat_values_schema
-            .into_iter()
-            .map(|it| {
-                Some(ExprOrSpread {
-                    spread: None,
-                    expr: it.into(),
-                })
-            })
-            .collect(),
-    });
+    let flat_values_schema_arr = array_lit(flat_values_schema);
 
     new_runtype_class(
         "AnyOfDiscriminatedRuntype",
@@ -789,22 +756,9 @@ fn maybe_runtype_any_of_consts(
             })
             .collect();
 
-        let consts = Expr::Array(ArrayLit {
-            span: DUMMY_SP,
-            elems: consts
-                .into_iter()
-                .map(|it| {
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: it.into(),
-                    })
-                })
-                .collect(),
-        });
-
         return Some(new_runtype_class(
             "AnyOfConstsRuntype",
-            vec![consts],
+            vec![array_lit(consts)],
             original_runtype,
         ));
     }
@@ -866,11 +820,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                         exp: t.regex_expr().into(),
                         flags: "".into(),
                     })),
-                    Expr::Lit(Lit::Str(Str {
-                        span: DUMMY_SP,
-                        value: t.describe().into(),
-                        raw: None,
-                    })),
+                    string_lit(&t.describe()),
                 ],
                 schema,
             ),
@@ -926,18 +876,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                 .iter()
                 .map(|it| print_runtype(it, named_schemas, ctx))
                 .collect::<Vec<Expr>>();
-            let prefix_arr = Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: prefix_item_validators
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: it.into(),
-                        })
-                    })
-                    .collect(),
-            });
+            let prefix_arr = array_lit(prefix_item_validators);
 
             let items = match items {
                 Some(item_schema) => print_runtype(item_schema, named_schemas, ctx),
@@ -1022,18 +961,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                     .collect(),
             });
 
-            let indexed_properties_arr = Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: indexed_properties_props
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: it.into(),
-                        })
-                    })
-                    .collect(),
-            });
+            let indexed_properties_arr = array_lit(indexed_properties_props);
 
             new_runtype_class(
                 "ObjectRuntype",
