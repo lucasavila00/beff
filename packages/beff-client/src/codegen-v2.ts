@@ -2195,7 +2195,7 @@ export class ObjectRuntype extends BaseRuntype {
       }
 
       if (this.indexedPropertiesParser.length > 0) {
-        const extraKeys = inputKeys.filter((k) => !(k in this.properties)).sort();
+        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k)).sort();
         for (const k of extraKeys) {
           const v = input[k];
           for (const p of this.indexedPropertiesParser) {
