@@ -283,6 +283,20 @@ function buildError(ctx: { path: string[] }, message: string, received: unknown)
     },
   ];
 }
+// Reports the errors of the child value at `key`, if it is invalid.
+function reportAtPath(
+  ctx: ReportContext,
+  acc: DecodeError[],
+  key: string,
+  runtype: Runtype,
+  input: unknown,
+): void {
+  if (!runtype.validate(ctx, input)) {
+    pushPath(ctx, key);
+    acc.push(...runtype.reportDecodeError(ctx, input));
+    popPath(ctx);
+  }
+}
 function pushPath(ctx: { path: string[] }, key: string) {
   ctx.path.push(key);
 }
@@ -1295,28 +1309,16 @@ export class TupleRuntype extends BaseRuntype {
 
     let idx = 0;
 
-    let acc = [];
+    let acc: DecodeError[] = [];
 
     for (const prefixItem of this.prefix) {
-      const ok = prefixItem.validate(ctx, input[idx]);
-      if (!ok) {
-        pushPath(ctx, `[${idx}]`);
-        const errors = prefixItem.reportDecodeError(ctx, input[idx]);
-        acc.push(...errors);
-        popPath(ctx);
-      }
+      reportAtPath(ctx, acc, `[${idx}]`, prefixItem, input[idx]);
       idx++;
     }
 
     if (this.rest != null) {
       for (let i = idx; i < input.length; i++) {
-        const ok = this.rest.validate(ctx, input[i]);
-        if (!ok) {
-          pushPath(ctx, `[${i}]`);
-          const errors = this.rest.reportDecodeError(ctx, input[i]);
-          acc.push(...errors);
-          popPath(ctx);
-        }
+        reportAtPath(ctx, acc, `[${i}]`, this.rest, input[i]);
       }
     } else if (input.length > idx) {
       acc.push(...buildError(ctx, `expected tuple with ${idx} items, got ${input.length}`, input));
@@ -1599,16 +1601,9 @@ export class ArrayRuntype extends BaseRuntype {
       return buildError(ctx, "expected array", input);
     }
 
-    let acc = [];
+    let acc: DecodeError[] = [];
     for (let i = 0; i < input.length; i++) {
-      const ok = this.itemParser.validate(ctx, input[i]);
-      if (!ok) {
-        pushPath(ctx, `[${i}]`);
-        const v = input[i];
-        const arr2 = this.itemParser.reportDecodeError(ctx, v);
-        acc.push(...arr2);
-        popPath(ctx);
-      }
+      reportAtPath(ctx, acc, `[${i}]`, this.itemParser, input[i]);
     }
 
     return acc;
@@ -1667,18 +1662,10 @@ export class MapRuntype extends BaseRuntype {
     if (!(input instanceof Map)) {
       return buildError(ctx, "expected Map", input);
     }
-    let acc: DecodeError[] = [];
+    const acc: DecodeError[] = [];
     for (const [k, v] of input) {
-      pushPath(ctx, `key(${stringifyWithBigInt(k)})`);
-      if (!this.keyParser.validate(ctx, k)) {
-        acc = acc.concat(this.keyParser.reportDecodeError(ctx, k));
-      }
-      popPath(ctx);
-      pushPath(ctx, `value(${stringifyWithBigInt(k)})`);
-      if (!this.valueParser.validate(ctx, v)) {
-        acc = acc.concat(this.valueParser.reportDecodeError(ctx, v));
-      }
-      popPath(ctx);
+      reportAtPath(ctx, acc, `key(${stringifyWithBigInt(k)})`, this.keyParser, k);
+      reportAtPath(ctx, acc, `value(${stringifyWithBigInt(k)})`, this.valueParser, v);
     }
     return acc;
   }
@@ -1729,13 +1716,9 @@ export class SetRuntype extends BaseRuntype {
     if (!(input instanceof Set)) {
       return buildError(ctx, "expected Set", input);
     }
-    let acc: DecodeError[] = [];
+    const acc: DecodeError[] = [];
     for (const v of input) {
-      pushPath(ctx, `item(${stringifyWithBigInt(v)})`);
-      if (!this.itemParser.validate(ctx, v)) {
-        acc = acc.concat(this.itemParser.reportDecodeError(ctx, v));
-      }
-      popPath(ctx);
+      reportAtPath(ctx, acc, `item(${stringifyWithBigInt(v)})`, this.itemParser, v);
     }
     return acc;
   }
@@ -2220,18 +2203,12 @@ export class ObjectRuntype extends BaseRuntype {
       return buildError(ctx, "expected object", input);
     }
 
-    let acc = [];
+    let acc: DecodeError[] = [];
 
     const configKeys = Object.keys(this.properties);
 
     for (const k of configKeys) {
-      const ok = this.properties[k].validate(ctx, input[k]);
-      if (!ok) {
-        pushPath(ctx, k);
-        const arr2 = this.properties[k].reportDecodeError(ctx, input[k]);
-        acc.push(...arr2);
-        popPath(ctx);
-      }
+      reportAtPath(ctx, acc, k, this.properties[k], input[k]);
     }
 
     if (this.indexedPropertiesParser.length > 0) {
