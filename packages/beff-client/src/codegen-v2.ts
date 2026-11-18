@@ -570,6 +570,14 @@ function renderTypeAlias(name: string, description: TypeDescription): string {
     : `${jsdocDescription(description.docText)}\n${declaration}`;
 }
 
+// Quote a property name if it is not a valid identifier or a plain number.
+function describePropertyKey(key: string): string {
+  if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) || /^(0|[1-9][0-9]*)$/.test(key)) {
+    return key;
+  }
+  return JSON.stringify(key);
+}
+
 function describeObjectMember(
   ctx: DescribeContext,
   key: string,
@@ -2024,7 +2032,7 @@ export class ObjectRuntype extends BaseRuntype {
     const sortedKeys = Object.keys(this.properties).sort();
     const props = sortedKeys.map((k) => {
       const it = this.properties[k];
-      return describeObjectMember(ctx, k, it);
+      return describeObjectMember(ctx, describePropertyKey(k), it);
     });
 
     const indexProps = this.indexedPropertiesParser.map(({ key, value }) =>
