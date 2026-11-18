@@ -44,6 +44,9 @@ type KnownConstants = typeof constants;
 export type NumberKeys = Record<number, string>;
 export type NumberIndex = { [k: number]: boolean };
 export type NumberOrTemplateKeys = Record<number | `x_${string}`, string>;
+export type NumberLiteralKeys = Record<1 | 2, string>;
+export type PartialNumberLiteralKeys = Partial<Record<1 | 2, string>>;
+export type MixedLiteralKeys = Record<1 | "a", string>;
 
 type DefaultG<T = string> = { v: T };
 type DefaultH<A, B = string> = { a: A; b: B };
@@ -84,4 +87,7 @@ export const Codecs = parse.buildParsers<{
   NumberIndex: NumberIndex;
   NumberOrTemplateKeys: NumberOrTemplateKeys;
   DefaultTypeParams: DefaultTypeParams;
+  NumberLiteralKeys: NumberLiteralKeys;
+  PartialNumberLiteralKeys: PartialNumberLiteralKeys;
+  MixedLiteralKeys: MixedLiteralKeys;
 }>();
