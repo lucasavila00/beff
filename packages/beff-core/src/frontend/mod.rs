@@ -1090,6 +1090,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         self.errors.push(self.build_error(anchor, msg));
     }
 
+    /// The runtype of a named type, if it has already been fully extracted.
+    fn resolved_validator(&self, name: &RuntypeUUID) -> Option<Runtype> {
+        self.partial_validators.get(name).and_then(|it| it.clone())
+    }
+
     fn anyhow_error<T>(&mut self, anchor: &Anchor, msg: DiagnosticInfoMessage) -> Result<T> {
         let e = anyhow!("{msg:?}");
         self.push_error(anchor, msg);
@@ -1240,11 +1245,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 false => self.error(anchor, DiagnosticInfoMessage::RestFoundOnExtractObject),
             },
             RuntypeKind::Ref(r) => {
-                let map = self
-                    .partial_validators
-                    .get(r)
-                    .and_then(|it| it.as_ref())
-                    .cloned();
+                let map = self.resolved_validator(r);
                 match map {
                     Some(schema) => self.extract_object_from_runtype(&schema, anchor),
                     None => self.error(
@@ -1423,11 +1424,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }))
             }
             RuntypeKind::Ref(r) => {
-                let map = self
-                    .partial_validators
-                    .get(r)
-                    .and_then(|it| it.as_ref())
-                    .cloned();
+                let map = self.resolved_validator(r);
                 match map {
                     Some(schema) => self.convert_partial(&schema, anchor),
                     None => self.error(
@@ -1479,11 +1476,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             }
                             None => match rm.kind {
                                 RuntypeKind::Ref(n) => {
-                                    let map = self
-                                        .partial_validators
-                                        .get(&n)
-                                        .and_then(|it| it.as_ref())
-                                        .cloned();
+                                    let map = self.resolved_validator(&n);
                                     let k = map.and_then(|it| it.extract_single_string_const());
                                     match k {
                                         Some(str) => keys.push(str),
@@ -1648,11 +1641,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
                     while is_ref {
                         if let RuntypeKind::Ref(r) = &type_args[0].kind {
-                            let map = self
-                                .partial_validators
-                                .get(r)
-                                .and_then(|it| it.as_ref())
-                                .cloned();
+                            let map = self.resolved_validator(r);
                             if let Some(schema) = map {
                                 key = schema;
                                 is_ref = matches!(key.kind, RuntypeKind::Ref(_));
@@ -1956,9 +1945,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok((first.clone(), rest.clone()))
             }
             RuntypeKind::Ref(r) => {
-                let v = self.partial_validators.get(r);
-
-                let v = v.and_then(|it| it.clone());
+                let v = self.resolved_validator(r);
                 if let Some(v) = v {
                     self.get_string_format_base_formats(&v, anchor)
                 } else {
@@ -2023,9 +2010,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok((first.clone(), rest.clone()))
             }
             RuntypeKind::Ref(r) => {
-                let v = self.partial_validators.get(r);
-
-                let v = v.and_then(|it| it.clone());
+                let v = self.resolved_validator(r);
                 if let Some(v) = v {
                     self.get_number_format_base_formats(&v, anchor)
                 } else {
@@ -2173,11 +2158,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match arr.kind {
             RuntypeKind::Array(items) => Ok(*items),
             RuntypeKind::Ref(n) => {
-                let map = self
-                    .partial_validators
-                    .get(&n)
-                    .and_then(|it| it.as_ref())
-                    .cloned();
+                let map = self.resolved_validator(&n);
                 match map {
                     Some(schema) => self.extract_array_value(schema, span, file.clone()),
                     _ => self.error(&anchor, DiagnosticInfoMessage::ExpectedArray),
@@ -2207,11 +2188,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(prefix_items)
             }
             RuntypeKind::Ref(n) => {
-                let map = self
-                    .partial_validators
-                    .get(&n)
-                    .and_then(|it| it.as_ref())
-                    .cloned();
+                let map = self.resolved_validator(&n);
                 match map {
                     Some(schema) => self.extract_tuple_value(schema, span, file.clone()),
                     _ => self.error(&anchor, DiagnosticInfoMessage::ExpectedTuple),
@@ -2928,8 +2905,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(TplLitTypeItem::one_of(acc))
             }
             RuntypeKind::Ref(name) => {
-                let v = self.partial_validators.get(name);
-                let v = v.and_then(|it| it.clone());
+                let v = self.resolved_validator(name);
                 match v {
                     Some(v) => self.runtype_to_tpl_lit(span, &v, file_name.clone()),
                     None => self.error(&anchor, DiagnosticInfoMessage::CannotResolveRefToTplLit),
@@ -3004,8 +2980,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(vs)
             }
             RuntypeKind::Ref(r) => {
-                let v = self.partial_validators.get(&r);
-                let v = v.and_then(|it| it.clone());
+                let v = self.resolved_validator(&r);
                 match v {
                     Some(v) => self.extract_union(v),
                     None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r)),
@@ -3056,9 +3031,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         // try to resolve syntatically
         match (&obj.kind, index) {
             (RuntypeKind::Ref(r), _) => {
-                let v = self.partial_validators.get(r);
-
-                let v = v.and_then(|it| it.clone());
+                let v = self.resolved_validator(r);
                 if let Some(v) = v {
                     return self.convert_indexed_access_syntatically(&v, index);
                 }
