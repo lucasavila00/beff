@@ -41,6 +41,9 @@ export type MetaKey = "alpha" | "beta" | `alpha_entity_${string}` | `beta-entity
 export type Meta = Partial<Record<MetaKey, string>>;
 export type Meta2 = Record<MetaKey, string>;
 type KnownConstants = typeof constants;
+export type NumberKeys = Record<number, string>;
+export type NumberIndex = { [k: number]: boolean };
+export type NumberOrTemplateKeys = Record<number | `x_${string}`, string>;
 
 export const Codecs = parse.buildParsers<{
   Dec: string;
@@ -62,4 +65,7 @@ export const Codecs = parse.buildParsers<{
   Meta: Meta;
   Meta2: Meta2;
   KnownConstants: KnownConstants;
+  NumberKeys: NumberKeys;
+  NumberIndex: NumberIndex;
+  NumberOrTemplateKeys: NumberOrTemplateKeys;
 }>();

@@ -661,3 +661,47 @@ it("Meta2: Record<MixedUnion, V>", () => {
     }
   `);
 });
+
+it("number index keys accept numeric strings", () => {
+  expect(Codecs.NumberKeys.validate({})).toBe(true);
+  expect(Codecs.NumberKeys.validate({ 1: "a", 2: "b", "-3": "c", "1.5": "d", "1e+21": "e" })).toBe(true);
+  expect(Codecs.NumberKeys.parse({ 2: "b", 1: "a" })).toEqual({ 1: "a", 2: "b" });
+  expect(Codecs.NumberKeys.validate({ a: "x" })).toBe(false);
+  expect(Codecs.NumberKeys.validate({ "01": "x" })).toBe(false);
+  expect(Codecs.NumberKeys.validate({ 1: 2 })).toBe(false);
+  expect(Codecs.NumberKeys.safeParse({ a: "x" })).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number key",
+          "path": [
+            "a",
+          ],
+          "received": "a",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(Codecs.NumberKeys.describe()).toMatchInlineSnapshot(
+    '"type CodecNumberKeys = { [K in number]: string };"',
+  );
+  expect(Codecs.NumberKeys.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": {
+        "type": "string",
+      },
+      "propertyNames": {
+        "pattern": "^-?(0|[1-9][0-9]*)(\\\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
+        "type": "string",
+      },
+      "type": "object",
+    }
+  `);
+
+  expect(Codecs.NumberIndex.validate({ 0: true, 10: false })).toBe(true);
+  expect(Codecs.NumberIndex.validate({ x: true })).toBe(false);
+
+  expect(Codecs.NumberOrTemplateKeys.validate({ 1: "a", x_y: "b" })).toBe(true);
+  expect(Codecs.NumberOrTemplateKeys.validate({ y: "a" })).toBe(false);
+});

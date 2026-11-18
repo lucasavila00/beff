@@ -29,6 +29,7 @@ import {
   TypedArrayRuntype,
   MapRuntype,
   SetRuntype,
+  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {
@@ -368,7 +369,7 @@ const direct_hoist_127 = new ObjectRuntype(undefined, {
 }, []);
 const direct_hoist_128 = new ObjectRuntype(undefined, {}, [
     {
-        "key": direct_hoist_11,
+        "key": new NumberKeyRuntype(undefined),
         "value": direct_hoist_11
     }
 ]);

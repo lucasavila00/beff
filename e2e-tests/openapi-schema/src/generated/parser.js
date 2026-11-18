@@ -33,6 +33,7 @@ const {
   TypedArrayRuntype,
   MapRuntype,
   SetRuntype,
+  NumberKeyRuntype,
 } = require("@beff/client/codegen-v2");
 
 class RefRuntype extends BaseRefRuntype  {

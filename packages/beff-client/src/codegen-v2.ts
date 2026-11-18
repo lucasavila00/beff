@@ -648,6 +648,36 @@ export class TypeofRuntype extends BaseRuntype {
   }
 }
 
+// The key of a number index signature, such as Record<number, T>.
+// Object keys are always strings, so the key must be a numeric string.
+const NUMBER_KEY_PATTERN = "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$";
+const NUMBER_KEY_REGEX = new RegExp(NUMBER_KEY_PATTERN);
+export class NumberKeyRuntype extends BaseRuntype {
+  protected describeTypeExpr(_ctx: DescribeContext): string {
+    return "number";
+  }
+  schema(_ctx: SchemaContext): JSONSchema7 {
+    return annotateSchema(this.metadata, { type: "string", pattern: NUMBER_KEY_PATTERN });
+  }
+  validate(_ctx: ValidateContext, input: unknown): boolean {
+    return typeof input === "string" && NUMBER_KEY_REGEX.test(input);
+  }
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
+    return input;
+  }
+  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    return buildError(ctx, "expected number key", input);
+  }
+  // Hash as `number`, so the hash of Record<number, T> does not change.
+  hash(_ctx: HashContext): number {
+    return numberHash;
+  }
+  hash256(ctx: Hash256Context): void {
+    ctx.writer.updateTag("typeof");
+    ctx.writer.updateString("number");
+  }
+}
+
 export class AnyRuntype extends BaseRuntype {
   constructor(metadata: RuntypeMetadata | undefined) {
     super(metadata);
