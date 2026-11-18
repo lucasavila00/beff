@@ -1,5 +1,27 @@
 # custom-formats
 
+## 1.0.22
+
+### Patch Changes
+
+- Updated dependencies [8affb35]
+- Updated dependencies [4c5dea3]
+- Updated dependencies [016ee7f]
+- Updated dependencies [50da924]
+- Updated dependencies [5974ebc]
+- Updated dependencies [949d1aa]
+- Updated dependencies [4695b6c]
+- Updated dependencies [c8f9a26]
+- Updated dependencies [0c81cf5]
+- Updated dependencies [20e8f53]
+- Updated dependencies [9c37a89]
+- Updated dependencies [1d34662]
+- Updated dependencies [6e718de]
+- Updated dependencies [c4f5953]
+- Updated dependencies [b182e9d]
+  - @beff/client@0.0.154
+  - @beff/cli@0.0.154
+
 ## 1.0.21
 
 ### Patch Changes

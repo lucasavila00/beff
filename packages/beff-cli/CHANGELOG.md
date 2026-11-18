@@ -1,5 +1,16 @@
 # @beff/cli
 
+## 0.0.154
+
+### Patch Changes
+
+- 4c5dea3: Fix the CLI crashing with `ENOENT` when the parent folders of `outputDir` do not exist. The CLI now creates all missing folders.
+- 5974ebc: Use type parameter defaults when a generic type alias or interface is referenced with fewer type arguments than parameters.
+- 4695b6c: `Record<1 | 2, T>` and mapped types over number literal keys now produce required named properties `"1"` and `"2"`, as in TypeScript, instead of an index signature that never matched.
+- c8f9a26: Fix `Record<number, T>` and number index signatures rejecting all keys. Object keys are strings, so the compiler now emits a `NumberKeyRuntype` key that accepts numeric strings such as `"1"`. The JSON Schema `propertyNames` for a number key is now a string with a numeric pattern.
+- 9c37a89: Fix template literal types accepting strings that match only in part. The generated regular expression now has `^` and `$` anchors, so the full string must match.
+- 1d34662: Template literal `${number}` now accepts signed, leading-dot, and exponent forms such as "-1", ".5", and "1e+21", and `${string}` now accepts line breaks.
+
 ## 0.0.153
 
 ### Patch Changes
