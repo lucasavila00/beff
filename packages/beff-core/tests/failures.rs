@@ -1558,4 +1558,55 @@ mod tests {
         ───╯
         ");
     }
+
+    #[test]
+    fn generic_default_missing_required_arg() {
+        let from = r#"
+    type H<A, B = string> = { a: A, b: B };
+    parse.buildParsers<{ X: H }>();
+  "#;
+        insta::assert_snapshot!(failure(from), @r"
+        Error: Type argument count mismatch
+           ╭─[entry.ts:3:30]
+           │
+         3 │     parse.buildParsers<{ X: H }>();
+           │                             ┬  
+           │                             ╰── Type argument count mismatch
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn generic_default_too_many_args() {
+        let from = r#"
+    type G<T = string> = { v: T };
+    parse.buildParsers<{ X: G<number, string> }>();
+  "#;
+        insta::assert_snapshot!(failure(from), @r"
+        Error: Type argument count mismatch
+           ╭─[entry.ts:3:30]
+           │
+         3 │     parse.buildParsers<{ X: G<number, string> }>();
+           │                             ────────┬────────  
+           │                                     ╰────────── Type argument count mismatch
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn interface_default_missing_required_arg() {
+        let from = r#"
+    interface Q<A, B = A[]> { a: A, b: B }
+    parse.buildParsers<{ X: Q }>();
+  "#;
+        insta::assert_snapshot!(failure(from), @r"
+        Error: Type argument count mismatch
+           ╭─[entry.ts:2:6]
+           │
+         2 │     interface Q<A, B = A[]> { a: A, b: B }
+           │     ───────────────────┬──────────────────  
+           │                        ╰──────────────────── Type argument count mismatch
+        ───╯
+        ");
+    }
 }

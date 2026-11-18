@@ -27,7 +27,7 @@ use swc_ecma_ast::{
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
     TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsPropertySignature,
     TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType,
-    TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
+    TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp, TsTypeParam,
     TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
     TsUnionOrIntersectionType, TsUnionType, UnaryOp,
 };
@@ -1309,6 +1309,42 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         Ok(vs)
     }
+    /// Binds each type parameter to its argument on the type application stack.
+    /// A missing argument takes the parameter's default, resolved with the earlier
+    /// parameters already bound, as TypeScript does.
+    fn push_type_params(
+        &mut self,
+        type_params: &[TsTypeParam],
+        type_args: Vec<Runtype>,
+        file: &BffFileName,
+        anchor: &Anchor,
+    ) -> Res<()> {
+        if type_args.len() > type_params.len() {
+            return self.error(anchor, DiagnosticInfoMessage::TypeArgumentCountMismatch);
+        }
+        let mut args = type_args.into_iter();
+        for (pushed, param) in type_params.iter().enumerate() {
+            let arg = match (args.next(), &param.default) {
+                (Some(arg), _) => Ok(arg),
+                (None, Some(default)) => self.extract_type(default, file.clone()),
+                (None, None) => {
+                    self.error(anchor, DiagnosticInfoMessage::TypeArgumentCountMismatch)
+                }
+            };
+            match arg {
+                Ok(arg) => self
+                    .type_application_stack
+                    .push((param.name.sym.to_string(), arg)),
+                Err(e) => {
+                    for _ in 0..pushed {
+                        self.type_application_stack.pop();
+                    }
+                    return Err(e);
+                }
+            }
+        }
+        Ok(())
+    }
     fn extract_interface_decl(
         &mut self,
         typ: &TsInterfaceDecl,
@@ -1326,14 +1362,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             None => &empty,
         };
 
-        if type_params.len() != type_args.len() {
-            return self.error(&anchor, DiagnosticInfoMessage::TypeArgumentCountMismatch);
-        }
-
-        for (k, v) in type_params.iter().zip(type_args.iter()) {
-            self.type_application_stack
-                .push((k.name.sym.to_string(), v.clone()));
-        }
+        self.push_type_params(type_params, type_args, &file, &anchor)?;
 
         let inferred = self.extract_ts_type_lit_members(&typ.body.body, file.clone());
 
@@ -1527,22 +1556,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         declaration_span,
                     } => {
                         let type_params = match &decl.type_params {
-                            Some(p) => {
-                                //
-                                p.params.iter().map(|tp| tp.name.sym.to_string()).collect()
-                            }
-                            None => vec![],
+                            Some(p) => p.params.as_slice(),
+                            None => &[],
                         };
-                        if type_params.len() != type_args.len() {
-                            return self
-                                .error(anchor, DiagnosticInfoMessage::TypeArgumentCountMismatch);
-                        }
-
-                        for (param, arg) in type_params.into_iter().zip(type_args.iter()) {
-                            self.type_application_stack.push((param, arg.clone()));
-                        }
+                        self.push_type_params(type_params, type_args, &address.file, anchor)?;
                         let runtype = self.extract_type(&decl.type_ann, address.file.clone());
-                        for _ in type_args {
+                        for _ in type_params {
                             self.type_application_stack.pop();
                         }
                         let runtype = runtype?;
