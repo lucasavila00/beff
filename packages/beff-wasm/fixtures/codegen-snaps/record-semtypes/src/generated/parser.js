@@ -74,7 +74,7 @@ const direct_hoist_1 = new AnyOfConstsRuntype(undefined, [
     "ADMIN",
     "USER"
 ]);
-const direct_hoist_2 = new RegexRuntype(undefined, /^(\d+(\.\d+)?)(x)(\d+(\.\d+)?)$/, "`${number}x${number}`");
+const direct_hoist_2 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}x${number}`");
 const direct_hoist_3 = new RefRuntype(undefined, "AccessLevel");
 const direct_hoist_4 = new RefRuntype(undefined, "AvatarSize");
 const direct_hoist_5 = new TypeofRuntype(undefined, "function");

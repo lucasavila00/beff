@@ -1793,7 +1793,7 @@ mod tests {
       "#
         ), @r#"
         const direct_hoist_0 = new RefRuntype(undefined, "Alias");
-        const direct_hoist_1 = new RegexRuntype(undefined, /^(\d+(\.\d+)?)(__)(\d+(\.\d+)?)$/, "`${number}__${number}`");
+        const direct_hoist_1 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(__)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}__${number}`");
         const namedRuntypes = {
             "Alias": direct_hoist_1
         };

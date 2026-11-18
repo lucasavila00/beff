@@ -181,6 +181,9 @@ export type T3 = Exclude<Shape, { kind: "circle" }>;
 
 type Version = `${number}.${number}.${number}`;
 type Version2 = `v${number}.${number}.${number}`;
+type PrefixedString = `a${string}`;
+type KeyedNumber = `${"a" | "b"}-${number}`;
+type FlagTpl = `${boolean}`;
 
 export type AObject = {
   tag: typeof T4.a;
@@ -229,6 +232,9 @@ export type S1 = Set<string>;
 export const {
   Version,
   Version2,
+  PrefixedString,
+  KeyedNumber,
+  FlagTpl,
   RequiredPartialObject,
   LevelAndDSettings,
   ImportEnumTypeof: ImportEnumTypeofCodec,
@@ -300,6 +306,9 @@ export const {
   AObject: AObject;
   Version: Version;
   Version2: Version2;
+  PrefixedString: PrefixedString;
+  KeyedNumber: KeyedNumber;
+  FlagTpl: FlagTpl;
   AccessLevelTpl2: AccessLevelTpl2;
   AccessLevelTpl: AccessLevelTpl;
   Arr3: Arr3;

@@ -192,7 +192,7 @@ const direct_hoist_45 = new ObjectRuntype(undefined, {
     "children": direct_hoist_44,
     "value": direct_hoist_1
 }, []);
-const direct_hoist_46 = new RegexRuntype(undefined, /^(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)$/, "`${number}.${number}.${number}`");
+const direct_hoist_46 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}.${number}.${number}`");
 const direct_hoist_47 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
     "b": direct_hoist_1
