@@ -309,22 +309,31 @@ fn new_runtype_class(constructor: &str, mut args: Vec<Expr>, original_runtype: &
     new_runtime_class(constructor, args)
 }
 
+fn object_lit(props: Vec<(String, Expr)>) -> Expr {
+    Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: props
+            .into_iter()
+            .map(|(key, value)| {
+                PropOrSpread::Prop(
+                    Prop::KeyValue(KeyValueProp {
+                        key: PropName::Str(Str {
+                            span: DUMMY_SP,
+                            value: key.into(),
+                            raw: None,
+                        }),
+                        value: value.into(),
+                    })
+                    .into(),
+                )
+            })
+            .collect(),
+    })
+}
+
 fn runtype_metadata_arg(schema: &Runtype) -> Expr {
     match schema.metadata.description.as_ref() {
-        Some(description) => Expr::Object(ObjectLit {
-            span: DUMMY_SP,
-            props: vec![PropOrSpread::Prop(
-                Prop::KeyValue(KeyValueProp {
-                    key: PropName::Str(Str {
-                        span: DUMMY_SP,
-                        value: "description".into(),
-                        raw: None,
-                    }),
-                    value: string_lit(description).into(),
-                })
-                .into(),
-            )],
-        }),
+        Some(description) => object_lit(vec![("description".to_string(), string_lit(description))]),
         None => Expr::Ident(identifier("undefined")),
     }
 }
@@ -490,9 +499,8 @@ fn runtype_any_of_discriminated(
 
     let disc = string_lit(&discriminator);
 
-    let schema_mapping_obj = Expr::Object(ObjectLit {
-        span: DUMMY_SP,
-        props: discriminator_strings
+    let schema_mapping_obj = object_lit(
+        discriminator_strings
             .iter()
             .map(|current_key| {
                 let cases = object_vs
@@ -519,20 +527,13 @@ fn runtype_any_of_discriminated(
                     Runtype::any_of(cases)
                 };
 
-                PropOrSpread::Prop(
-                    Prop::KeyValue(KeyValueProp {
-                        key: PropName::Str(Str {
-                            span: DUMMY_SP,
-                            value: current_key.clone().into(),
-                            raw: None,
-                        }),
-                        value: print_runtype(&schema, named_schemas, ctx).into(),
-                    })
-                    .into(),
+                (
+                    current_key.clone(),
+                    print_runtype(&schema, named_schemas, ctx),
                 )
             })
             .collect(),
-    });
+    );
 
     // The validation mapping is printed from the same cases as the schema mapping.
     let mapping_obj = schema_mapping_obj.clone();
@@ -910,56 +911,17 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                         Optionality::Required(schema) => print_runtype(schema, named_schemas, ctx),
                     };
 
-                    Expr::Object(ObjectLit {
-                        span: DUMMY_SP,
-                        props: vec![
-                            //
-                            PropOrSpread::Prop(
-                                Prop::KeyValue(KeyValueProp {
-                                    key: PropName::Str(Str {
-                                        span: DUMMY_SP,
-                                        value: "key".into(),
-                                        raw: None,
-                                    }),
-                                    value: print_index_key(&it.key, named_schemas, ctx).into(),
-                                })
-                                .into(),
-                            ),
-                            PropOrSpread::Prop(
-                                Prop::KeyValue(KeyValueProp {
-                                    key: PropName::Str(Str {
-                                        span: DUMMY_SP,
-                                        value: "value".into(),
-                                        raw: None,
-                                    }),
-                                    value: value_rt.into(),
-                                })
-                                .into(),
-                            ),
-                        ],
-                    })
+                    object_lit(vec![
+                        (
+                            "key".to_string(),
+                            print_index_key(&it.key, named_schemas, ctx),
+                        ),
+                        ("value".to_string(), value_rt),
+                    ])
                 })
                 .collect();
 
-            let obj_validator = Expr::Object(ObjectLit {
-                span: DUMMY_SP,
-                props: mapped
-                    .iter()
-                    .map(|(key, value)| {
-                        PropOrSpread::Prop(
-                            Prop::KeyValue(KeyValueProp {
-                                key: PropName::Str(Str {
-                                    span: DUMMY_SP,
-                                    value: key.clone().into(),
-                                    raw: None,
-                                }),
-                                value: value.clone().into(),
-                            })
-                            .into(),
-                        )
-                    })
-                    .collect(),
-            });
+            let obj_validator = object_lit(mapped.into_iter().collect());
 
             let indexed_properties_arr = array_lit(indexed_properties_props);
 
@@ -992,25 +954,7 @@ fn build_parsers_input(
         validator_exprs.push((decoder.exported_name.clone(), validator));
     }
 
-    Expr::Object(ObjectLit {
-        span: DUMMY_SP,
-        props: validator_exprs
-            .into_iter()
-            .map(|(key, value)| {
-                PropOrSpread::Prop(
-                    Prop::KeyValue(KeyValueProp {
-                        key: PropName::Str(Str {
-                            span: DUMMY_SP,
-                            value: key.into(),
-                            raw: None,
-                        }),
-                        value: value.into(),
-                    })
-                    .into(),
-                )
-            })
-            .collect(),
-    })
+    object_lit(validator_exprs)
 }
 
 fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
@@ -1025,25 +969,12 @@ fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr
         .filter(|(name, _)| !ctx.inlined.contains(name))
         .collect();
 
-    Expr::Object(ObjectLit {
-        span: DUMMY_SP,
-        props: validator_exprs
+    object_lit(
+        validator_exprs
             .into_iter()
-            .map(|(key, value)| {
-                PropOrSpread::Prop(
-                    Prop::KeyValue(KeyValueProp {
-                        key: PropName::Str(Str {
-                            span: DUMMY_SP,
-                            value: ctx.print_rt_name(&key).into(),
-                            raw: None,
-                        }),
-                        value: value.into(),
-                    })
-                    .into(),
-                )
-            })
+            .map(|(key, value)| (ctx.print_rt_name(&key), value))
             .collect(),
-    })
+    )
 }
 
 impl ParserExtractResult {
