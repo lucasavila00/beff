@@ -1962,6 +1962,15 @@ export class OptionalFieldRuntype implements Runtype {
   }
 }
 
+// Assigning to "__proto__" sets the prototype instead of creating a property.
+function setOwnProperty(target: Record<string, unknown>, key: string, value: unknown): void {
+  if (key === "__proto__") {
+    Object.defineProperty(target, key, { value, enumerable: true, writable: true, configurable: true });
+    return;
+  }
+  target[key] = value;
+}
+
 export class ObjectRuntype extends BaseRuntype {
   private properties: Record<string, Runtype>;
   private indexedPropertiesParser: Array<{
@@ -2128,7 +2137,7 @@ export class ObjectRuntype extends BaseRuntype {
     if (ctx.objectKeyOrder === "input") {
       for (const k of inputKeys) {
         if (hasOwn.call(this.properties, k)) {
-          acc[k] = this.properties[k].parseAfterValidation(ctx, input[k]);
+          setOwnProperty(acc, k, this.properties[k].parseAfterValidation(ctx, input[k]));
           continue;
         }
 
@@ -2138,7 +2147,7 @@ export class ObjectRuntype extends BaseRuntype {
           if (isValid) {
             const itemParsed = p.value.parseAfterValidation(ctx, v);
             const keyParsed = p.key.parseAfterValidation(ctx, k);
-            acc[keyParsed as any] = itemParsed;
+            setOwnProperty(acc, keyParsed as string, itemParsed);
           }
         }
       }
@@ -2151,7 +2160,7 @@ export class ObjectRuntype extends BaseRuntype {
         }
         const v = input[k];
         const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
-        acc[k] = itemParsed;
+        setOwnProperty(acc, k, itemParsed);
       }
 
       if (this.indexedPropertiesParser.length > 0) {
@@ -2163,7 +2172,7 @@ export class ObjectRuntype extends BaseRuntype {
             if (isValid) {
               const itemParsed = p.value.parseAfterValidation(ctx, v);
               const keyParsed = p.key.parseAfterValidation(ctx, k);
-              acc[keyParsed as any] = itemParsed;
+              setOwnProperty(acc, keyParsed as string, itemParsed);
             }
           }
         }
