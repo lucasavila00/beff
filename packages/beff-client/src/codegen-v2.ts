@@ -244,10 +244,15 @@ function prependPath(parentPath: string[], err: DecodeError): DecodeError {
   return { ...err, path: [...parentPath, ...err.path] };
 }
 
+// JSON.stringify throws on bigint values. Write them as `123n`.
+function stringifyWithBigInt(value: unknown): string {
+  return JSON.stringify(value, (_key, it) => (typeof it === "bigint" ? `${it}n` : it));
+}
+
 function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
   const seen = new Set<string>();
   return errors.filter((err) => {
-    const key = JSON.stringify(err);
+    const key = stringifyWithBigInt(err);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -1666,12 +1671,12 @@ export class MapRuntype extends BaseRuntype {
     }
     let acc: DecodeError[] = [];
     for (const [k, v] of input) {
-      pushPath(ctx, `key(${JSON.stringify(k)})`);
+      pushPath(ctx, `key(${stringifyWithBigInt(k)})`);
       if (!this.keyParser.validate(ctx, k)) {
         acc = acc.concat(this.keyParser.reportDecodeError(ctx, k));
       }
       popPath(ctx);
-      pushPath(ctx, `value(${JSON.stringify(k)})`);
+      pushPath(ctx, `value(${stringifyWithBigInt(k)})`);
       if (!this.valueParser.validate(ctx, v)) {
         acc = acc.concat(this.valueParser.reportDecodeError(ctx, v));
       }
@@ -1728,7 +1733,7 @@ export class SetRuntype extends BaseRuntype {
     }
     let acc: DecodeError[] = [];
     for (const v of input) {
-      pushPath(ctx, `item(${JSON.stringify(v)})`);
+      pushPath(ctx, `item(${stringifyWithBigInt(v)})`);
       if (!this.itemParser.validate(ctx, v)) {
         acc = acc.concat(this.itemParser.reportDecodeError(ctx, v));
       }
