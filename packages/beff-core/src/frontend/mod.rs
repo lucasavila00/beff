@@ -1108,6 +1108,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let err = self.build_error(anchor, msg);
         err.into()
     }
+    fn box_anyhow_error(
+        &mut self,
+        anchor: &Anchor,
+        e: anyhow::Error,
+    ) -> Box<DiagnosticInformation> {
+        self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+    }
 
     fn get_or_fetch_file(
         &mut self,
@@ -1725,42 +1732,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
                         let left_st = left_ty
                             .to_sem_type(&validators_reference_vec, &mut ctx)
-                            .map_err(|e| {
-                                self.box_error(
-                                    anchor,
-                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                )
-                            })?;
+                            .map_err(|e| self.box_anyhow_error(anchor, e))?;
 
                         let right_ty = right.clone();
 
                         let right_st = right_ty
                             .to_sem_type(&validators_reference_vec, &mut ctx)
-                            .map_err(|e| {
-                                self.box_error(
-                                    anchor,
-                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                )
-                            })?;
+                            .map_err(|e| self.box_anyhow_error(anchor, e))?;
 
-                        let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
-                            self.box_error(
-                                anchor,
-                                DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                            )
-                        })?;
+                        let subtracted_ty = left_st
+                            .diff(&right_st)
+                            .map_err(|e| self.box_anyhow_error(anchor, e))?;
                         let res = self
                             .semtype_to_runtype(subtracted_ty, &mut ctx, anchor)?
                             .remove_nots_of_intersections_and_empty_of_union(
                                 &validators_reference_vec,
                                 &mut ctx,
                             )
-                            .map_err(|e| {
-                                self.box_error(
-                                    anchor,
-                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                )
-                            })?;
+                            .map_err(|e| self.box_anyhow_error(anchor, e))?;
                         Ok(res)
                     }
                     _ => self.error(
@@ -3033,9 +3022,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         ctx: &mut SemTypeContext,
         anchor: &Anchor,
     ) -> Res<Runtype> {
-        if access_st.is_empty(ctx).map_err(|e| {
-            self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-        })? {
+        if access_st
+            .is_empty(ctx)
+            .map_err(|e| self.box_anyhow_error(anchor, e))?
+        {
             return Ok(Runtype::never());
         }
         let (head, tail) = semtype_to_runtypes(
@@ -3051,9 +3041,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             },
             &mut self.counter,
         )
-        .map_err(|any| {
-            self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(any.to_string()))
-        })?;
+        .map_err(|e| self.box_anyhow_error(anchor, e))?;
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
         }
@@ -3147,18 +3135,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         let obj_st = obj
             .to_sem_type(&validators_vec.iter().collect::<Vec<_>>(), &mut ctx)
-            .map_err(|e| {
-                self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            })?;
+            .map_err(|e| self.box_anyhow_error(anchor, e))?;
         let idx_st = index
             .to_sem_type(&validators_vec.iter().collect::<Vec<_>>(), &mut ctx)
-            .map_err(|e| {
-                self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            })?;
+            .map_err(|e| self.box_anyhow_error(anchor, e))?;
 
-        let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
-            self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-        })?;
+        let access_st: Rc<SemType> = ctx
+            .indexed_access(obj_st, idx_st)
+            .map_err(|e| self.box_anyhow_error(anchor, e))?;
 
         self.semtype_to_runtype(access_st, &mut ctx, anchor)
     }
@@ -3198,13 +3182,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let vs = self.validators_vec();
         let st = json_schema
             .to_sem_type(&vs.iter().collect::<Vec<_>>(), &mut ctx)
-            .map_err(|e| {
-                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            })?;
+            .map_err(|e| self.box_anyhow_error(&anchor, e))?;
 
-        let keyof_st: Rc<SemType> = ctx.keyof(st).map_err(|e| {
-            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-        })?;
+        let keyof_st: Rc<SemType> = ctx
+            .keyof(st)
+            .map_err(|e| self.box_anyhow_error(&anchor, e))?;
 
         self.semtype_to_runtype(keyof_st, &mut ctx, &anchor)
     }
@@ -3326,21 +3308,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         let check_type_st = check_type_schema
             .to_sem_type(&validators_reference_vec, &mut ctx)
-            .map_err(|e| {
-                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            })?;
+            .map_err(|e| self.box_anyhow_error(&anchor, e))?;
 
         let extends_type_st = extends_type_schema
             .to_sem_type(&validators_reference_vec, &mut ctx)
-            .map_err(|e| {
-                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            })?;
+            .map_err(|e| self.box_anyhow_error(&anchor, e))?;
 
         let is_true = check_type_st
             .is_subtype(&extends_type_st, &mut ctx)
-            .map_err(|e| {
-                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            })?;
+            .map_err(|e| self.box_anyhow_error(&anchor, e))?;
 
         if is_true {
             self.extract_type(&t.true_type, file_name.clone())
