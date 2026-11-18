@@ -162,7 +162,7 @@ If `config.json` has a property `"logLevl": "info"`, `parse` throws an error. Th
 
 ## Validate recursive data
 
-Beff supports recursive types. You do not have to do more steps.
+Beff supports recursive types. No more configuration is necessary.
 
 ```ts
 Parsers.Comment.validate({

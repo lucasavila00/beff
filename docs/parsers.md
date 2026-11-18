@@ -2,18 +2,20 @@
 
 `buildParsers` returns an object of validators. Each validator has the type `BeffParser<T>`. This page describes the methods of `BeffParser<T>`.
 
-| Method                       | Return value                                                 | Refer to                        |
-| ---------------------------- | ------------------------------------------------------------ | ------------------------------- |
-| `parse(input, options?)`     | The parsed value. Throws an error if the input is not valid. | This page                       |
-| `safeParse(input, options?)` | A result object. Does not throw an error.                    | This page                       |
-| `validate(input, options?)`  | `true` or `false`.                                           | This page                       |
-| `zod()`                      | A zod schema.                                                | This page                       |
-| `name`                       | The name of the validator.                                   | This page                       |
-| `schema()`                   | A JSON Schema.                                               | [JSON Schema](./json-schema.md) |
-| `schemaWithContext(ctx)`     | A JSON Schema with `$ref` values.                            | [JSON Schema](./json-schema.md) |
-| `describe()`                 | A TypeScript type, as a string.                              | [Describe](./describe.md)       |
-| `hash()`                     | A 32-bit number.                                             | [Hashes](./hashes.md)           |
-| `hash256()`                  | A SHA-256 hex string.                                        | [Hashes](./hashes.md)           |
+| Method                                       | Return value                                                 |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| [`parse(input, options?)`](#parse)           | The parsed value. Throws an error if the input is not valid. |
+| [`safeParse(input, options?)`](#safeparse)   | A result object. Does not throw an error.                    |
+| [`validate(input, options?)`](#validate)     | `true` or `false`.                                           |
+| [`zod()`](#zod)                              | A zod schema.                                                |
+| [`name`](#name)                              | The name of the validator.                                   |
+| [`schema()`](./json-schema.md)               | A JSON Schema.                                               |
+| [`schemaWithContext(ctx)`](./json-schema.md) | A JSON Schema with `$ref` values.                            |
+| [`describe()`](./describe.md)                | A TypeScript type, as a string.                              |
+| [`hash()`](./hashes.md)                      | A 32-bit number.                                             |
+| [`hash256()`](./hashes.md)                   | A SHA-256 hex string.                                        |
+
+Use `parse` when the input must be valid. Use `safeParse` when your code must handle the errors. Use `validate` when you need only a type guard.
 
 ## `parse`
 
@@ -23,7 +25,7 @@
 const user = Parsers.User.parse({ name: "John Doe", age: 42 });
 ```
 
-The error message has the name of the validator and the text from [`printErrors`](./errors.md#printerrors):
+The error message contains the name of the validator and the text from [`printErrors`](./errors.md#printerrors):
 
 ```ts
 Parsers.User.parse({ name: "John Doe" });
@@ -80,13 +82,14 @@ if (Parsers.User.validate(input)) {
 Parsers.User.safeParse({ name: "John Doe", age: 42, extra: 1 }, { disallowExtraProperties: true });
 // { success: false, errors: [{ message: "extra property", path: ["extra"], received: 1 }] }
 
+// Use "sorted" for stable output, for example in snapshot tests.
 Parsers.User.parse({ name: "John Doe", age: 42 }, { objectKeyOrder: "sorted" });
 // { age: 42, name: "John Doe" }
 ```
 
 ## `zod`
 
-`zod` returns a zod schema that uses the Beff validator. Use it to add Beff validators to a project that uses zod.
+`zod` returns a zod version 3 schema that uses the Beff validator. Use it to add Beff validators to a project that uses zod.
 
 ```ts
 import { z } from "zod";

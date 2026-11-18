@@ -19,19 +19,33 @@ Beff gives a branded TypeScript type for each format. Thus, the TypeScript compi
 2. In the parser file, declare the type with `StringFormat`. Use the same name as in `beff.json`.
 3. Give the validation function to `buildParsers` in the `stringFormats` object.
 
+   ```ts
+   import parse from "./generated/parser";
+   import { StringFormat } from "@beff/client";
+
+   const VALID_CURRENCIES = ["USD", "EUR"];
+
+   export type ValidCurrency = StringFormat<"ValidCurrency">;
+
+   export type Price = {
+     amount: number;
+     currency: ValidCurrency;
+   };
+
+   export const Parsers = parse.buildParsers<{
+     Price: Price;
+   }>({
+     stringFormats: {
+       ValidCurrency: (input: string) => VALID_CURRENCIES.includes(input),
+     },
+   });
+   ```
+
+To create a value with a format type, parse the data:
+
 ```ts
-import parse from "./generated/parser";
-import { StringFormat } from "@beff/client";
-
-export type ValidCurrency = StringFormat<"ValidCurrency">;
-
-export const Parsers = parse.buildParsers<{
-  ValidCurrency: ValidCurrency;
-}>({
-  stringFormats: {
-    ValidCurrency: (input: string) => VALID_CURRENCIES.includes(input),
-  },
-});
+const price = Parsers.Price.parse({ amount: 10, currency: "USD" });
+// The type of price.currency is ValidCurrency.
 ```
 
 You must give a validation function for each format in `beff.json`. If a format has no function, `buildParsers` throws the error `Missing custom format <name>`.
@@ -97,7 +111,7 @@ stringFormats: {
 
 Use `StringFormatExtends` or `NumberFormatExtends` to make a format from a different format. The new format adds a validation function to the base format.
 
-A value is valid only if all the functions in the chain return `true`. Beff calls the functions in order, from the base format to the last format.
+A value is valid only if all the validation functions in the chain return `true`. Beff calls the validation functions in order, from the base format to the last format.
 
 Example: `UserId` is the base format. `ReadAuthorizedUserId` extends `UserId`. `WriteAuthorizedUserId` extends `ReadAuthorizedUserId`.
 
@@ -126,6 +140,8 @@ Example: `UserId` is the base format. `ReadAuthorizedUserId` extends `UserId`. `
    export type WriteAuthorizedUserId = StringFormatExtends<ReadAuthorizedUserId, "WriteAuthorizedUserId">;
 
    export const Parsers = parse.buildParsers<{
+     UserId: UserId;
+     ReadAuthorizedUserId: ReadAuthorizedUserId;
      WriteAuthorizedUserId: WriteAuthorizedUserId;
    }>({
      stringFormats: {
@@ -177,9 +193,9 @@ numberFormats: {
 
 ## Error messages
 
-If a format function returns `false`, Beff uses the `errorMessage` of the last format in the chain that has one. If no format has an `errorMessage`, Beff uses a default message, for example `expected string with format "UserId"`.
+If a validation function returns `false`, Beff uses the `errorMessage` of the last format in the chain that has one. If no format has an `errorMessage`, Beff uses a default message, for example `expected string with format "UserId"`.
 
-Beff does not use the message of the function that returned `false`. Thus, write each `errorMessage` so that it is correct for all formats below it in the chain.
+Beff does not use the message of the validation function that returned `false`. Thus, write each `errorMessage` so that it is correct for the full chain.
 
 ```ts
 stringFormats: {
@@ -224,14 +240,3 @@ For a number format, the schema type is `"number"`:
 Parsers.Percentage.schema();
 // { type: "number", format: "NonNegativeNumber and Percentage" }
 ```
-
-## Describe
-
-`describe()` shows the full chain of formats:
-
-```ts
-Parsers.WriteAuthorizedUserId.describe();
-// type CodecWriteAuthorizedUserId = StringFormatExtends<StringFormatExtends<StringFormat<"UserId">, "ReadAuthorizedUserId">, "WriteAuthorizedUserId">;
-```
-
-For more information, refer to [Describe](./describe.md).

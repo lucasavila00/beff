@@ -5,10 +5,9 @@ Beff is a validator generator. It reads your TypeScript types and writes runtime
 ## Why Beff?
 
 - **No type-checker overhead**: Libraries such as zod and io-ts build types with TypeScript generics. Beff reads plain TypeScript types. Your editor and the TypeScript compiler do less work.
-- **Fast**: Beff is written in Rust and compiled to WebAssembly. It compiles a small project in approximately 5 ms. It compiles a project with more than 200 types in approximately 200 ms.
+- **Fast**: Beff is a Rust program. It runs as WebAssembly. It compiles a small project in approximately 5 ms. It compiles a project with more than 200 types in approximately 200 ms.
 - **Same path resolution as TypeScript**: Beff uses the TypeScript compiler to find imported files. If your editor finds a type, Beff finds it too.
-- **Efficient output**: Beff optimizes the generated validator code at compile time.
-- **Clear errors**: Beff gives clear error messages at compile time and at runtime.
+- **Readable errors**: Each error shows the path, the expected type, and the received value. Refer to [Errors](./docs/errors.md).
 - **Wide type support**: Beff supports recursive types, generics, mapped types, conditional types, template literal types, and utility types such as `Omit`, `Exclude`, `Partial`, `Required`, and `Record`.
 
 ## Quick start
@@ -16,7 +15,7 @@ Beff is a validator generator. It reads your TypeScript types and writes runtime
 1. Install the packages:
 
    ```shell
-   npm i @beff/cli @beff/client
+   npm i @beff/cli @beff/client zod@3
    ```
 
 2. Create the file `beff.json`:
@@ -55,6 +54,9 @@ Beff is a validator generator. It reads your TypeScript types and writes runtime
    import { Parsers } from "./parser";
 
    const user = Parsers.User.parse({ name: "John Doe", age: 42 });
+
+   Parsers.User.parse({ name: "John Doe" });
+   // Error: Failed to parse User - (age) expected number, received: undefined
    ```
 
 For more information, read [Getting started](./docs/getting-started.md).

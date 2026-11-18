@@ -7,29 +7,30 @@ Each validator can create a JSON Schema for its type.
 `schema()` returns one JSON Schema with all definitions inline. It does not use `$ref`.
 
 ```ts
-const jsonSchema = Parsers.User.schema();
-```
+/** A registered user. */
+type User = {
+  name: string;
+  age: number;
+};
 
-NOTE: `schema()` cannot show a recursive type inline. Where a type refers to itself, `schema()` writes `{}`. This schema accepts all values. For recursive types, use `schemaWithContext`.
-
-```ts
-type Tree = { value: number; children: Tree[] };
-
-Parsers.Tree.schema();
+Parsers.User.schema();
 // {
 //   type: "object",
 //   properties: {
-//     children: { type: "array", items: {} },
-//     value: { type: "number" },
+//     age: { type: "number" },
+//     name: { type: "string" },
 //   },
-//   required: ["children", "value"],
+//   required: ["age", "name"],
 //   additionalProperties: false,
+//   description: "A registered user.",
 // }
 ```
 
+Beff copies JSDoc comments to the `description` field of the schema.
+
 ## `schemaWithContext`
 
-Use `schemaWithContext` to create schemas with `$ref` values. One definition can then be used in many schemas. This is useful for OpenAPI documents.
+Use `schemaWithContext` to create schemas with `$ref` values. Many schemas can then use one definition. This is useful for OpenAPI documents.
 
 1. Create a `SchemaPrintingContext`.
 2. Call `schemaWithContext(ctx)` for each validator. Each call returns a schema with `$ref` values.
@@ -90,9 +91,32 @@ const definitions = ctx.exportDefinitions();
 // { $defs: { User: { ... } } }
 ```
 
+## Custom formats
+
+For the schema of custom formats, refer to [Custom formats](./custom-formats.md#json-schema-format).
+
+## Recursive types
+
+`schema()` cannot show a recursive type inline. Where a type refers to itself, `schema()` writes `{}`. This schema accepts all values. For recursive types, use `schemaWithContext`.
+
+```ts
+type Tree = { value: number; children: Tree[] };
+
+Parsers.Tree.schema();
+// {
+//   type: "object",
+//   properties: {
+//     children: { type: "array", items: {} },
+//     value: { type: "number" },
+//   },
+//   required: ["children", "value"],
+//   additionalProperties: false,
+// }
+```
+
 ## Override the schema of a named type
 
-Use `namedTypeSchemaOverrides` to change the schema of a named type for one export only. This option does not change validation.
+Use `namedTypeSchemaOverrides` to change the schema of a named type for one export only. For example, use it to hide the details of a type in a public document. This option does not change validation.
 
 ```ts
 import { b, createNamedType, overrideNamedType, SchemaPrintingContext } from "@beff/client";
@@ -122,11 +146,3 @@ ctx.exportDefinitions();
 
 - To change a named type everywhere, including validation, use `overrideNamedType`. Refer to [Runtime validators](./runtime-validators.md#named-types).
 - To change only the schema in one JSON Schema or OpenAPI export, use `namedTypeSchemaOverrides`.
-
-## JSDoc comments
-
-Beff copies JSDoc comments from your types to the `description` field of the schema.
-
-## Custom formats
-
-For the schema of custom formats, refer to [Custom formats](./custom-formats.md#json-schema-format).

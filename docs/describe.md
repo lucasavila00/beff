@@ -43,6 +43,13 @@ name: string;
 type CodecTeam = { lead: User, members: Array<User> };
 ```
 
+## Example: give the type to an LLM
+
+```ts
+const prompt = "Return JSON of this type:\n" + Parsers.Team.describe();
+const output = Parsers.Team.parse(JSON.parse(await callLlm(prompt)));
+```
+
 ## How Beff prints the type
 
 - The validator type has the name `Codec<Name>`. `<Name>` is the property name in `buildParsers`.
@@ -69,7 +76,7 @@ type Tree = { children: Array<Tree>, value: number };
 type CodecTree = Tree;
 ```
 
-## Runtime validators
+## `b` validators
 
 `describe()` also works on validators from the `b` API. Refer to [Runtime validators](./runtime-validators.md). These validators have no name. Thus, Beff prints only the type:
 

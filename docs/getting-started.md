@@ -7,10 +7,10 @@ Beff has two packages:
 - `@beff/cli` generates the validator code.
 - `@beff/client` contains the runtime code that the generated validators use.
 
-Install the two packages:
+Install the two packages. `@beff/client` also needs `zod` version 3:
 
 ```shell
-npm i @beff/cli @beff/client
+npm i @beff/cli @beff/client zod@3
 ```
 
 ## Create the configuration file
@@ -75,6 +75,16 @@ Run the CLI again each time you change a type. You can also use watch mode. Watc
 npx beff -p beff.json -w
 ```
 
+You can add the command to `package.json`:
+
+```json
+{
+  "scripts": {
+    "beff": "beff -p beff.json"
+  }
+}
+```
+
 ### CLI options
 
 ```shell
@@ -92,7 +102,7 @@ Options:
 
 ## Use the validators
 
-Each property of `Parsers` is a validator. Refer to [Parsers](./parsers.md) for the full list of methods.
+Each property of `Parsers` is a validator. The API uses the word "parser" in some names, for example `buildParsers`. In this documentation, a validator is an object that `buildParsers` returns. Refer to [Parsers](./parsers.md) for the full list of methods.
 
 ```ts
 import { Parsers } from "./parser";

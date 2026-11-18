@@ -6,7 +6,7 @@ Use a hash to find out if a type changed. For example:
 
 - Keep the hash of an API type in a test. The test fails when a person changes the type.
 - Add the hash to a cache key. When the type changes, the cache key changes too.
-- Compare the type of a client and a server.
+- Send the hash from the client to the server. The server rejects the request if its hash is different.
 
 ## `hash256`
 
@@ -51,7 +51,7 @@ Parsers.User.hash256() === Parsers.Person.hash256();
 // true
 ```
 
-A compiled validator and a runtime validator with the same structure have the same hash:
+A generated validator and a `b` validator with the same structure have the same hash:
 
 ```ts
 import { b } from "@beff/client";
@@ -61,8 +61,6 @@ const AdHocUser = b.Object({ name: b.String(), age: b.Number() });
 AdHocUser.hash256() === Parsers.User.hash256();
 // true
 ```
-
-NOTE: For recursive types, `hash()` uses the type name. Two recursive types with different names have different `hash()` values. `hash256()` does not use the type name.
 
 ## Example: detect changes to an API type
 

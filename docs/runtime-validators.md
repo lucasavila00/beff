@@ -1,6 +1,6 @@
 # Runtime validators
 
-The `b` API creates validators in code, without the compiler. It is similar to zod and io-ts. Validators from the `b` API have the same methods as compiled validators. Refer to [Parsers](./parsers.md).
+The `b` API creates validators in code, without the compiler. It is similar to zod and io-ts. Validators from the `b` API have the same methods as generated validators. Refer to [Parsers](./parsers.md).
 
 ```ts
 import { b } from "@beff/client";
@@ -14,7 +14,15 @@ const Item = b.Object({
 const items = b.Array(Item).parse(input);
 ```
 
-NOTE: The `b` API supports only simple types. This keeps the TypeScript compiler fast. For complex types, write a TypeScript type and let Beff compile it.
+To get the TypeScript type of a validator, use `TypeOf`:
+
+```ts
+import { TypeOf } from "@beff/client";
+
+type Item = TypeOf<typeof Item>;
+```
+
+NOTE: The `b` API supports only simple types. This keeps the TypeScript compiler fast. The `b` API has no optional properties and no typed unions. For these types, write a TypeScript type and let Beff compile it.
 
 ## Functions
 
@@ -35,6 +43,8 @@ NOTE: The `b` API supports only simple types. This keeps the TypeScript compiler
 | `b.ReadOnlyArray(item)`                     | `readonly T[]`                                                          |
 | `b.Uint8Array()` and the other typed arrays | `Uint8Array`, `Int32Array`, `Float64Array`, and the other typed arrays. |
 | `buntyped.Union(...items)`                  | `any`. The validator accepts a value if one of the items accepts it.    |
+
+`buntyped.Union` has its own import: `import { buntyped } from "@beff/client";`.
 
 ## Named types
 

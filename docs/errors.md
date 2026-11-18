@@ -3,7 +3,7 @@
 This page describes the runtime errors. When the input is not valid:
 
 - `safeParse` returns a list of `DecodeError` objects.
-- `parse` throws an `Error`. The message has the same errors as text.
+- `parse` throws an `Error`. The message contains the same errors as text.
 
 ## The `DecodeError` type
 
@@ -30,6 +30,8 @@ The `path` has one item for each level in the input:
 
 - An object property is the property name, for example `"age"`.
 - An array item is the index in square brackets, for example `"[0]"`.
+
+`safeParse` returns a maximum of 10 errors.
 
 ### Example: regular errors
 
@@ -118,8 +120,6 @@ Parsers.Shape.safeParse({ kind: "circle", radius: "x" });
 // errors: [{ message: "expected number", path: ["radius"], received: "x" }]
 ```
 
-`safeParse` returns a maximum of 10 errors.
-
 ## `printErrors`
 
 `printErrors` changes a list of `DecodeError` objects into one line of text.
@@ -147,6 +147,8 @@ The text has this format:
 | Error at the root | `expected object, received: null`                                                   |
 | Union error       | `Failed to decode one of (expected string \| expected number), received: true`      |
 
+`printErrors` shows a received object as `Object` and a received array as `Array`.
+
 ### Add a parent path
 
 `printErrors` has an optional second argument, `parentPath`. Beff adds `parentPath` before the path of each error. Use it to show where the value is in a larger document:
@@ -154,6 +156,20 @@ The text has this format:
 ```ts
 printErrors(result.errors, ["body"]);
 // (body.members[0].age) expected number, received: "25"
+```
+
+## Create your own error format
+
+You can use the `DecodeError` list directly. For example, show the errors next to the fields of a form:
+
+```ts
+const result = Parsers.User.safeParse(formData);
+if (!result.success) {
+  const fieldErrors = result.errors.map((err) => ({
+    field: err.path.join("."),
+    message: "message" in err ? err.message : "not valid",
+  }));
+}
 ```
 
 ## Error messages for custom formats
