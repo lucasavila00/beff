@@ -107,6 +107,13 @@ Run `pnpm run all` or to debug `DEBUG=true pnpm run all` where it will not optim
 - Do not fix problems that need types that nobody writes, for example `Date & { foo: string }`. If such a type gives wrong results, make the compiler reject it with a short error.
 - If a reported problem does not occur with real code or real data, close the issue and say why.
 
+## Errors
+
+- Do not hide an error. If something fails, stop with an error that tells what failed. This rule applies to the library, the CLI, tests, scripts and benchmarks.
+- Do not catch an error to continue, to skip an item, or to show it as a value in a table or a log.
+- Do not add a fallback for an old version, an old path or an old option. Change all the code that uses it.
+- Catch an error only when the code handles that error completely, for example to make a validation error for the user. Catch only the error type that you expect.
+
 ## Benchmarks
 
 - The benchmarks in `bench/` are manual. Do not run them as part of `pnpm test`, and do not add them to the Tests workflow or to any automatic trigger (push or pull request).
