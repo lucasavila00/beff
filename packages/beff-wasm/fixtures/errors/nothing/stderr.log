@@ -1,1 +1,1 @@
-Failed to read JSON configuration file at /errors/nothing/bff.json: Error: ENOENT: no such file or directory, open '/errors/nothing/bff.json'
+Failed to read JSON configuration file at /errors/nothing/beff.json: Error: ENOENT: no such file or directory, open '/errors/nothing/beff.json'
