@@ -264,12 +264,12 @@ function reportAtPath(
   acc: DecodeError[],
   key: string,
   validate: Validate,
-  reportErrors: Report,
+  runtype: Runtype,
   input: unknown,
 ): void {
   if (!validate(ctx, input)) {
     pushPath(ctx, key);
-    acc.push(...reportErrors(ctx, input));
+    acc.push(...coldOf(runtype).reportErrors(ctx, input));
     popPath(ctx);
   }
 }
@@ -505,6 +505,17 @@ const TAG_NEVER = 2;
 const TAG_ANY = 3;
 const TAG_REFERENCE = 4;
 
+// The functions of a node that most programs call rarely or never. A node makes them on their first use, see
+// `coldOf`. Then a program that only validates and parses valid inputs does not pay for them.
+type ColdFunctions = {
+  // The errors of an input that `validate` rejected.
+  reportErrors: Report;
+  describe: (ctx: DescribeContext) => TypeDescription;
+  schema: (ctx: SchemaContext) => JSONSchema7;
+  // The child nodes. A reference has one child, the type it points to now.
+  children: () => Runtype[];
+};
+
 // A node of a parser. Every builder below returns one, and all nodes have the same fields.
 export type Runtype = {
   tag: number;
@@ -512,30 +523,33 @@ export type Runtype = {
   validate: Validate;
   // Parse an input that `validate` accepted.
   parse: Parse;
-  // The errors of an input that `validate` rejected.
-  reportErrors: Report;
-  describe: (ctx: DescribeContext) => TypeDescription;
-  schema: (ctx: SchemaContext) => JSONSchema7;
+  // Makes the cold functions. Call `coldOf` instead: it keeps the result in `cold`.
+  makeCold: () => ColdFunctions;
+  cold: ColdFunctions | undefined;
   // The name of the type a reference points to.
   name: string | undefined;
-  // The child nodes. A reference has one child, the type it points to now.
-  children: () => Runtype[];
+  // The type of an optional property.
+  inner: Runtype | undefined;
 };
+
+// The cold functions of a node. The first call makes them.
+function coldOf(runtype: Runtype): ColdFunctions {
+  return (runtype.cold ??= runtype.makeCold());
+}
 
 const noChildren = (): Runtype[] => [];
 const parseReturnsInput: Parse = (_ctx, input) => input;
 
 // Makes a node. All nodes get the same fields in the same order, so V8 uses one hidden class for all of them.
-function node(fields: Omit<Runtype, "name">): Runtype {
+function node(fields: Pick<Runtype, "tag" | "validate" | "parse" | "makeCold">): Runtype {
   return {
     tag: fields.tag,
     validate: fields.validate,
     parse: fields.parse,
-    reportErrors: fields.reportErrors,
-    describe: fields.describe,
-    schema: fields.schema,
+    makeCold: fields.makeCold,
+    cold: undefined,
     name: undefined,
-    children: fields.children,
+    inner: undefined,
   };
 }
 
@@ -545,30 +559,40 @@ function leaf(fields: {
   validate: Validate;
   message: string;
   typeExpr: string;
-  schema: Runtype["schema"];
+  schema: ColdFunctions["schema"];
 }): Runtype {
-  const { message, typeExpr } = fields;
+  const { message, typeExpr, schema } = fields;
   return node({
     tag: fields.tag,
     validate: fields.validate,
     parse: parseReturnsInput,
-    reportErrors: (ctx, input) => buildError(ctx, message, input),
-    describe: () => ({ typeExpr }),
-    schema: fields.schema,
-    children: noChildren,
+    makeCold: () => ({
+      reportErrors: (ctx, input) => buildError(ctx, message, input),
+      describe: () => ({ typeExpr }),
+      schema,
+      children: noChildren,
+    }),
   });
 }
 
 // Returns a copy of the node with a description. The description replaces the doc text of the node, and it is
 // added to its schema. The node itself does not change, because other nodes can use it.
 export function withDescription(runtype: Runtype, description: string): Runtype {
-  const { describe, schema } = runtype;
   return {
     ...runtype,
-    describe: (ctx) => ({ typeExpr: describe(ctx).typeExpr, docText: description }),
-    // `schema.call(this, ...)` gives the original function the copy as `this`. discriminatedUnion uses it.
-    schema: function (this: Runtype, ctx: SchemaContext): JSONSchema7 {
-      return { ...schema.call(this, ctx), description };
+    cold: undefined,
+    makeCold: () => {
+      const cold = coldOf(runtype);
+      const { describe, schema } = cold;
+      return {
+        ...cold,
+        describe: (ctx) => ({ typeExpr: describe(ctx).typeExpr, docText: description }),
+        // `schema.call(this, ...)` gives the original function the functions of the copy as `this`.
+        // discriminatedUnion uses it.
+        schema: function (this: ColdFunctions, ctx: SchemaContext): JSONSchema7 {
+          return { ...schema.call(this, ctx), description };
+        },
+      };
     },
   };
 }
@@ -583,7 +607,7 @@ function jsdocDescription(description: string): string {
 }
 
 function describeTypeExpr(ctx: DescribeContext, runtype: Runtype): string {
-  return runtype.describe(ctx).typeExpr;
+  return coldOf(runtype).describe(ctx).typeExpr;
 }
 
 function renderTypeDescription(description: TypeDescription): string {
@@ -613,7 +637,7 @@ function describeObjectMember(
   value: Runtype,
 ): { docText?: string; member: string } {
   const optionalMark = value.tag === TAG_OPTIONAL ? "?" : "";
-  const description = value.describe(ctx);
+  const description = coldOf(value).describe(ctx);
 
   return {
     docText: description.docText,
@@ -647,12 +671,12 @@ function collectDescribeRefs(runtype: Runtype, ctx: DescribeContext): void {
 
     ctx.visitedRefs.add(name);
     ctx.activeRefs.add(name);
-    collectDescribeRefs(runtype.children()[0], ctx);
+    collectDescribeRefs(coldOf(runtype).children()[0], ctx);
     ctx.activeRefs.delete(name);
     return;
   }
 
-  for (const child of runtype.children()) {
+  for (const child of coldOf(runtype).children()) {
     collectDescribeRefs(child, ctx);
   }
 }
@@ -712,10 +736,12 @@ export const never = (): Runtype =>
     parse: () => {
       throw new Error("unreachable");
     },
-    reportErrors: (ctx, input) => buildError(ctx, "expected never", input),
-    describe: () => ({ typeExpr: "never" }),
-    schema: () => ({ anyOf: [] }),
-    children: noChildren,
+    makeCold: () => ({
+      reportErrors: (ctx, input) => buildError(ctx, "expected never", input),
+      describe: () => ({ typeExpr: "never" }),
+      schema: () => ({ anyOf: [] }),
+      children: noChildren,
+    }),
   });
 
 type Const = string | number | boolean | null;
@@ -754,7 +780,7 @@ export const regex = (re: RegExp, description: string): Runtype =>
   });
 
 const noSchema =
-  (typeName: string): Runtype["schema"] =>
+  (typeName: string): ColdFunctions["schema"] =>
   (ctx) => {
     throw new Error(buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${typeName}`));
   };
@@ -821,20 +847,22 @@ function withFormat(
       return true;
     },
     parse: parseReturnsInput,
-    reportErrors: (ctx, input) =>
-      buildError(
-        ctx,
-        typeof input === typeName
-          ? (resolveFormatErrorMessage(formatters, formats, input) ?? expected)
-          : expected,
-        input,
-      ),
-    describe: () => ({ typeExpr: describeFormats(typeName === "string" ? "String" : "Number", formats) }),
-    schema: () => ({
-      type: typeName,
-      format: formatters[formats[formats.length - 1]]?.jsonSchemaFormat ?? formats.join(" and "),
+    makeCold: () => ({
+      reportErrors: (ctx, input) =>
+        buildError(
+          ctx,
+          typeof input === typeName
+            ? (resolveFormatErrorMessage(formatters, formats, input) ?? expected)
+            : expected,
+          input,
+        ),
+      describe: () => ({ typeExpr: describeFormats(typeName === "string" ? "String" : "Number", formats) }),
+      schema: () => ({
+        type: typeName,
+        format: formatters[formats[formats.length - 1]]?.jsonSchemaFormat ?? formats.join(" and "),
+      }),
+      children: noChildren,
     }),
-    children: noChildren,
   });
 }
 export const stringWithFormat = (formats: string[]): Runtype =>
@@ -873,10 +901,8 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
   const count = prefix.length;
   const validators = prefix.map((it) => it.validate);
   const parsers = prefix.map((it) => it.parse);
-  const reporters = prefix.map((it) => it.reportErrors);
   const validateRest = rest?.validate;
   const parseRest = rest?.parse;
-  const reportRest = rest?.reportErrors;
   return node({
     tag: TAG_NONE,
     validate: (ctx, input) => {
@@ -910,44 +936,46 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
       }
       return acc;
     },
-    reportErrors: (ctx, input) => {
-      if (!Array.isArray(input)) {
-        return buildError(ctx, "expected tuple", input);
-      }
-
-      const acc: DecodeError[] = [];
-      for (let index = 0; index < count; index++) {
-        reportAtPath(ctx, acc, `[${index}]`, validators[index], reporters[index], input[index]);
-      }
-      if (validateRest !== undefined) {
-        for (let index = count; index < input.length; index++) {
-          reportAtPath(ctx, acc, `[${index}]`, validateRest, reportRest!, input[index]);
+    makeCold: () => ({
+      reportErrors: (ctx, input) => {
+        if (!Array.isArray(input)) {
+          return buildError(ctx, "expected tuple", input);
         }
-      } else if (input.length > count) {
-        acc.push(...buildError(ctx, `expected tuple with ${count} items, got ${input.length}`, input));
-      }
 
-      return acc;
-    },
-    describe: (ctx) => {
-      const prefixExpr = prefix.map((it) => describeTypeExpr(ctx, it)).join(", ");
-      const restExpr = rest != null ? `...Array<${describeTypeExpr(ctx, rest)}>` : null;
+        const acc: DecodeError[] = [];
+        for (let index = 0; index < count; index++) {
+          reportAtPath(ctx, acc, `[${index}]`, validators[index], prefix[index], input[index]);
+        }
+        if (validateRest !== undefined) {
+          for (let index = count; index < input.length; index++) {
+            reportAtPath(ctx, acc, `[${index}]`, validateRest, rest!, input[index]);
+          }
+        } else if (input.length > count) {
+          acc.push(...buildError(ctx, `expected tuple with ${count} items, got ${input.length}`, input));
+        }
 
-      const inner = [prefixExpr, restExpr].filter((it) => it != null && it.length > 0).join(", ");
-      return { typeExpr: `[${inner}]` };
-    },
-    schema: (ctx) => {
-      pushPath(ctx, "[]");
-      const prefixItems = prefix.map((it) => it.schema(ctx));
-      const items = rest != null ? rest.schema(ctx) : false;
-      popPath(ctx);
-      return {
-        type: "array",
-        prefixItems,
-        items,
-      } as any;
-    },
-    children: () => [...prefix, ...(rest == null ? [] : [rest])],
+        return acc;
+      },
+      describe: (ctx) => {
+        const prefixExpr = prefix.map((it) => describeTypeExpr(ctx, it)).join(", ");
+        const restExpr = rest != null ? `...Array<${describeTypeExpr(ctx, rest)}>` : null;
+
+        const inner = [prefixExpr, restExpr].filter((it) => it != null && it.length > 0).join(", ");
+        return { typeExpr: `[${inner}]` };
+      },
+      schema: (ctx) => {
+        pushPath(ctx, "[]");
+        const prefixItems = prefix.map((it) => coldOf(it).schema(ctx));
+        const items = rest != null ? coldOf(rest).schema(ctx) : false;
+        popPath(ctx);
+        return {
+          type: "array",
+          prefixItems,
+          items,
+        } as any;
+      },
+      children: () => [...prefix, ...(rest == null ? [] : [rest])],
+    }),
   });
 }
 
@@ -955,7 +983,6 @@ export function intersection(members: Runtype[]): Runtype {
   const count = members.length;
   const validators = members.map((it) => it.validate);
   const parsers = members.map((it) => it.parse);
-  const reporters = members.map((it) => it.reportErrors);
   const parseMembers = (ctx: Ctx, input: any): object => {
     let acc = {};
     for (let index = 0; index < count; index++) {
@@ -1000,39 +1027,41 @@ export function intersection(members: Runtype[]): Runtype {
       ctx.intersectionInput = old;
       return parsed;
     },
-    reportErrors: (ctx, input) => {
-      const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
-      const old = ctx.intersectionInput;
-      ctx.intersectionInput = input;
-      const errors: DecodeError[] = [];
-      for (let index = 0; index < count; index++) {
-        errors.push(...reporters[index](ctx, input));
-      }
-      ctx.intersectionInput = old;
-      if (errors.length > 0 || !checksExtraProperties) {
-        return errors;
-      }
-      const acc: DecodeError[] = [];
-      for (const key of extraKeys(input)) {
-        pushPath(ctx, key);
-        acc.push(...buildError(ctx, `extra property`, input[key]));
-        popPath(ctx);
-      }
-      return acc;
-    },
-    describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" & ")})` }),
-    schema: (ctx) => {
-      const schemas = members.map((it) => it.schema(ctx));
-      const merged = tryMergeAllOfObjectSchemas(schemas);
-      if (merged != null) {
-        return merged;
-      }
+    makeCold: () => ({
+      reportErrors: (ctx, input) => {
+        const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
+        const old = ctx.intersectionInput;
+        ctx.intersectionInput = input;
+        const errors: DecodeError[] = [];
+        for (let index = 0; index < count; index++) {
+          errors.push(...coldOf(members[index]).reportErrors(ctx, input));
+        }
+        ctx.intersectionInput = old;
+        if (errors.length > 0 || !checksExtraProperties) {
+          return errors;
+        }
+        const acc: DecodeError[] = [];
+        for (const key of extraKeys(input)) {
+          pushPath(ctx, key);
+          acc.push(...buildError(ctx, `extra property`, input[key]));
+          popPath(ctx);
+        }
+        return acc;
+      },
+      describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" & ")})` }),
+      schema: (ctx) => {
+        const schemas = members.map((it) => coldOf(it).schema(ctx));
+        const merged = tryMergeAllOfObjectSchemas(schemas);
+        if (merged != null) {
+          return merged;
+        }
 
-      return {
-        allOf: schemas,
-      };
-    },
-    children: () => members,
+        return {
+          allOf: schemas,
+        };
+      },
+      children: () => members,
+    }),
   });
 }
 
@@ -1111,7 +1140,6 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
 export function union(members: Runtype[]): Runtype {
   const validators = members.map((it) => it.validate);
   const parsers = members.map((it) => it.parse);
-  const reporters = members.map((it) => it.reportErrors);
   return node({
     tag: TAG_NONE,
     validate: (ctx, input) => {
@@ -1134,37 +1162,38 @@ export function union(members: Runtype[]): Runtype {
       }
       return deepmerge(...items);
     },
-    reportErrors: (ctx, input) => {
-      const branchErrors: DecodeError[][] = [];
-      const oldPaths = ctx.path;
-      ctx.path = [];
-      for (let index = 0; index < validators.length; index++) {
-        branchErrors.push(reporters[index](ctx, input));
-      }
-      ctx.path = oldPaths;
+    makeCold: () => ({
+      reportErrors: (ctx, input) => {
+        const branchErrors: DecodeError[][] = [];
+        const oldPaths = ctx.path;
+        ctx.path = [];
+        for (let index = 0; index < validators.length; index++) {
+          branchErrors.push(coldOf(members[index]).reportErrors(ctx, input));
+        }
+        ctx.path = oldPaths;
 
-      // Filter to closest-matching branches by max error depth
-      const depths = branchErrors.map((errors) => maxErrorDepth(errors));
-      const bestDepth = Math.max(...depths);
-      const filtered =
-        bestDepth > 0
-          ? branchErrors.filter((_, index) => depths[index] === bestDepth).flat()
-          : branchErrors.flat();
+        // Filter to closest-matching branches by max error depth
+        const depths = branchErrors.map((errors) => maxErrorDepth(errors));
+        const bestDepth = Math.max(...depths);
+        const filtered =
+          bestDepth > 0
+            ? branchErrors.filter((_, index) => depths[index] === bestDepth).flat()
+            : branchErrors.flat();
 
-      return buildUnionError(ctx, filtered, input);
-    },
-    describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
-    schema: (ctx) => ({
-      anyOf: members.map((it) => it.schema(ctx)),
+        return buildUnionError(ctx, filtered, input);
+      },
+      describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
+      schema: (ctx) => ({
+        anyOf: members.map((it) => coldOf(it).schema(ctx)),
+      }),
+      children: () => members,
     }),
-    children: () => members,
   });
 }
 
 export function array(item: Runtype): Runtype {
   const validateItem = item.validate;
   const parseItem = item.parse;
-  const reportItem = item.reportErrors;
   return node({
     tag: TAG_NONE,
     validate: (ctx, input) => {
@@ -1188,39 +1217,39 @@ export function array(item: Runtype): Runtype {
       }
       return acc;
     },
-    reportErrors: (ctx, input) => {
-      if (!Array.isArray(input)) {
-        return buildError(ctx, "expected array", input);
-      }
+    makeCold: () => ({
+      reportErrors: (ctx, input) => {
+        if (!Array.isArray(input)) {
+          return buildError(ctx, "expected array", input);
+        }
 
-      const acc: DecodeError[] = [];
-      for (let index = 0; index < input.length; index++) {
-        reportAtPath(ctx, acc, `[${index}]`, validateItem, reportItem, input[index]);
-      }
+        const acc: DecodeError[] = [];
+        for (let index = 0; index < input.length; index++) {
+          reportAtPath(ctx, acc, `[${index}]`, validateItem, item, input[index]);
+        }
 
-      return acc;
-    },
-    describe: (ctx) => ({ typeExpr: `Array<${describeTypeExpr(ctx, item)}>` }),
-    schema: (ctx) => {
-      pushPath(ctx, "[]");
-      const items = item.schema(ctx);
-      popPath(ctx);
-      return {
-        type: "array",
-        items,
-      };
-    },
-    children: () => [item],
+        return acc;
+      },
+      describe: (ctx) => ({ typeExpr: `Array<${describeTypeExpr(ctx, item)}>` }),
+      schema: (ctx) => {
+        pushPath(ctx, "[]");
+        const items = coldOf(item).schema(ctx);
+        popPath(ctx);
+        return {
+          type: "array",
+          items,
+        };
+      },
+      children: () => [item],
+    }),
   });
 }
 
 export function map(key: Runtype, value: Runtype): Runtype {
   const validateKey = key.validate;
   const parseKey = key.parse;
-  const reportKey = key.reportErrors;
   const validateValue = value.validate;
   const parseValue = value.parse;
-  const reportValue = value.reportErrors;
   return node({
     tag: TAG_NONE,
     validate: (ctx, input) => {
@@ -1241,34 +1270,30 @@ export function map(key: Runtype, value: Runtype): Runtype {
       }
       return res;
     },
-    reportErrors: (ctx, input) => {
-      if (!(input instanceof Map)) {
-        return buildError(ctx, "expected Map", input);
-      }
-      const acc: DecodeError[] = [];
-      for (const [entryKey, entryValue] of input) {
-        reportAtPath(ctx, acc, `key(${stringifyWithBigInt(entryKey)})`, validateKey, reportKey, entryKey);
-        reportAtPath(
-          ctx,
-          acc,
-          `value(${stringifyWithBigInt(entryKey)})`,
-          validateValue,
-          reportValue,
-          entryValue,
-        );
-      }
-      return acc;
-    },
-    describe: (ctx) => ({ typeExpr: `Map<${describeTypeExpr(ctx, key)}, ${describeTypeExpr(ctx, value)}>` }),
-    schema: noSchema("Map"),
-    children: () => [key, value],
+    makeCold: () => ({
+      reportErrors: (ctx, input) => {
+        if (!(input instanceof Map)) {
+          return buildError(ctx, "expected Map", input);
+        }
+        const acc: DecodeError[] = [];
+        for (const [entryKey, entryValue] of input) {
+          reportAtPath(ctx, acc, `key(${stringifyWithBigInt(entryKey)})`, validateKey, key, entryKey);
+          reportAtPath(ctx, acc, `value(${stringifyWithBigInt(entryKey)})`, validateValue, value, entryValue);
+        }
+        return acc;
+      },
+      describe: (ctx) => ({
+        typeExpr: `Map<${describeTypeExpr(ctx, key)}, ${describeTypeExpr(ctx, value)}>`,
+      }),
+      schema: noSchema("Map"),
+      children: () => [key, value],
+    }),
   });
 }
 
 export function set(item: Runtype): Runtype {
   const validateItem = item.validate;
   const parseItem = item.parse;
-  const reportItem = item.reportErrors;
   return node({
     tag: TAG_NONE,
     validate: (ctx, input) => {
@@ -1289,19 +1314,21 @@ export function set(item: Runtype): Runtype {
       }
       return res;
     },
-    reportErrors: (ctx, input) => {
-      if (!(input instanceof Set)) {
-        return buildError(ctx, "expected Set", input);
-      }
-      const acc: DecodeError[] = [];
-      for (const entry of input) {
-        reportAtPath(ctx, acc, `item(${stringifyWithBigInt(entry)})`, validateItem, reportItem, entry);
-      }
-      return acc;
-    },
-    describe: (ctx) => ({ typeExpr: `Set<${describeTypeExpr(ctx, item)}>` }),
-    schema: noSchema("Set"),
-    children: () => [item],
+    makeCold: () => ({
+      reportErrors: (ctx, input) => {
+        if (!(input instanceof Set)) {
+          return buildError(ctx, "expected Set", input);
+        }
+        const acc: DecodeError[] = [];
+        for (const entry of input) {
+          reportAtPath(ctx, acc, `item(${stringifyWithBigInt(entry)})`, validateItem, item, entry);
+        }
+        return acc;
+      },
+      describe: (ctx) => ({ typeExpr: `Set<${describeTypeExpr(ctx, item)}>` }),
+      schema: noSchema("Set"),
+      children: () => [item],
+    }),
   });
 }
 
@@ -1326,7 +1353,7 @@ function ensureContextualDefinition(
     return;
   }
   printingContext.markDefinitionInProgress(name);
-  const body = target.schema(ctx);
+  const body = coldOf(target).schema(ctx);
   printingContext.storeDefinition(name, body);
 }
 
@@ -1372,71 +1399,73 @@ export function discriminatedUnion(
         [discriminator]: input[discriminator],
       };
     },
-    reportErrors: (ctx, input) => {
-      if (input == null || typeof input !== "object") {
-        return buildError(ctx, "expected object", input);
-      }
+    makeCold: () => ({
+      reportErrors: (ctx, input) => {
+        if (input == null || typeof input !== "object") {
+          return buildError(ctx, "expected object", input);
+        }
 
-      const discriminatorValue = input[discriminator];
-      if (discriminatorValue == null) {
-        return buildError(ctx, "expected discriminator key " + JSON.stringify(discriminator), input);
-      }
-      const variant = variants.get(String(discriminatorValue));
-      if (variant === undefined) {
-        pushPath(ctx, discriminator);
-        const errors = buildError(
-          ctx,
-          "expected one of " +
-            Object.keys(mapping)
-              .map((it) => JSON.stringify(it))
-              .join(", "),
-          discriminatorValue,
-        );
-        popPath(ctx);
-        return errors;
-      }
-      return variant.reportErrors(ctx, input);
-    },
-    describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
-    // A normal function, not an arrow function: it reads the node from `this`, see below.
-    schema: function (this: Runtype, ctx: SchemaContext): JSONSchema7 {
-      const printingContext = ctx.printingContext;
-      if (ctx.mode === "contextual" && printingContext != null) {
-        // The flat schema of the union gives the number in the names of its variants, so two unions with the
-        // same schema get the same names. `this` is the node that the caller has. If it has a description,
-        // the description is in the flat schema too.
-        const flatSchema = this.schema({ path: ctx.path, seen: {}, mode: "flat" });
-        const unionNumber = stringToNumber(JSON.stringify(flatSchema));
-        const variantRefs = Object.entries(mapping).map(([key, variant]) => {
-          // A variant that is a named type keeps its name. Other variants get a name made from the union.
-          const name =
-            variant.tag === TAG_REFERENCE
-              ? variant.name!
-              : `Discriminated${sanitizeComponentNamePart(discriminator)}${sanitizeComponentNamePart(key)}${Math.abs(unionNumber)}`;
-          const target = variant.tag === TAG_REFERENCE ? variant.children()[0] : variant;
-          ensureContextualDefinition(printingContext, name, target, ctx);
-          return { key, ref: printingContext.getRef(name) };
-        });
+        const discriminatorValue = input[discriminator];
+        if (discriminatorValue == null) {
+          return buildError(ctx, "expected discriminator key " + JSON.stringify(discriminator), input);
+        }
+        const variant = variants.get(String(discriminatorValue));
+        if (variant === undefined) {
+          pushPath(ctx, discriminator);
+          const errors = buildError(
+            ctx,
+            "expected one of " +
+              Object.keys(mapping)
+                .map((it) => JSON.stringify(it))
+                .join(", "),
+            discriminatorValue,
+          );
+          popPath(ctx);
+          return errors;
+        }
+        return coldOf(variant).reportErrors(ctx, input);
+      },
+      describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
+      // A normal function, not an arrow function: it reads the node from `this`, see below.
+      schema: function (this: ColdFunctions, ctx: SchemaContext): JSONSchema7 {
+        const printingContext = ctx.printingContext;
+        if (ctx.mode === "contextual" && printingContext != null) {
+          // The flat schema of the union gives the number in the names of its variants, so two unions with the
+          // same schema get the same names. `this` has the functions of the node that the caller has. If it has a description,
+          // the description is in the flat schema too.
+          const flatSchema = this.schema({ path: ctx.path, seen: {}, mode: "flat" });
+          const unionNumber = stringToNumber(JSON.stringify(flatSchema));
+          const variantRefs = Object.entries(mapping).map(([key, variant]) => {
+            // A variant that is a named type keeps its name. Other variants get a name made from the union.
+            const name =
+              variant.tag === TAG_REFERENCE
+                ? variant.name!
+                : `Discriminated${sanitizeComponentNamePart(discriminator)}${sanitizeComponentNamePart(key)}${Math.abs(unionNumber)}`;
+            const target = variant.tag === TAG_REFERENCE ? coldOf(variant).children()[0] : variant;
+            ensureContextualDefinition(printingContext, name, target, ctx);
+            return { key, ref: printingContext.getRef(name) };
+          });
+
+          return {
+            type: "object",
+            discriminator: {
+              propertyName: discriminator,
+              mapping: Object.fromEntries(variantRefs.map(({ key, ref }) => [key, ref])),
+            },
+            oneOf: variantRefs.map(({ ref }) => ({ $ref: ref })),
+          };
+        }
 
         return {
           type: "object",
           discriminator: {
             propertyName: discriminator,
-            mapping: Object.fromEntries(variantRefs.map(({ key, ref }) => [key, ref])),
           },
-          oneOf: variantRefs.map(({ ref }) => ({ $ref: ref })),
+          anyOf: members.map((it) => coldOf(it).schema(ctx)),
         };
-      }
-
-      return {
-        type: "object",
-        discriminator: {
-          propertyName: discriminator,
-        },
-        anyOf: members.map((it) => it.schema(ctx)),
-      };
-    },
-    children: () => members,
+      },
+      children: () => members,
+    }),
   });
 }
 
@@ -1444,19 +1473,23 @@ export function discriminatedUnion(
 export function optional(inner: Runtype): Runtype {
   const validateInner = inner.validate;
   const parseInner = inner.parse;
-  return node({
+  const optionalNode = node({
     tag: TAG_OPTIONAL,
     validate: (ctx, input) => input == null || validateInner(ctx, input),
     parse: (ctx, input) => (input == null ? input : parseInner(ctx, input)),
     // `validate` accepts null and undefined, so the input here is neither of them. Only the errors of the inner
     // type are relevant.
-    reportErrors: inner.reportErrors,
-    describe: (ctx) => inner.describe(ctx),
-    schema: (ctx) => ({
-      anyOf: [inner.schema(ctx), { type: "null" }],
+    makeCold: () => ({
+      reportErrors: (ctx, input) => coldOf(inner).reportErrors(ctx, input),
+      describe: (ctx) => coldOf(inner).describe(ctx),
+      schema: (ctx) => ({
+        anyOf: [coldOf(inner).schema(ctx), { type: "null" }],
+      }),
+      children: () => [inner],
     }),
-    children: () => [inner],
   });
+  optionalNode.inner = inner;
+  return optionalNode;
 }
 
 const hasOwn = Object.prototype.hasOwnProperty;
@@ -1550,7 +1583,6 @@ function hasExtraKeys(positions: PropertyPositions, input: object): boolean {
 }
 
 export function object(properties: Record<string, Runtype>, indexed: Indexed = []): Runtype {
-  const keys = Object.keys(properties);
   // The property list has the key, the optional flag, and the validate and parse functions of each property.
   // An optional property has the functions of its inner type, so it does not add a call.
   // The validate and parse functions below read only this array, and they do not call helper functions for
@@ -1559,9 +1591,9 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
   const propertyList: PropertyList = [];
   // It has no prototype, so only the keys of `properties` are in it.
   const positions: PropertyPositions = Object.create(null);
-  for (const key of keys) {
+  for (const key of Object.keys(properties)) {
     const optional = properties[key].tag === TAG_OPTIONAL;
-    const inner = optional ? properties[key].children()[0] : properties[key];
+    const inner = optional ? properties[key].inner! : properties[key];
     positions[key] = propertyList.length;
     propertyList.push(key, optional, inner.validate, inner.parse);
   }
@@ -1644,146 +1676,151 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
       }
       return acc;
     },
-    reportErrors: (ctx, input) => {
-      if (typeof input !== "object" || Array.isArray(input) || input === null) {
-        return buildError(ctx, "expected object", input);
-      }
-
-      const acc: DecodeError[] = [];
-
-      for (let position = 0; position < propertyList.length; position += PropertyOffset.Size) {
-        const key = propertyList[position + PropertyOffset.Key] as string;
-        const value = input[key];
-        if (!(value == null && propertyList[position + PropertyOffset.Optional])) {
-          reportAtPath(
-            ctx,
-            acc,
-            key,
-            propertyList[position + PropertyOffset.Validate] as Validate,
-            properties[key].reportErrors,
-            value,
-          );
-        }
-      }
-
-      if (hasIndexed) {
-        for (const key of Object.keys(input)) {
-          if (positions[key] !== undefined || leavesKeyToIntersection(indexed, ctx, input, key)) {
-            continue;
+    makeCold: () => {
+      const keys = Object.keys(properties);
+      return {
+        reportErrors: (ctx, input) => {
+          if (typeof input !== "object" || Array.isArray(input) || input === null) {
+            return buildError(ctx, "expected object", input);
           }
-          for (const signature of indexed) {
-            const keyOk = signature.key.validate(ctx, key);
-            const valueOk = signature.value.validate(ctx, input[key]);
-            if (!keyOk || !valueOk) {
-              pushPath(ctx, key);
-              if (!keyOk) {
-                acc.push(...signature.key.reportErrors(ctx, key));
-              }
-              if (!valueOk) {
-                acc.push(...signature.value.reportErrors(ctx, input[key]));
-              }
-              popPath(ctx);
+
+          const acc: DecodeError[] = [];
+
+          for (let position = 0; position < propertyList.length; position += PropertyOffset.Size) {
+            const key = propertyList[position + PropertyOffset.Key] as string;
+            const value = input[key];
+            if (!(value == null && propertyList[position + PropertyOffset.Optional])) {
+              reportAtPath(
+                ctx,
+                acc,
+                key,
+                propertyList[position + PropertyOffset.Validate] as Validate,
+                properties[key],
+                value,
+              );
             }
           }
-        }
-      } else if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
-        const extraKeys = Object.keys(input).filter((key) => positions[key] === undefined);
-        if (extraKeys.length > 0) {
-          return extraKeys.flatMap((key) => {
+
+          if (hasIndexed) {
+            for (const key of Object.keys(input)) {
+              if (positions[key] !== undefined || leavesKeyToIntersection(indexed, ctx, input, key)) {
+                continue;
+              }
+              for (const signature of indexed) {
+                const keyOk = signature.key.validate(ctx, key);
+                const valueOk = signature.value.validate(ctx, input[key]);
+                if (!keyOk || !valueOk) {
+                  pushPath(ctx, key);
+                  if (!keyOk) {
+                    acc.push(...coldOf(signature.key).reportErrors(ctx, key));
+                  }
+                  if (!valueOk) {
+                    acc.push(...coldOf(signature.value).reportErrors(ctx, input[key]));
+                  }
+                  popPath(ctx);
+                }
+              }
+            }
+          } else if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
+            const extraKeys = Object.keys(input).filter((key) => positions[key] === undefined);
+            if (extraKeys.length > 0) {
+              return extraKeys.flatMap((key) => {
+                pushPath(ctx, key);
+                const errors = buildError(ctx, `extra property`, input[key]);
+                popPath(ctx);
+                return errors;
+              });
+            }
+          }
+
+          return acc;
+        },
+        describe: (ctx) => {
+          const props = [...keys]
+            .sort()
+            .map((key) => describeObjectMember(ctx, describePropertyKey(key), properties[key]));
+
+          const indexProps = indexed.map(({ key, value }) => describeIndexObjectMember(ctx, key, value));
+
+          const members = [...props, ...indexProps];
+          const hasMemberDescriptions = members.some((it) => it.docText != null);
+          if (hasMemberDescriptions) {
+            if (members.length === 0) {
+              return { typeExpr: "{}" };
+            }
+            const content = members.map(renderObjectMember).join("\n");
+            return { typeExpr: `{\n${content}\n}` };
+          }
+
+          const content = members.map((it) => it.member).join(", ");
+          return { typeExpr: `{ ${content} }` };
+        },
+        schema: (ctx) => {
+          const schemaProperties: Record<string, JSONSchema7Definition> = {};
+          const optionalized = new Set<string>();
+          for (const key of keys) {
             pushPath(ctx, key);
-            const errors = buildError(ctx, `extra property`, input[key]);
+            const raw = coldOf(properties[key]).schema(ctx);
+            const rewrite = removeNullUnionBranch(raw);
+            if (rewrite != null) {
+              schemaProperties[key] = rewrite;
+              optionalized.add(key);
+            } else {
+              schemaProperties[key] = raw;
+            }
             popPath(ctx);
-            return errors;
+          }
+
+          const required = keys.filter((key) => !optionalized.has(key));
+          const base: JSONSchema7 = {
+            type: "object",
+            properties: schemaProperties,
+            ...(required.length > 0 ? { required } : {}),
+          };
+
+          const indexSchemas = indexed.map(({ key, value }): JSONSchema7 => {
+            pushPath(ctx, "[key]");
+            const keySchema = coldOf(key).schema(ctx);
+            popPath(ctx);
+            pushPath(ctx, "[value]");
+            const valueSchema = coldOf(value).schema(ctx);
+            popPath(ctx);
+
+            return {
+              type: "object",
+              additionalProperties: valueSchema,
+              propertyNames: keySchema,
+            };
           });
-        }
-      }
 
-      return acc;
-    },
-    describe: (ctx) => {
-      const props = [...keys]
-        .sort()
-        .map((key) => describeObjectMember(ctx, describePropertyKey(key), properties[key]));
+          if (indexSchemas.length === 0) {
+            return { ...base, additionalProperties: false };
+          }
 
-      const indexProps = indexed.map(({ key, value }) => describeIndexObjectMember(ctx, key, value));
+          // special case for Record<string, T> with no named properties
+          if (keys.length === 0 && indexSchemas.length === 1) {
+            const valueRuntype = indexed[0].value;
 
-      const members = [...props, ...indexProps];
-      const hasMemberDescriptions = members.some((it) => it.docText != null);
-      if (hasMemberDescriptions) {
-        if (members.length === 0) {
-          return { typeExpr: "{}" };
-        }
-        const content = members.map(renderObjectMember).join("\n");
-        return { typeExpr: `{\n${content}\n}` };
-      }
+            // Record<string, never> -> empty closed object (keys don't matter)
+            if (valueRuntype.tag === TAG_NEVER) {
+              return { type: "object", additionalProperties: false };
+            }
 
-      const content = members.map((it) => it.member).join(", ");
-      return { typeExpr: `{ ${content} }` };
-    },
-    schema: (ctx) => {
-      const schemaProperties: Record<string, JSONSchema7Definition> = {};
-      const optionalized = new Set<string>();
-      for (const key of keys) {
-        pushPath(ctx, key);
-        const raw = properties[key].schema(ctx);
-        const rewrite = removeNullUnionBranch(raw);
-        if (rewrite != null) {
-          schemaProperties[key] = rewrite;
-          optionalized.add(key);
-        } else {
-          schemaProperties[key] = raw;
-        }
-        popPath(ctx);
-      }
+            // Record<string, unknown> -> simplify additionalProperties to true
+            if (valueRuntype.tag === TAG_ANY) {
+              return { ...indexSchemas[0], additionalProperties: true };
+            }
 
-      const required = keys.filter((key) => !optionalized.has(key));
-      const base: JSONSchema7 = {
-        type: "object",
-        properties: schemaProperties,
-        ...(required.length > 0 ? { required } : {}),
-      };
+            return indexSchemas[0];
+          }
 
-      const indexSchemas = indexed.map(({ key, value }): JSONSchema7 => {
-        pushPath(ctx, "[key]");
-        const keySchema = key.schema(ctx);
-        popPath(ctx);
-        pushPath(ctx, "[value]");
-        const valueSchema = value.schema(ctx);
-        popPath(ctx);
-
-        return {
-          type: "object",
-          additionalProperties: valueSchema,
-          propertyNames: keySchema,
-        };
-      });
-
-      if (indexSchemas.length === 0) {
-        return { ...base, additionalProperties: false };
-      }
-
-      // special case for Record<string, T> with no named properties
-      if (keys.length === 0 && indexSchemas.length === 1) {
-        const valueRuntype = indexed[0].value;
-
-        // Record<string, never> -> empty closed object (keys don't matter)
-        if (valueRuntype.tag === TAG_NEVER) {
-          return { type: "object", additionalProperties: false };
-        }
-
-        // Record<string, unknown> -> simplify additionalProperties to true
-        if (valueRuntype.tag === TAG_ANY) {
-          return { ...indexSchemas[0], additionalProperties: true };
-        }
-
-        return indexSchemas[0];
-      }
-
-      return {
-        allOf: [base, ...indexSchemas],
+          return {
+            allOf: [base, ...indexSchemas],
+          };
+        },
+        children: () => [...Object.values(properties), ...indexed.flatMap(({ key, value }) => [key, value])],
       };
     },
-    children: () => [...Object.values(properties), ...indexed.flatMap(({ key, value }) => [key, value])],
   });
 }
 
@@ -1806,43 +1843,45 @@ export function reference(registry: Registry, name: string): Runtype {
     tag: TAG_REFERENCE,
     validate: (ctx, input) => cell.runtype!.validate(ctx, input),
     parse: (ctx, input) => cell.runtype!.parse(ctx, input),
-    reportErrors: (ctx, input) => cell.runtype!.reportErrors(ctx, input),
-    describe: (ctx) => {
-      const to = cell.runtype!;
-      if (ctx.refCounts[name] > 1) {
-        if (!ctx.activeRefs.has(name) && ctx.definitions[name] == null) {
-          ctx.activeRefs.add(name);
-          ctx.definitions[name] = to.describe(ctx);
-          ctx.activeRefs.delete(name);
+    makeCold: () => ({
+      reportErrors: (ctx, input) => coldOf(cell.runtype!).reportErrors(ctx, input),
+      describe: (ctx) => {
+        const to = cell.runtype!;
+        if (ctx.refCounts[name] > 1) {
+          if (!ctx.activeRefs.has(name) && ctx.definitions[name] == null) {
+            ctx.activeRefs.add(name);
+            ctx.definitions[name] = coldOf(to).describe(ctx);
+            ctx.activeRefs.delete(name);
+          }
+          return { typeExpr: name };
         }
-        return { typeExpr: name };
-      }
-      return to.describe(ctx);
-    },
-    schema: (ctx) => {
-      const to = cell.runtype!;
-      if (ctx.mode === "contextual") {
-        const printingContext = ctx.printingContext;
-        if (printingContext == null) {
-          throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
+        return coldOf(to).describe(ctx);
+      },
+      schema: (ctx) => {
+        const to = cell.runtype!;
+        if (ctx.mode === "contextual") {
+          const printingContext = ctx.printingContext;
+          if (printingContext == null) {
+            throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
+          }
+          if (!printingContext.hasDefinition(name) && !printingContext.isDefinitionInProgress(name)) {
+            printingContext.markDefinitionInProgress(name);
+            const schemaTarget = printingContext.getNamedTypeSchemaOverride(name) ?? to;
+            const body = coldOf(schemaTarget).schema(ctx);
+            printingContext.storeDefinition(name, body);
+          }
+          return { $ref: printingContext.getRef(name) };
         }
-        if (!printingContext.hasDefinition(name) && !printingContext.isDefinitionInProgress(name)) {
-          printingContext.markDefinitionInProgress(name);
-          const schemaTarget = printingContext.getNamedTypeSchemaOverride(name) ?? to;
-          const body = schemaTarget.schema(ctx);
-          printingContext.storeDefinition(name, body);
+        if (ctx.seen[name]) {
+          return {};
         }
-        return { $ref: printingContext.getRef(name) };
-      }
-      if (ctx.seen[name]) {
-        return {};
-      }
-      ctx.seen[name] = true;
-      var tmp = to.schema(ctx);
-      delete ctx.seen[name];
-      return tmp;
-    },
-    children: () => [cell.runtype!],
+        ctx.seen[name] = true;
+        var tmp = coldOf(to).schema(ctx);
+        delete ctx.seen[name];
+        return tmp;
+      },
+      children: () => [cell.runtype!],
+    }),
   });
   referenceNode.name = name;
   return referenceNode;
@@ -1900,7 +1939,7 @@ class ParserFromRuntype implements BeffParser<any> {
     }
     return {
       success: false,
-      errors: this._runtype.reportErrors(ctx, input).slice(0, 10),
+      errors: coldOf(this._runtype).reportErrors(ctx, input).slice(0, 10),
     };
   }
   zod(): z.ZodType<any, z.ZodTypeDef, any> {
@@ -1909,7 +1948,7 @@ class ParserFromRuntype implements BeffParser<any> {
       (data: any) => this.validate(data),
       //@ts-ignore
       (val: any) => {
-        const errors = this._runtype.reportErrors(newCtx(undefined), val);
+        const errors = coldOf(this._runtype).reportErrors(newCtx(undefined), val);
         return printErrors(errors, []);
       },
     );
@@ -1923,7 +1962,7 @@ class ParserFromRuntype implements BeffParser<any> {
       seen: {},
       mode: "flat" as const,
     };
-    return this._runtype.schema(ctx);
+    return coldOf(this._runtype).schema(ctx);
   }
   schemaWithContext(schemaPrintingContext: SchemaPrintingContext): JSONSchema7 {
     const ctx = {
@@ -1932,7 +1971,7 @@ class ParserFromRuntype implements BeffParser<any> {
       mode: "contextual" as const,
       printingContext: schemaPrintingContext,
     };
-    return this._runtype.schema(ctx);
+    return coldOf(this._runtype).schema(ctx);
   }
   describe(): string {
     const ctx: DescribeContext = {
@@ -1942,7 +1981,7 @@ class ParserFromRuntype implements BeffParser<any> {
       visitedRefs: new Set(),
     };
     collectDescribeRefs(this._runtype, ctx);
-    const out = this._runtype.describe(ctx);
+    const out = coldOf(this._runtype).describe(ctx);
     let sortedDepsKeys = Object.keys(ctx.definitions).sort();
     const depsPart = sortedDepsKeys
       .map((key): [string, TypeDescription] => [key, ctx.definitions[key]])
