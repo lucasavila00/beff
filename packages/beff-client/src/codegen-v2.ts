@@ -1547,7 +1547,16 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
 
 // A "value kind" is a group of JavaScript values. Each value has one kind, or no kind (a symbol).
 // "nullish" is null or undefined. "object" is an object that is not an array and not a function.
-const VALUE_KINDS = ["nullish", "boolean", "number", "string", "bigint", "array", "object", "function"] as const;
+const VALUE_KINDS = [
+  "nullish",
+  "boolean",
+  "number",
+  "string",
+  "bigint",
+  "array",
+  "object",
+  "function",
+] as const;
 type ValueKind = (typeof VALUE_KINDS)[number];
 
 // Returns the index in VALUE_KINDS of the kind of the input.

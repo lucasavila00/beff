@@ -35,7 +35,12 @@ const counted = (inner: Runtype): { runtype: Runtype; calls: () => number } => {
 // `withKinds: true` gives the union a kind table, as the compiler does. `false` gives no table.
 // Returns the parser of Node and the number of validate() calls on Node.
 let listId = 0;
-const makeList = (other: Runtype, otherKind: "nullish" | "string", nodeFirst: boolean, withKinds: boolean) => {
+const makeList = (
+  other: Runtype,
+  otherKind: "nullish" | "string",
+  nodeFirst: boolean,
+  withKinds: boolean,
+) => {
   const name = `UnionKindsNode${listId++}`;
   const node = counted(runtypeOf(createNamedType(name, b.Unknown())));
   const members = nodeFirst ? [node.runtype, other] : [other, node.runtype];
@@ -120,7 +125,11 @@ describe("union with the runtype of each kind", () => {
   it("sends an array or a function with the prototype of a Date to the Date member", () => {
     const d = new DateRuntype(undefined);
     // Member 1 checks strings. Member 0 (the Date) checks arrays, objects and functions.
-    const U = buildParserFromRuntype(new AnyOfRuntype(undefined, [d, str], { string: 1, array: 0, object: 0, function: 0 }), "U", false);
+    const U = buildParserFromRuntype(
+      new AnyOfRuntype(undefined, [d, str], { string: 1, array: 0, object: 0, function: 0 }),
+      "U",
+      false,
+    );
     const value = new Date(0);
     expect(U.parse(value)).toBe(value);
     expect(U.parse("x")).toBe("x");
