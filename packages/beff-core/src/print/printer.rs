@@ -492,23 +492,31 @@ fn runtype_any_of_discriminated(
 
     let disc = string_lit(&discriminator);
 
+    // The variants for each discriminator value, in variant order.
+    let mut variants_by_key: BTreeMap<String, Vec<&BTreeMap<String, Optionality<Runtype>>>> =
+        BTreeMap::new();
+    for vs in &object_vs {
+        let value = vs
+            .get(&discriminator)
+            .expect("we already checked the discriminator exists")
+            .inner();
+        let keys = extract_union(value, named_schemas)
+            .into_iter()
+            .filter_map(|it| it.extract_single_string_const())
+            .collect::<BTreeSet<_>>();
+        for key in keys {
+            variants_by_key.entry(key).or_default().push(vs);
+        }
+    }
+
     let schema_mapping_obj = object_lit(
         discriminator_strings
             .iter()
             .map(|current_key| {
-                let cases = object_vs
-                    .iter()
-                    .filter(|vs| {
-                        let value = vs
-                            .get(&discriminator)
-                            .expect("we already checked the discriminator exists")
-                            .inner();
-
-                        extract_union(value, named_schemas)
-                            .into_iter()
-                            .filter_map(|it| it.extract_single_string_const())
-                            .any(|it| it == *current_key)
-                    })
+                let cases = variants_by_key
+                    .get(current_key)
+                    .into_iter()
+                    .flatten()
                     .map(|vs| {
                         Runtype::object(vs.iter().map(|it| (it.0.clone(), it.1.clone())).collect())
                     })
@@ -565,10 +573,14 @@ fn maybe_runtype_any_of_discriminated(
         .collect::<Option<Vec<_>>>();
 
     if let Some(object_vs) = object_vs {
+        // Each key once, in the order it first appears.
         let mut keys = vec![];
+        let mut seen_keys = BTreeSet::new();
         for vs in &object_vs {
             for key in vs.keys() {
-                keys.push(key.clone());
+                if seen_keys.insert(key) {
+                    keys.push(key.clone());
+                }
             }
         }
 
@@ -576,22 +588,15 @@ fn maybe_runtype_any_of_discriminated(
             let contained_in_all = object_vs.iter().all(|it| it.contains_key(&discriminator));
 
             if contained_in_all {
-                let equal_in_all = object_vs
+                let values = object_vs
                     .iter()
-                    .map(|it| it.get(&discriminator).unwrap().clone())
-                    .collect::<BTreeSet<_>>()
-                    .len()
-                    == 1;
+                    .map(|it| {
+                        it.get(&discriminator)
+                            .expect("we already checked the discriminator exists")
+                    })
+                    .collect::<BTreeSet<_>>();
+                let equal_in_all = values.len() == 1;
                 if !equal_in_all {
-                    let values = object_vs
-                        .iter()
-                        .map(|it| {
-                            it.get(&discriminator)
-                                .expect("we already checked the discriminator exists")
-                                .clone()
-                        })
-                        .collect::<BTreeSet<_>>();
-
                     let all_required = values
                         .iter()
                         .all(|it| matches!(it, Optionality::Required(_)));
