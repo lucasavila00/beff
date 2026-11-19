@@ -305,13 +305,16 @@ type UserProvidedStringFormat =
       errorMessage?: UserProvidedStringErrorMessageFn;
       jsonSchemaFormat?: string;
     };
-type RegisteredStringFormat = {
+export type RegisteredStringFormat = {
   validator: UserProvidedStringValidatorFn;
   errorMessage?: UserProvidedStringErrorMessageFn;
   jsonSchemaFormat?: string;
 };
-const stringFormatters: Record<string, RegisteredStringFormat> = {};
-export function registerStringFormatter(name: string, value: UserProvidedStringFormat) {
+export function registerStringFormatter(
+  stringFormatters: Record<string, RegisteredStringFormat>,
+  name: string,
+  value: UserProvidedStringFormat,
+) {
   if (typeof value === "function") {
     stringFormatters[name] = {
       validator: value,
@@ -330,13 +333,16 @@ type UserProvidedNumberFormat =
       errorMessage?: UserProvidedNumberErrorMessageFn;
       jsonSchemaFormat?: string;
     };
-type RegisteredNumberFormat = {
+export type RegisteredNumberFormat = {
   validator: UserProvidedNumberValidatorFn;
   errorMessage?: UserProvidedNumberErrorMessageFn;
   jsonSchemaFormat?: string;
 };
-const numberFormatters: Record<string, RegisteredNumberFormat> = {};
-export function registerNumberFormatter(name: string, value: UserProvidedNumberFormat) {
+export function registerNumberFormatter(
+  numberFormatters: Record<string, RegisteredNumberFormat>,
+  name: string,
+  value: UserProvidedNumberFormat,
+) {
   if (typeof value === "function") {
     numberFormatters[name] = {
       validator: value,
@@ -879,7 +885,7 @@ export class TypedArrayRuntype extends BaseRuntype {
   }
 }
 
-export class StringWithFormatRuntype extends BaseRuntype {
+export abstract class BaseStringWithFormatRuntype extends BaseRuntype {
   private formats: string[];
 
   constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
@@ -889,11 +895,12 @@ export class StringWithFormatRuntype extends BaseRuntype {
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return describeFormats("String", this.formats);
   }
+  abstract getStringFormatters(): Record<string, RegisteredStringFormat>;
   schema(_ctx: SchemaContext): JSONSchema7 {
     const finalFormat = this.formats[this.formats.length - 1];
     return annotateSchema(this.metadata, {
       type: "string",
-      format: stringFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
+      format: this.getStringFormatters()[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
     });
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
@@ -902,7 +909,7 @@ export class StringWithFormatRuntype extends BaseRuntype {
     }
 
     for (const f of this.formats) {
-      const formatter = stringFormatters[f];
+      const formatter = this.getStringFormatters()[f];
       const validator = formatter?.validator;
 
       if (validator == null) {
@@ -923,7 +930,7 @@ export class StringWithFormatRuntype extends BaseRuntype {
     return buildError(
       ctx,
       typeof input === "string"
-        ? (resolveFormatErrorMessage(stringFormatters, this.formats, input) ??
+        ? (resolveFormatErrorMessage(this.getStringFormatters(), this.formats, input) ??
             `expected string with format "${this.formats.join(" and ")}"`)
         : `expected string with format "${this.formats.join(" and ")}"`,
       input,
@@ -931,7 +938,7 @@ export class StringWithFormatRuntype extends BaseRuntype {
   }
 }
 
-export class NumberWithFormatRuntype extends BaseRuntype {
+export abstract class BaseNumberWithFormatRuntype extends BaseRuntype {
   private formats: string[];
   constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
     super(metadata);
@@ -940,11 +947,12 @@ export class NumberWithFormatRuntype extends BaseRuntype {
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return describeFormats("Number", this.formats);
   }
+  abstract getNumberFormatters(): Record<string, RegisteredNumberFormat>;
   schema(_ctx: SchemaContext): JSONSchema7 {
     const finalFormat = this.formats[this.formats.length - 1];
     return annotateSchema(this.metadata, {
       type: "number",
-      format: numberFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
+      format: this.getNumberFormatters()[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
     });
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
@@ -953,7 +961,7 @@ export class NumberWithFormatRuntype extends BaseRuntype {
     }
 
     for (const f of this.formats) {
-      const formatter = numberFormatters[f];
+      const formatter = this.getNumberFormatters()[f];
       const validator = formatter?.validator;
 
       if (validator == null) {
@@ -974,7 +982,7 @@ export class NumberWithFormatRuntype extends BaseRuntype {
     return buildError(
       ctx,
       typeof input === "number"
-        ? (resolveFormatErrorMessage(numberFormatters, this.formats, input) ??
+        ? (resolveFormatErrorMessage(this.getNumberFormatters(), this.formats, input) ??
             `expected number with format "${this.formats.join(" and ")}"`)
         : `expected number with format "${this.formats.join(" and ")}"`,
       input,
