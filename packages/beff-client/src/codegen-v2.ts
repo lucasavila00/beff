@@ -685,6 +685,9 @@ export class TypeofRuntype extends BaseRuntype {
     super(metadata);
     this.typeName = typeName;
   }
+  typeOfName(): TypeOfSupported {
+    return this.typeName;
+  }
 
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return this.typeName;
@@ -870,6 +873,9 @@ export class ConstRuntype extends BaseRuntype {
   constructor(metadata: RuntypeMetadata | undefined, value: Const) {
     super(metadata);
     this.value = value ?? null;
+  }
+  constValue(): Const {
+    return this.value;
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return JSON.stringify(this.value);
@@ -1187,6 +1193,9 @@ export class AnyOfConstsRuntype extends BaseRuntype {
   constructor(metadata: RuntypeMetadata | undefined, values: Const[]) {
     super(metadata);
     this.values = values;
+  }
+  constValues(): Const[] {
+    return this.values;
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     const parts = this.values.map((it) => JSON.stringify(it));
@@ -1545,11 +1554,101 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
     .join(",")}}`;
 }
 
+// The kinds of value a runtype can accept, as a bitmask. AnyOfRuntype uses it to
+// skip union branches that cannot match without walking them. The mask of a
+// runtype must include every kind its validate() can accept; unknown runtypes
+// accept every kind.
+const KIND_NULLISH = 1;
+const KIND_BOOLEAN = 2;
+const KIND_NUMBER = 4;
+const KIND_STRING = 8;
+const KIND_BIGINT = 16;
+const KIND_ARRAY = 32;
+const KIND_OBJECT = 64;
+const KIND_OTHER = 128;
+const KIND_ALL = 255;
+
+function kindOfValue(input: unknown): number {
+  if (input == null) return KIND_NULLISH;
+  switch (typeof input) {
+    case "boolean":
+      return KIND_BOOLEAN;
+    case "number":
+      return KIND_NUMBER;
+    case "string":
+      return KIND_STRING;
+    case "bigint":
+      return KIND_BIGINT;
+    case "object":
+      return Array.isArray(input) ? KIND_ARRAY : KIND_OBJECT;
+    default:
+      return KIND_OTHER;
+  }
+}
+
+function acceptedKinds(runtype: Runtype): number {
+  if (runtype instanceof BaseRefRuntype) {
+    // Resolved on every call, because overrideNamedType can replace the target.
+    return acceptedKinds(runtype.getNamedRuntypes()[runtype.refName]);
+  }
+  if (runtype instanceof TypeofRuntype) {
+    switch (runtype.typeOfName()) {
+      case "string":
+        return KIND_STRING;
+      case "number":
+        return KIND_NUMBER;
+      case "boolean":
+        return KIND_BOOLEAN;
+    }
+  }
+  if (runtype instanceof NullishRuntype) return KIND_NULLISH;
+  if (runtype instanceof ConstRuntype) return kindOfValue(runtype.constValue());
+  if (runtype instanceof AnyOfConstsRuntype) {
+    let kinds = 0;
+    for (const it of runtype.constValues()) {
+      kinds |= kindOfValue(it);
+    }
+    return kinds;
+  }
+  if (
+    runtype instanceof RegexRuntype ||
+    runtype instanceof StringWithFormatRuntype ||
+    runtype instanceof NumberKeyRuntype
+  ) {
+    return KIND_STRING;
+  }
+  if (runtype instanceof NumberWithFormatRuntype) return KIND_NUMBER;
+  if (runtype instanceof BigIntRuntype) return KIND_BIGINT;
+  if (runtype instanceof ArrayRuntype || runtype instanceof TupleRuntype) return KIND_ARRAY;
+  if (runtype instanceof ObjectRuntype) return KIND_OBJECT;
+  // Checks `typeof input === "object"`, which is also true for arrays.
+  if (runtype instanceof AnyOfDiscriminatedRuntype) return KIND_ARRAY | KIND_OBJECT;
+  // `instanceof` only checks the prototype chain, which arrays and functions can also have.
+  if (
+    runtype instanceof DateRuntype ||
+    runtype instanceof TypedArrayRuntype ||
+    runtype instanceof MapRuntype ||
+    runtype instanceof SetRuntype
+  ) {
+    return KIND_ARRAY | KIND_OBJECT | KIND_OTHER;
+  }
+  return KIND_ALL;
+}
+
 export class AnyOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
+  // acceptedKinds() of each branch, or -1 for refs, which are resolved on every call.
+  private kinds: number[] | undefined;
   constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[]) {
     super(metadata);
     this.schemas = schemas;
+  }
+  private branchKinds(i: number): number {
+    if (this.kinds == null) {
+      this.kinds = this.schemas.map((it) => (it instanceof BaseRefRuntype ? -1 : acceptedKinds(it)));
+    }
+    const k = this.kinds[i];
+    return k === -1 ? acceptedKinds(this.schemas[i]) : k;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, {
@@ -1565,9 +1664,24 @@ export class AnyOfRuntype extends BaseRuntype {
     return false;
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    // Only branches that accept the kind of the input can match.
+    const kind = kindOfValue(input);
+    let candidates = 0;
+    let lastCandidate = 0;
+    for (let i = 0; i < this.schemas.length; i++) {
+      if ((this.branchKinds(i) & kind) !== 0) {
+        candidates++;
+        lastCandidate = i;
+      }
+    }
+    // The input passed validate(), so a single candidate must be the match.
+    if (candidates === 1) {
+      return this.schemas[lastCandidate].parseAfterValidation(ctx, input);
+    }
     const items = [];
-    for (const it of this.schemas) {
-      if (it.validate(ctx, input)) {
+    for (let i = 0; i < this.schemas.length; i++) {
+      const it = this.schemas[i];
+      if ((this.branchKinds(i) & kind) !== 0 && it.validate(ctx, input)) {
         items.push(it.parseAfterValidation(ctx, input));
       }
     }
