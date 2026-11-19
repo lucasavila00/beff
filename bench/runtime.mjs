@@ -1,10 +1,13 @@
 // Runtime benchmark: time per call of the generated `Root` validator on inputs that double in size.
 //
-//   node runtime.mjs [--shape union] [--scale 16] [--from 1000] [--rows 6]
+//   node runtime.mjs [--shape union] [--scale 16] [--from 1000] [--rows 6] [--tables off] [--ab]
 //
 // `--scale` is the size of the types (as in gen.mjs). The input size n doubles each row.
 // "invalid" inputs are the same values with the last leaf replaced by a value of the wrong type.
+// `--tables off` removes the tables of kinds from the unions of the generated code.
+// `--ab` runs every shape twice, each in its own process: without the tables, then with them.
 import { parseArgs } from "node:util";
+import { spawnSync } from "node:child_process";
 import { shapes, build, corrupt } from "./gen.mjs";
 
 const { values } = parseArgs({
@@ -13,11 +16,24 @@ const { values } = parseArgs({
     scale: { type: "string" },
     from: { type: "string" },
     rows: { type: "string" },
+    tables: { type: "string" },
+    ab: { type: "boolean" },
   },
 });
 const N = Number(values.scale ?? 16);
 const from = Number(values.from ?? 1000);
 const rows = Number(values.rows ?? 6);
+const tables = values.tables !== "off";
+
+if (values.ab) {
+  for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
+    for (const mode of ["off", "on"]) {
+      const args = ["--shape", shape, "--scale", N, "--from", from, "--rows", rows, "--tables", mode];
+      spawnSync(process.execPath, [process.argv[1], ...args.map(String)], { stdio: "inherit" });
+    }
+  }
+  process.exit(0);
+}
 
 // Milliseconds per call, measured for at least 200 ms after one warm-up call.
 function measure(f) {
@@ -44,7 +60,7 @@ const fmt = (ms, prev) => {
 };
 
 for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
-  const Root = (await build(shape, N)).Root;
+  const Root = (await build(shape, N, { tables })).Root;
   const ops = {
     validate: (v) => Root.validate(v),
     safeParse: (v) => Root.safeParse(v),
@@ -61,7 +77,8 @@ for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
       throw new Error("parse accepted an invalid value");
     },
   };
-  console.log(`\n### ${shape} (scale ${N}; time per call, growth per 2x in parentheses)\n`);
+  const title = tables ? shape : `${shape}, union tables removed`;
+  console.log(`\n### ${title} (scale ${N}; time per call, growth per 2x in parentheses)\n`);
   console.log(`| n | ${Object.keys(ops).join(" | ")} |`);
   console.log(`|${" --- |".repeat(Object.keys(ops).length + 1)}`);
   let prev = {};
@@ -69,6 +86,7 @@ for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
     const valid = shapes[shape].value(N, n);
     const bad = corrupt(shapes[shape].value(N, n));
     const cells = Object.entries(ops).map(([name, op]) => {
+      if (shapes[shape].slowErrors && /^(safeParse|parse) \(invalid\)$/.test(name)) return "skipped";
       const ms = measure(() => op(valid, bad));
       const cell = fmt(ms, prev[name]);
       prev[name] = ms;

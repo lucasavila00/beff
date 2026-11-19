@@ -131,7 +131,7 @@ for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
   };
   for (const n of [1, 5, 20]) {
     run(value(n), true);
-    run(corrupt(value(n)), false);
+    if (!(shapes[shape].slowErrors && n > 5)) run(corrupt(value(n)), false);
   }
   for (let i = 0; i < runs; i++) {
     run(mutate(value(1 + Math.floor(random() * 4))), false);

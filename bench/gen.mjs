@@ -62,6 +62,41 @@ export const shapes = {
       ) + `\ntype Root = R0;`,
     value: (_N, n) => range(n).reduce((next) => ({ name: "r", tags: ["a"], next }), null),
   },
+  // The same list, but it ends with a string: `next: R | string`.
+  "recursive-string": {
+    types: (N) =>
+      repeat(N, (i) => `type R${i} = { name: string; tags: string[]; next: R${(i + 1) % N} | string };`).join(
+        "\n",
+      ) + `\ntype Root = R0;`,
+    value: (_N, n) => range(n).reduce((next) => ({ name: "r", tags: ["a"], next }), "end"),
+  },
+  // N pairs of recursive types with a discriminator: `next: A | B | null`.
+  // `slowErrors`: the error report of an invalid input tries both members at every level, so it is
+  // exponential in the depth. The scripts do not report the errors of deep invalid inputs of these shapes.
+  "recursive-disc": {
+    slowErrors: true,
+    types: (N) =>
+      repeat(N, (i) => {
+        const next = `A${(i + 1) % N} | B${(i + 1) % N} | null`;
+        return `type A${i} = { kind: "a"; name: string; next: ${next} };\ntype B${i} = { kind: "b"; tags: string[]; next: ${next} };`;
+      }).join("\n") + `\ntype Root = A0;`,
+    value: (_N, n) =>
+      range(n).reduce(
+        (next, i) => ((n - i) % 2 === 1 ? { kind: "a", name: "r", next } : { kind: "b", tags: ["a"], next }),
+        null,
+      ),
+  },
+  // The same pairs without a discriminator. Both branches are objects, so parse validates each one again.
+  "recursive-pair": {
+    slowErrors: true,
+    types: (N) =>
+      repeat(N, (i) => {
+        const next = `P${(i + 1) % N} | Q${(i + 1) % N} | null`;
+        return `type P${i} = { a: string; next: ${next} };\ntype Q${i} = { b: string[]; next: ${next} };`;
+      }).join("\n") + `\ntype Root = P0;`,
+    value: (_N, n) =>
+      range(n).reduce((next, i) => ((n - i) % 2 === 1 ? { a: "r", next } : { b: ["a"], next }), null),
+  },
   // Two generic types instantiated with N different arguments.
   generics: {
     types: (N) =>
@@ -199,12 +234,24 @@ export function compile(dir) {
   return { ms, rssMb: rssKb / 1024 };
 }
 
-// Generates and compiles a project, then returns its parsers.
-export async function build(shape, N) {
+// Builds every union of the generated code without its table of kinds. The union then tries each
+// member, as it did before the tables. This gives a baseline in the same job and on the same machine.
+const withoutUnionTables = (code) =>
+  code.replaceAll("new AnyOfRuntype(", "anyOfWithoutTable(") +
+  "\nfunction anyOfWithoutTable(metadata, schemas) {\n  return new AnyOfRuntype(metadata, schemas);\n}\n";
+
+// Generates and compiles a project, then returns its parsers. `tables: false` removes the union tables.
+export async function build(shape, N, { tables = true } = {}) {
   const dir = outDir(shape, N);
   generate(shape, N, dir);
   compile(dir);
-  const mod = await import(pathToFileURL(path.join(dir, "src/generated/parser.js")).href);
+  let file = path.join(dir, "src/generated/parser.js");
+  if (!tables) {
+    const stripped = withoutUnionTables(fs.readFileSync(file, "utf-8"));
+    file = path.join(dir, "src/generated/parser.no-tables.js");
+    fs.writeFileSync(file, stripped);
+  }
+  const mod = await import(pathToFileURL(file).href);
   return mod.default.buildParsers(formatArgs(shape, N));
 }
 

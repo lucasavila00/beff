@@ -17,17 +17,20 @@ Each script writes synthetic projects to `bench/out/<shape>-<scale>/` (ignored b
 
 `gen.mjs` writes `beff.json` and `src/parser.ts` for one shape. `--scale N` sets the number of types, variants or levels:
 
-| shape           | types                                                                                |
-| --------------- | ------------------------------------------------------------------------------------ |
-| `objects`       | N independent object types                                                           |
-| `deep`          | one inline object type nested N levels deep                                          |
-| `union`         | a union of N object types without a discriminator, and a union of N string literals  |
-| `discriminated` | a discriminated union with N variants                                                |
-| `recursive`     | N mutually recursive types (`R0 -> R1 -> ... -> R0`)                                 |
-| `generics`      | `Box<Pair<A, B>>` instantiated with N different arguments                            |
-| `records`       | `Record<string, Inner>`, where `Inner` has N fields and a template literal index key |
-| `formats`       | template literals and N `StringFormat` / `NumberFormat` types                        |
-| `intersections` | `Omit<A & B, "c"> & Partial<Pick<C, "a" \| "b">>` for N type triples                 |
+| shape              | types                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| `objects`          | N independent object types                                                           |
+| `deep`             | one inline object type nested N levels deep                                          |
+| `union`            | a union of N object types without a discriminator, and a union of N string literals  |
+| `discriminated`    | a discriminated union with N variants                                                |
+| `recursive`        | N mutually recursive types (`R0 -> R1 -> ... -> R0`)                                 |
+| `recursive-string` | the same list, ending with a string (`next: R \| string`)                            |
+| `recursive-disc`   | N pairs of recursive types with a discriminator (`next: A \| B \| null`)             |
+| `recursive-pair`   | the same pairs without a discriminator                                               |
+| `generics`         | `Box<Pair<A, B>>` instantiated with N different arguments                            |
+| `records`          | `Record<string, Inner>`, where `Inner` has N fields and a template literal index key |
+| `formats`          | template literals and N `StringFormat` / `NumberFormat` types                        |
+| `intersections`    | `Omit<A & B, "c"> & Partial<Pick<C, "a" \| "b">>` for N type triples                 |
 
 Every shape declares a `Root` type, used by the runtime benchmark and the stress checks.
 
@@ -44,7 +47,8 @@ node compile.mjs [--shape union] [--from 25] [--rows 6]
 
 # Time per validate / safeParse / parse call on valid and invalid inputs that double in size.
 # --scale is the type size, the input size starts at --from and doubles each row.
-node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6]
+# --ab runs each shape twice in the same job: with the union tables of kinds removed from the generated code, then with them.
+node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6] [--ab]
 
 # Random inputs: validate, safeParse and parse must agree and must not throw.
 # Also prints the deepest recursive input that does not overflow the stack.
