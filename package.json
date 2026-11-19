@@ -8,6 +8,7 @@
     "test": "pnpm run -r test",
     "beff": "pnpm run -r beff",
     "all": "pnpm run build && pnpm run beff && pnpm run test",
+    "bench": "pnpm --dir bench run bench",
     "knip": "knip --treat-config-hints-as-errors",
     "prettier:check": "prettier --check .",
     "prettier:write": "prettier --write ."
