@@ -182,7 +182,7 @@ You can set the error message for a custom format. Refer to [Custom formats](./c
 
 The validators are recursive functions. If the input for a recursive type is too deep, the JavaScript engine throws a `RangeError` (stack overflow). `validate`, `parse`, and `safeParse` all throw this error. `safeParse` does not catch it.
 
-In our tests on Node.js with the default stack size, the limit was between approximately 1000 and 4000 levels. The limit is not a fixed number. It depends on the type, the method, the JavaScript engine, and the stack size. If the input can be deeper than some hundred levels, examine its depth before you validate it.
+In our tests on Node.js with the default stack size, the limit was between approximately 1000 and 4000 levels. The limit is not a fixed number. It depends on the type, the method, the JavaScript engine, and the stack size.
 
 ### Slow error reports for recursive unions
 
