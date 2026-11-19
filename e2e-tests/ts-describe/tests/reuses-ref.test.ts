@@ -92,5 +92,4 @@ it("works", () => {
       "type": "object",
     }
   `);
-  expect(Codecs.ReusesRef.hash()).toMatchInlineSnapshot("-869413918");
 });

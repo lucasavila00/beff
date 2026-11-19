@@ -12,8 +12,6 @@
 | [`schema()`](./json-schema.md)               | A JSON Schema.                                               |
 | [`schemaWithContext(ctx)`](./json-schema.md) | A JSON Schema with `$ref` values.                            |
 | [`describe()`](./describe.md)                | A TypeScript type, as a string.                              |
-| [`hash()`](./hashes.md)                      | A 32-bit number.                                             |
-| [`hash256()`](./hashes.md)                   | A SHA-256 hex string.                                        |
 
 Use `parse` when the input must be valid. Use `safeParse` when your code must handle the errors. Use `validate` when you need only a type guard.
 
