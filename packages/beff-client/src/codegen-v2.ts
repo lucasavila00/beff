@@ -1548,14 +1548,20 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
 // The kind of a value. The compiler knows the kinds each member of a union accepts (`js_kinds` in
 // beff-core), and prints the runtype that checks each kind.
 type Kind = "nullish" | "boolean" | "number" | "string" | "bigint" | "array" | "object" | "function";
-const kindOf = (input: unknown): string =>
-  input == null ? "nullish" : Array.isArray(input) ? "array" : typeof input;
 
 export class AnyOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
   // For each kind of value that the union accepts, the one runtype that checks values of that kind.
   // Only the compiler passes it: it is never computed here, because a named type can be overridden.
-  private byKind: Record<string, Runtype | undefined> | undefined;
+  private hasKinds: boolean;
+  private kNullish: Runtype | undefined;
+  private kBoolean: Runtype | undefined;
+  private kNumber: Runtype | undefined;
+  private kString: Runtype | undefined;
+  private kBigint: Runtype | undefined;
+  private kArray: Runtype | undefined;
+  private kObject: Runtype | undefined;
+  private kFunction: Runtype | undefined;
   constructor(
     metadata: RuntypeMetadata | undefined,
     schemas: Runtype[],
@@ -1563,7 +1569,35 @@ export class AnyOfRuntype extends BaseRuntype {
   ) {
     super(metadata);
     this.schemas = schemas;
-    this.byKind = byKind;
+    this.hasKinds = byKind !== undefined;
+    this.kNullish = byKind?.nullish;
+    this.kBoolean = byKind?.boolean;
+    this.kNumber = byKind?.number;
+    this.kString = byKind?.string;
+    this.kBigint = byKind?.bigint;
+    this.kArray = byKind?.array;
+    this.kObject = byKind?.object;
+    this.kFunction = byKind?.function;
+  }
+  // The runtype that checks values of the kind of the input.
+  private ofKind(input: unknown): Runtype | undefined {
+    if (input == null) return this.kNullish;
+    switch (typeof input) {
+      case "object":
+        return Array.isArray(input) ? this.kArray : this.kObject;
+      case "string":
+        return this.kString;
+      case "number":
+        return this.kNumber;
+      case "boolean":
+        return this.kBoolean;
+      case "bigint":
+        return this.kBigint;
+      case "function":
+        return this.kFunction;
+      default:
+        return undefined;
+    }
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, {
@@ -1571,9 +1605,8 @@ export class AnyOfRuntype extends BaseRuntype {
     });
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
-    const byKind = this.byKind;
-    if (byKind !== undefined) {
-      const it = byKind[kindOf(input)];
+    if (this.hasKinds) {
+      const it = this.ofKind(input);
       return it !== undefined && it.validate(ctx, input);
     }
     for (const it of this.schemas) {
@@ -1584,10 +1617,9 @@ export class AnyOfRuntype extends BaseRuntype {
     return false;
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const byKind = this.byKind;
-    if (byKind !== undefined) {
+    if (this.hasKinds) {
       // The input passed validate(), so its kind is in the table. Its runtype does not validate again.
-      return byKind[kindOf(input)]!.parseAfterValidation(ctx, input);
+      return this.ofKind(input)!.parseAfterValidation(ctx, input);
     }
     const items = [];
     for (const it of this.schemas) {
