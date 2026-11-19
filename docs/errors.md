@@ -175,3 +175,15 @@ if (!result.success) {
 ## Error messages for custom formats
 
 You can set the error message for a custom format. Refer to [Custom formats](./custom-formats.md#error-messages).
+
+## Known limits
+
+### Deep recursive input
+
+The validators are recursive functions. If the input for a recursive type is too deep, the JavaScript engine throws a `RangeError` (stack overflow). `validate`, `parse`, and `safeParse` all throw this error. `safeParse` does not catch it.
+
+In our tests on Node.js with the default stack size, the limit was between approximately 1000 and 4000 levels. The limit is not a fixed number. It depends on the type, the method, the JavaScript engine, and the stack size. If the input can be deeper than some hundred levels, examine its depth before you validate it.
+
+### Slow error reports for recursive unions
+
+The error report can be slow for a recursive union that has two or more object members, for example `type Tree = A | B | null` where `A` and `B` contain a `Tree`. If the input is not valid, the time of `parse` and `safeParse` becomes approximately two times longer for each level of the input. For example, an input with 16 levels can take half a second. Refer to [issue #458](https://github.com/lucasavila00/beff/issues/458).
