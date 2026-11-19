@@ -55,6 +55,22 @@ if (result.success) {
 
 For the format of `DecodeError`, refer to [Errors](./errors.md).
 
+## The parsed value
+
+`parse` and `safeParse` do not change the input. They make new objects, arrays, tuples, `Map` objects, and `Set` objects for the result. The result is not always a full copy: a `Date` object, a typed array, or a value of type `any` or `unknown` can be the same object as in the input.
+
+The result has only the properties that are in the type. This rule also applies to nested objects. For a type with an index signature, for example `Record<string, number>`, the result has all the keys that agree with the index signature. To reject an input that has more properties, use the [`disallowExtraProperties`](#parse-options) option.
+
+The result does not pollute prototypes. `JSON.parse` can make an object with an own property that has the name `__proto__`. Beff handles this key as a usual property and does not set a prototype from it. Each object that Beff makes for the result has the usual `Object.prototype`.
+
+```ts
+const input = JSON.parse('{ "name": "John Doe", "age": 42, "__proto__": { "admin": true } }');
+const user = Parsers.User.parse(input);
+// { name: "John Doe", age: 42 }
+"admin" in user;
+// false
+```
+
 ## `validate`
 
 `validate` returns `true` or `false`. It is a TypeScript type guard.
