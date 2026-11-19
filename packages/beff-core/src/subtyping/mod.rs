@@ -38,6 +38,8 @@ struct ToSemTypeConverter<'a> {
     // `Runtype::js_value_kinds` uses this mode. It must know only if a runtype accepts some
     // object or some array, not which ones. In this mode the converter does not follow the
     // references inside an object or an array, so a long chain of types does not make it slow.
+    // `js_value_kinds` handles references, unions and intersections before it calls the
+    // converter, so the converter gets none of them in this mode.
     shallow: bool,
 }
 
@@ -65,11 +67,7 @@ impl<'a> ToSemTypeConverter<'a> {
         builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
         if self.shallow {
-            let target = match &schema.kind {
-                RuntypeKind::Ref(name) => self.get_reference(name)?,
-                _ => schema,
-            };
-            let tag = match &target.kind {
+            let tag = match &schema.kind {
                 RuntypeKind::Object { .. } => Some(SubTypeTag::Mapping),
                 RuntypeKind::Array(_) | RuntypeKind::Tuple { .. } | RuntypeKind::AnyArrayLike => {
                     Some(SubTypeTag::List)
@@ -80,10 +78,6 @@ impl<'a> ToSemTypeConverter<'a> {
                 // of a larger type is too small, so it could miss a kind. Fail here.
                 // `js_value_kinds` then returns all kinds.
                 RuntypeKind::StNot(_) => bail!("cannot find the kinds of a negation"),
-                // `js_value_kinds` handles an intersection before it calls the converter.
-                // Fail for an intersection in a different position. `js_value_kinds` then
-                // returns all kinds.
-                RuntypeKind::AllOf(_) => bail!("cannot find the kinds of a nested intersection"),
                 _ => None,
             };
             if let Some(tag) = tag {
