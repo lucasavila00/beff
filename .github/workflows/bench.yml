@@ -20,6 +20,10 @@ on:
         description: "Extra args for stress.mjs (--scale, --runs, --seed)"
         required: false
         default: ""
+      load_args:
+        description: "Extra args for load.mjs (--scale)"
+        required: false
+        default: ""
 concurrency:
   group: bench-${{ github.ref }}
   cancel-in-progress: true
@@ -50,10 +54,11 @@ jobs:
           COMPILE_ARGS: ${{ inputs.compile_args }}
           RUNTIME_ARGS: ${{ inputs.runtime_args }}
           STRESS_ARGS: ${{ inputs.stress_args }}
+          LOAD_ARGS: ${{ inputs.load_args }}
         run: |
           shape=${SHAPE:+--shape $SHAPE}
           status=0
-          for s in "compile $COMPILE_ARGS" "runtime $RUNTIME_ARGS" "stress $STRESS_ARGS"; do
+          for s in "compile $COMPILE_ARGS" "runtime $RUNTIME_ARGS" "stress $STRESS_ARGS" "load $LOAD_ARGS"; do
             set -- $s
             name=$1
             shift
@@ -62,7 +67,7 @@ jobs:
             node "$name.mjs" $shape "$@" 2>&1 | tee "$name.txt"
             code=${PIPESTATUS[0]}
             set -e
-            # compile and runtime print markdown tables; stress prints plain text.
+            # compile, runtime and load print markdown tables; stress prints plain text.
             if [ "$name" = stress ]; then
               printf '\n```\n%s\n```\n' "$(cat "$name.txt")" >> "$GITHUB_STEP_SUMMARY"
             else
