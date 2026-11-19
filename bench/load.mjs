@@ -30,12 +30,14 @@ function firstUse(parsers, shape, N) {
   for (const parser of Object.values(parsers)) {
     parser.validate(undefined);
     parser.safeParse(undefined);
-    parser.describe();
+    // `describe` and `schema` can throw: some types have no JSON Schema, and a long chain of recursive types
+    // overflows the stack.
+    try {
+      parser.describe();
+    } catch {}
     try {
       parser.schema();
-    } catch {
-      // Some types have no JSON Schema.
-    }
+    } catch {}
   }
   const valid = shapes[shape].value(N, 4);
   const invalid = corrupt(shapes[shape].value(N, 4));
