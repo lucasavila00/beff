@@ -1,4 +1,3 @@
-import type { ZodType } from "zod";
 import { JSONSchema7 } from "./json-schema.js";
 import type { SchemaPrintingContext } from "./codegen-v2.js";
 
@@ -38,7 +37,6 @@ export type BeffParser<T> = {
     input: any,
     options?: ParseOptions,
   ) => { success: true; data: T } | { success: false; errors: DecodeError[] };
-  zod: () => ZodType<T>;
   name: string;
   validate(input: any, options?: ParseOptions): input is T;
   schema: () => JSONSchema7;

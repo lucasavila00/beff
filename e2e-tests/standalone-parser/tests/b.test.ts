@@ -20,17 +20,6 @@ it("parse", () => {
   `);
   expect(T3.name).toMatchInlineSnapshot('"b.Object"');
   expect(
-    T3.zod().parse({
-      kind: "square",
-      x: 1,
-    }),
-  ).toMatchInlineSnapshot(`
-    {
-      "kind": "square",
-      "x": 1,
-    }
-  `);
-  expect(
     T3.parse(
       {
         kind: "square",

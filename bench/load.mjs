@@ -43,10 +43,9 @@ if (process.argv[2] === "--child") {
     entryPoints: [client],
     bundle: true,
     format: "esm",
-    external: ["zod"],
     write: false,
   });
-  console.log(`\n### @beff/client/codegen-v2 (bundled, without zod)\n`);
+  console.log(`\n### @beff/client/codegen-v2 (bundled)\n`);
   console.log("| raw | gzip | minified | minified + gzip |");
   console.log("| --- | --- | --- | --- |");
   console.log(`| ${sizes(bundle.outputFiles[0].text).join(" | ")} |`);
