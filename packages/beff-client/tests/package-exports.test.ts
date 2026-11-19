@@ -51,11 +51,11 @@ describe("published package exports", () => {
     expect(output).toBe("function");
   });
 
-  it("exposes named exports from the runtime subpath under ESM import", () => {
+  it("exposes named exports from the codegen subpath under ESM import", () => {
     const output = runNode([
       "--input-type=module",
       "-e",
-      'const mod = await import("@beff/client/runtime"); console.log(typeof mod.AllOfRuntype);',
+      'const mod = await import("@beff/client/codegen-v2"); console.log(typeof mod.AllOfRuntype);',
     ]);
 
     expect(output).toBe("function");
@@ -67,10 +67,10 @@ describe("published package exports", () => {
     expect(output).toBe("function");
   });
 
-  it("continues to expose the runtime subpath under CommonJS require", () => {
+  it("continues to expose the codegen subpath under CommonJS require", () => {
     const output = runNode([
       "-e",
-      'const mod = require("@beff/client/runtime"); console.log(typeof mod.AllOfRuntype);',
+      'const mod = require("@beff/client/codegen-v2"); console.log(typeof mod.AllOfRuntype);',
     ]);
 
     expect(output).toBe("function");

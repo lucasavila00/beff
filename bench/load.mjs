@@ -38,7 +38,7 @@ if (process.argv[2] === "--child") {
   const { values } = parseArgs({ options: { shape: { type: "string" }, scale: { type: "string" } } });
   const N = Number(values.scale ?? 800);
 
-  const client = createRequire(import.meta.url).resolve("@beff/client/runtime");
+  const client = createRequire(import.meta.url).resolve("@beff/client/codegen-v2");
   const bundle = buildSync({
     entryPoints: [client],
     bundle: true,
@@ -46,7 +46,7 @@ if (process.argv[2] === "--child") {
     external: ["zod"],
     write: false,
   });
-  console.log(`\n### @beff/client/runtime (bundled, without zod)\n`);
+  console.log(`\n### @beff/client/codegen-v2 (bundled, without zod)\n`);
   console.log("| raw | gzip | minified | minified + gzip |");
   console.log("| --- | --- | --- | --- |");
   console.log(`| ${sizes(bundle.outputFiles[0].text).join(" | ")} |`);

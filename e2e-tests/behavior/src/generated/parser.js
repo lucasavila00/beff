@@ -25,7 +25,7 @@ import {
   SetRuntype,
   NumberKeyRuntype,
   buildParsers,
-} from "@beff/client/runtime";
+} from "@beff/client/codegen-v2";
 const RequiredStringFormats = ["UserId","AdminId"];
 const RequiredNumberFormats = ["NonNegative","Rate"];
 const namedRuntypes = {};
