@@ -14,6 +14,7 @@ use swc_ecma_ast::{
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
 
+use crate::NameIndex;
 use crate::RuntypeUUID;
 use crate::ast::json::Json;
 use crate::ast::runtype::CustomFormat;
@@ -217,7 +218,7 @@ impl PrintableRuntypeKindKey {
 
 struct PrintContext {
     hoisted: BTreeMap<PrintableRuntypeKey, (usize, Expr)>,
-    all_names: Vec<RuntypeUUID>,
+    all_names: NameIndex,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
     inlined: BTreeSet<RuntypeUUID>,
 }
@@ -225,7 +226,7 @@ struct PrintContext {
 impl PrintContext {
     pub(crate) fn print_rt_name(&mut self, name: &RuntypeUUID) -> String {
         let mut ctx = DebugPrintCtx {
-            all_names: &self.all_names.iter().collect::<Vec<_>>(),
+            all_names: &self.all_names,
             type_with_args_names: &mut self.type_with_args_names,
         };
         name.print_name_for_js_codegen(&mut ctx)
@@ -261,16 +262,17 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
 /// Any type with the same name must be identical
 fn validate_type_uniqueness(parser: &[NamedSchema]) -> Result<Vec<NamedSchema>> {
     let mut acc: Vec<NamedSchema> = vec![];
+    let mut index: BTreeMap<&RuntypeUUID, usize> = BTreeMap::new();
 
     for d in parser {
-        let found = acc.iter_mut().find(|x| x.name == d.name);
-        if let Some(found) = found {
-            if found.schema != d.schema {
+        if let Some(&i) = index.get(&d.name) {
+            if acc[i].schema != d.schema {
                 // TODO: emit proper diag here?
                 // or merge before?
                 return Err(anyhow!("Two different types with the same name"));
             }
         } else {
+            index.insert(&d.name, acc.len());
             acc.push(d.clone());
         }
     }
@@ -480,7 +482,7 @@ fn runtype_any_of_discriminated(
 ) -> Expr {
     let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
     let dbg_ctx = DebugPrintCtx {
-        all_names: &ctx.all_names.iter().collect::<Vec<_>>(),
+        all_names: &ctx.all_names,
         type_with_args_names: &mut ctx.type_with_args_names,
     };
     flat_values.sort_by_key(|it| it.debug_print(&dbg_ctx));
@@ -734,7 +736,7 @@ fn maybe_runtype_any_of_consts(
 ) -> Option<Expr> {
     let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
     let dbg_ctx = DebugPrintCtx {
-        all_names: &ctx.all_names.iter().collect::<Vec<_>>(),
+        all_names: &ctx.all_names,
         type_with_args_names: &mut ctx.type_with_args_names,
     };
 
@@ -979,10 +981,7 @@ impl ParserExtractResult {
     pub fn emit_code(self) -> Result<String> {
         let built_parsers = self.built_decoders.unwrap_or_default();
         let named_schemas = validate_type_uniqueness(&self.validators)?;
-        let all_names = named_schemas
-            .iter()
-            .map(|it| it.name.clone())
-            .collect::<Vec<RuntypeUUID>>();
+        let all_names = NameIndex::new(named_schemas.iter().map(|it| &it.name));
         let mut hoisted = PrintContext {
             hoisted: BTreeMap::new(),
             all_names,
