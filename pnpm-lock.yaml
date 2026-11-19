@@ -190,9 +190,6 @@ importers:
       '@babel/code-frame':
         specifier: ^7.22.13
         version: 7.27.1
-      '@beff/client':
-        specifier: workspace:^0.0.154
-        version: link:../beff-client
       '@types/babel__code-frame':
         specifier: ^7.0.4
         version: 7.0.6
