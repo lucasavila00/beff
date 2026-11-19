@@ -24,7 +24,6 @@ describe("overrideNamedType", () => {
       "type OverrideTestId = number;\n\n{ id: OverrideTestId, tags: Array<OverrideTestId> }",
     );
     expect(User.schema()).toEqual(b.Object({ id: b.Number(), tags: b.Array(b.Number()) }).schema());
-    expect(User.hash()).toBe(b.Object({ id: b.Number(), tags: b.Array(b.Number()) }).hash());
   });
 
   it("can make a named type recursive", () => {

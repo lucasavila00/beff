@@ -1,33 +1,8 @@
 import { type BeffParser, type DecodeError, type ParseOptions, type RegularDecodeError } from "./types.js";
 import { z } from "zod";
-import {
-  generateHashFromString,
-  generateHashFromNumbers,
-  Hash256Writer,
-  unknownHash,
-  stringHash,
-  numberHash,
-  booleanHash,
-  nullishHash,
-  undefinedHash,
-  arrayHash,
-  objectHash,
-  dateHash,
-  bigintHash,
-  stringWithFormatHash,
-  numberWithFormatHash,
-  anyOfConstsHash,
-  tupleHash,
-  allOfHash,
-  anyOfHash,
-  optionalFieldHash,
-  mapHash,
-  setHash,
-} from "./hash.js";
 import { JSONSchema7, JSONSchema7Definition, JSONSchema7TypeName } from "./json-schema.js";
 import { removeNullUnionBranch } from "./openapi-pp.js";
 import { printErrors } from "./err.js";
-export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
 
 const JSON_PROTO = Object.getPrototypeOf({});
 
@@ -399,23 +374,6 @@ function describeFormats(typeName: "String" | "Number", formats: string[]): stri
   return acc;
 }
 
-function hashFormats(seed: number, formats: string[]): number {
-  let acc: number[] = [seed];
-  for (const f of [...formats].sort()) {
-    acc.push(generateHashFromString(f));
-  }
-  return generateHashFromNumbers(acc);
-}
-
-function hash256Formats(ctx: Hash256Context, tag: string, formats: string[]): void {
-  ctx.writer.updateTag(tag);
-  const sorted = [...formats].sort();
-  ctx.writer.updateNumber(sorted.length);
-  for (const f of sorted) {
-    ctx.writer.updateString(f);
-  }
-}
-
 type TypeDescription = {
   typeExpr: string;
   docText?: string;
@@ -535,16 +493,6 @@ function intersectionChecksExtraProperties(ctx: Ctx, input: unknown): boolean {
   );
 }
 
-type HashContext = {
-  seen: Record<string, boolean>;
-};
-
-type Hash256Context = {
-  writer: Hash256Writer;
-  active: Map<Runtype, number>;
-  nextCycleId: number;
-};
-
 type Validate = (ctx: Ctx, input: any) => boolean;
 type Parse = (ctx: Ctx, input: any) => any;
 type Report = (ctx: Ctx, input: any) => DecodeError[];
@@ -568,8 +516,6 @@ export type Runtype = {
   reportErrors: Report;
   describe: (ctx: DescribeContext) => TypeDescription;
   schema: (ctx: SchemaContext) => JSONSchema7;
-  hash: (ctx: HashContext) => number;
-  hash256: (ctx: Hash256Context) => void;
   // The name of the type a reference points to.
   name: string | undefined;
   // The child nodes. A reference has one child, the type it points to now.
@@ -588,8 +534,6 @@ function node(fields: Omit<Runtype, "name">): Runtype {
     reportErrors: fields.reportErrors,
     describe: fields.describe,
     schema: fields.schema,
-    hash: fields.hash,
-    hash256: fields.hash256,
     name: undefined,
     children: fields.children,
   };
@@ -602,8 +546,6 @@ function leaf(fields: {
   message: string;
   typeExpr: string;
   schema: Runtype["schema"];
-  hash: Runtype["hash"];
-  hash256: Runtype["hash256"];
 }): Runtype {
   const { message, typeExpr } = fields;
   return node({
@@ -613,8 +555,6 @@ function leaf(fields: {
     reportErrors: (ctx, input) => buildError(ctx, message, input),
     describe: () => ({ typeExpr }),
     schema: fields.schema,
-    hash: fields.hash,
-    hash256: fields.hash256,
     children: noChildren,
   });
 }
@@ -626,7 +566,10 @@ export function withDescription(runtype: Runtype, description: string): Runtype 
   return {
     ...runtype,
     describe: (ctx) => ({ typeExpr: describe(ctx).typeExpr, docText: description }),
-    schema: (ctx) => ({ ...schema(ctx), description }),
+    // `schema.call(this, ...)` gives the original function the copy as `this`. discriminatedUnion uses it.
+    schema: function (this: Runtype, ctx: SchemaContext): JSONSchema7 {
+      return { ...schema.call(this, ctx), description };
+    },
   };
 }
 
@@ -714,33 +657,19 @@ function collectDescribeRefs(runtype: Runtype, ctx: DescribeContext): void {
   }
 }
 
-const hash256Tag =
-  (tag: string): Runtype["hash256"] =>
-  (ctx) =>
-    ctx.writer.updateTag(tag);
-
-function typeOf(typeName: string, validate: Validate, hash: number): Runtype {
+function typeOf(typeName: string, validate: Validate): Runtype {
   return leaf({
     tag: TAG_NONE,
     validate,
     message: "expected " + typeName,
     typeExpr: typeName,
     schema: () => ({ type: typeName as JSONSchema7TypeName }),
-    hash: () => hash,
-    hash256: (ctx) => {
-      ctx.writer.updateTag("typeof");
-      ctx.writer.updateString(typeName);
-    },
   });
 }
-export const string = (): Runtype => typeOf("string", (_ctx, input) => typeof input === "string", stringHash);
-export const number = (): Runtype => typeOf("number", (_ctx, input) => typeof input === "number", numberHash);
-export const boolean = (): Runtype =>
-  typeOf("boolean", (_ctx, input) => typeof input === "boolean", booleanHash);
-// The hash of a function type is undefined. It was undefined on the runtype classes too, and the hash must not
-// change.
-export const functionType = (): Runtype =>
-  typeOf("function", (_ctx, input) => typeof input === "function", undefined as any);
+export const string = (): Runtype => typeOf("string", (_ctx, input) => typeof input === "string");
+export const number = (): Runtype => typeOf("number", (_ctx, input) => typeof input === "number");
+export const boolean = (): Runtype => typeOf("boolean", (_ctx, input) => typeof input === "boolean");
+export const functionType = (): Runtype => typeOf("function", (_ctx, input) => typeof input === "function");
 
 // The key of a number index signature, such as Record<number, T>.
 // Object keys are always strings, so the key must be a numeric string.
@@ -753,12 +682,6 @@ export const numberKey = (): Runtype =>
     message: "expected number key",
     typeExpr: "number",
     schema: () => ({ type: "string", pattern: NUMBER_KEY_PATTERN }),
-    // Hash as `number`, so the hash of Record<number, T> does not change.
-    hash: () => numberHash,
-    hash256: (ctx) => {
-      ctx.writer.updateTag("typeof");
-      ctx.writer.updateString("number");
-    },
   });
 
 export const any = (): Runtype =>
@@ -768,8 +691,6 @@ export const any = (): Runtype =>
     message: "expected any",
     typeExpr: "any",
     schema: () => ({}),
-    hash: () => unknownHash,
-    hash256: hash256Tag("any"),
   });
 
 const nullish = (description: "undefined" | "null" | "void"): Runtype =>
@@ -779,8 +700,6 @@ const nullish = (description: "undefined" | "null" | "void"): Runtype =>
     message: "expected nullish value",
     typeExpr: description,
     schema: () => ({ type: "null" }),
-    hash: () => nullishHash,
-    hash256: hash256Tag("nullish"),
   });
 export const nullType = (): Runtype => nullish("null");
 export const undefinedType = (): Runtype => nullish("undefined");
@@ -796,56 +715,10 @@ export const never = (): Runtype =>
     reportErrors: (ctx, input) => buildError(ctx, "expected never", input),
     describe: () => ({ typeExpr: "never" }),
     schema: () => ({ anyOf: [] }),
-    hash: () => undefinedHash,
-    hash256: hash256Tag("never"),
     children: noChildren,
   });
 
 type Const = string | number | boolean | null;
-
-function constSortKey(value: Const): string {
-  if (value == null) return "null:";
-  return `${typeof value}:${String(value)}`;
-}
-
-function compareConst(a: Const, b: Const): number {
-  return constSortKey(a).localeCompare(constSortKey(b));
-}
-
-function hashConst(value: Const): number {
-  if (value == null) {
-    return nullishHash;
-  }
-  switch (typeof value) {
-    case "string":
-      return generateHashFromString(value);
-    case "number":
-      return generateHashFromNumbers([value]);
-    case "boolean":
-      return generateHashFromString(value ? "true" : "false");
-  }
-}
-
-function hash256Const(ctx: Hash256Context, value: Const): void {
-  if (value == null) {
-    ctx.writer.updateNull();
-    return;
-  }
-  switch (typeof value) {
-    case "string":
-      ctx.writer.updateTag("string");
-      ctx.writer.updateString(value);
-      return;
-    case "number":
-      ctx.writer.updateTag("number");
-      ctx.writer.updateNumber(value);
-      return;
-    case "boolean":
-      ctx.writer.updateTag("boolean");
-      ctx.writer.updateBoolean(value);
-      return;
-  }
-}
 
 export function literal(constValue: Const): Runtype {
   const value = constValue ?? null;
@@ -868,11 +741,6 @@ export function literal(constValue: Const): Runtype {
 
       return { const: value };
     },
-    hash: () => hashConst(value),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("const");
-      hash256Const(ctx, value);
-    },
   });
 }
 
@@ -883,11 +751,6 @@ export const regex = (re: RegExp, description: string): Runtype =>
     message: `expected string matching ${description}`,
     typeExpr: description,
     schema: () => ({ type: "string", pattern: re.source }),
-    hash: () => generateHashFromString(description),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("regex");
-      ctx.writer.updateString(description);
-    },
   });
 
 const noSchema =
@@ -903,8 +766,6 @@ export const date = (): Runtype =>
     message: "expected Date",
     typeExpr: "Date",
     schema: noSchema("Date"),
-    hash: () => dateHash,
-    hash256: hash256Tag("date"),
   });
 
 export const bigint = (): Runtype =>
@@ -914,8 +775,6 @@ export const bigint = (): Runtype =>
     message: "expected BigInt",
     typeExpr: "BigInt",
     schema: noSchema("BigInt"),
-    hash: () => bigintHash,
-    hash256: hash256Tag("bigint"),
   });
 
 export const typedArray = (ctorName: string): Runtype =>
@@ -929,11 +788,6 @@ export const typedArray = (ctorName: string): Runtype =>
     message: `expected ${ctorName}`,
     typeExpr: ctorName,
     schema: noSchema(ctorName),
-    hash: () => generateHashFromString(ctorName.toLowerCase()),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("typedArray");
-      ctx.writer.updateString(ctorName);
-    },
   });
 
 function withFormat(
@@ -980,8 +834,6 @@ function withFormat(
       type: typeName,
       format: formatters[formats[formats.length - 1]]?.jsonSchemaFormat ?? formats.join(" and "),
     }),
-    hash: () => hashFormats(typeName === "string" ? stringWithFormatHash : numberWithFormatHash, formats),
-    hash256: (ctx) => hash256Formats(ctx, `${typeName}WithFormat`, formats),
     children: noChildren,
   });
 }
@@ -1013,15 +865,6 @@ export function literals(values: Const[]): Runtype {
       return {
         enum: values,
       };
-    },
-    hash: () => generateHashFromNumbers([anyOfConstsHash, ...[...values].sort().map(hashConst)]),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("anyOfConsts");
-      const sorted = [...values].sort((a, b) => compareConst(a, b));
-      ctx.writer.updateNumber(sorted.length);
-      for (const v of sorted) {
-        hash256Const(ctx, v);
-      }
     },
   });
 }
@@ -1103,31 +946,6 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
         prefixItems,
         items,
       } as any;
-    },
-    hash: (ctx) => {
-      let acc: number[] = [tupleHash];
-      for (const p of prefix) {
-        acc.push(p.hash(ctx));
-      }
-      if (rest != null) {
-        acc.push(rest.hash(ctx));
-      } else {
-        acc.push(0);
-      }
-      return generateHashFromNumbers(acc);
-    },
-    hash256: (ctx) => {
-      ctx.writer.updateTag("tuple");
-      ctx.writer.updateNumber(prefix.length);
-      for (const p of prefix) {
-        p.hash256(ctx);
-      }
-      if (rest == null) {
-        ctx.writer.updateTag("noRest");
-      } else {
-        ctx.writer.updateTag("rest");
-        rest.hash256(ctx);
-      }
     },
     children: () => [...prefix, ...(rest == null ? [] : [rest])],
   });
@@ -1213,14 +1031,6 @@ export function intersection(members: Runtype[]): Runtype {
       return {
         allOf: schemas,
       };
-    },
-    hash: (ctx) => generateHashFromNumbers([allOfHash, ...members.map((it) => it.hash(ctx))]),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("allOf");
-      ctx.writer.updateNumber(members.length);
-      for (const s of members) {
-        s.hash256(ctx);
-      }
     },
     children: () => members,
   });
@@ -1347,14 +1157,6 @@ export function union(members: Runtype[]): Runtype {
     schema: (ctx) => ({
       anyOf: members.map((it) => it.schema(ctx)),
     }),
-    hash: (ctx) => generateHashFromNumbers([anyOfHash, ...members.map((it) => it.hash(ctx))]),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("anyOf");
-      ctx.writer.updateNumber(members.length);
-      for (const s of members) {
-        s.hash256(ctx);
-      }
-    },
     children: () => members,
   });
 }
@@ -1408,11 +1210,6 @@ export function array(item: Runtype): Runtype {
         items,
       };
     },
-    hash: (ctx) => generateHashFromNumbers([arrayHash, item.hash(ctx)]),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("array");
-      item.hash256(ctx);
-    },
     children: () => [item],
   });
 }
@@ -1464,12 +1261,6 @@ export function map(key: Runtype, value: Runtype): Runtype {
     },
     describe: (ctx) => ({ typeExpr: `Map<${describeTypeExpr(ctx, key)}, ${describeTypeExpr(ctx, value)}>` }),
     schema: noSchema("Map"),
-    hash: (ctx) => generateHashFromNumbers([mapHash, key.hash(ctx), value.hash(ctx)]),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("map");
-      key.hash256(ctx);
-      value.hash256(ctx);
-    },
     children: () => [key, value],
   });
 }
@@ -1510,11 +1301,6 @@ export function set(item: Runtype): Runtype {
     },
     describe: (ctx) => ({ typeExpr: `Set<${describeTypeExpr(ctx, item)}>` }),
     schema: noSchema("Set"),
-    hash: (ctx) => generateHashFromNumbers([setHash, item.hash(ctx)]),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("set");
-      item.hash256(ctx);
-    },
     children: () => [item],
   });
 }
@@ -1544,6 +1330,15 @@ function ensureContextualDefinition(
   printingContext.storeDefinition(name, body);
 }
 
+// Make a 32-bit number from a string. The same string always gives the same number.
+function stringToNumber(value: string): number {
+  let result = 0;
+  for (let index = 0; index < value.length; index++) {
+    result = (result * 31 + value.charCodeAt(index)) | 0;
+  }
+  return result;
+}
+
 // A union of object types. `mapping` has the type of each value of the `discriminator` property, and
 // `members` has the types of the union as they are described.
 export function discriminatedUnion(
@@ -1552,8 +1347,6 @@ export function discriminatedUnion(
   members: Runtype[],
 ): Runtype {
   const variants = new Map(Object.entries(mapping));
-  const hash: Runtype["hash"] = (ctx) =>
-    generateHashFromNumbers([anyOfHash, ...members.map((it) => it.hash(ctx))]);
   return node({
     tag: TAG_NONE,
     validate: (ctx, input) => {
@@ -1605,16 +1398,21 @@ export function discriminatedUnion(
       return variant.reportErrors(ctx, input);
     },
     describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
-    schema: (ctx) => {
+    // A normal function, not an arrow function: it reads the node from `this`, see below.
+    schema: function (this: Runtype, ctx: SchemaContext): JSONSchema7 {
       const printingContext = ctx.printingContext;
       if (ctx.mode === "contextual" && printingContext != null) {
-        const unionHash = hash({ seen: {} });
+        // The flat schema of the union gives the number in the names of its variants, so two unions with the
+        // same schema get the same names. `this` is the node that the caller has. If it has a description,
+        // the description is in the flat schema too.
+        const flatSchema = this.schema({ path: ctx.path, seen: {}, mode: "flat" });
+        const unionNumber = stringToNumber(JSON.stringify(flatSchema));
         const variantRefs = Object.entries(mapping).map(([key, variant]) => {
           // A variant that is a named type keeps its name. Other variants get a name made from the union.
           const name =
             variant.tag === TAG_REFERENCE
               ? variant.name!
-              : `Discriminated${sanitizeComponentNamePart(discriminator)}${sanitizeComponentNamePart(key)}${Math.abs(unionHash)}`;
+              : `Discriminated${sanitizeComponentNamePart(discriminator)}${sanitizeComponentNamePart(key)}${Math.abs(unionNumber)}`;
           const target = variant.tag === TAG_REFERENCE ? variant.children()[0] : variant;
           ensureContextualDefinition(printingContext, name, target, ctx);
           return { key, ref: printingContext.getRef(name) };
@@ -1638,21 +1436,6 @@ export function discriminatedUnion(
         anyOf: members.map((it) => it.schema(ctx)),
       };
     },
-    hash,
-    hash256: (ctx) => {
-      ctx.writer.updateTag("anyOfDiscriminated");
-      ctx.writer.updateString(discriminator);
-      ctx.writer.updateNumber(members.length);
-      for (const s of members) {
-        s.hash256(ctx);
-      }
-      const mappingKeys = Object.keys(mapping).sort();
-      ctx.writer.updateNumber(mappingKeys.length);
-      for (const key of mappingKeys) {
-        ctx.writer.updateString(key);
-        mapping[key].hash256(ctx);
-      }
-    },
     children: () => members,
   });
 }
@@ -1672,11 +1455,6 @@ export function optional(inner: Runtype): Runtype {
     schema: (ctx) => ({
       anyOf: [inner.schema(ctx), { type: "null" }],
     }),
-    hash: (ctx) => generateHashFromNumbers([optionalFieldHash, inner.hash(ctx)]),
-    hash256: (ctx) => {
-      ctx.writer.updateTag("optionalField");
-      inner.hash256(ctx);
-    },
     children: () => [inner],
   });
 }
@@ -2005,33 +1783,6 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
         allOf: [base, ...indexSchemas],
       };
     },
-    hash: (ctx) => {
-      let acc: number[] = [objectHash];
-      for (const key of [...keys].sort()) {
-        acc.push(generateHashFromString(key));
-        acc.push(properties[key].hash(ctx));
-      }
-      for (const signature of indexed) {
-        acc.push(signature.key.hash(ctx));
-        acc.push(signature.value.hash(ctx));
-      }
-      return generateHashFromNumbers(acc);
-    },
-    hash256: (ctx) => {
-      ctx.writer.updateTag("object");
-      ctx.writer.updateNumber(keys.length);
-      for (const key of [...keys].sort()) {
-        const parser = properties[key];
-        ctx.writer.updateString(key);
-        ctx.writer.updateBoolean(parser.tag === TAG_OPTIONAL);
-        parser.hash256(ctx);
-      }
-      ctx.writer.updateNumber(indexed.length);
-      for (const signature of indexed) {
-        signature.key.hash256(ctx);
-        signature.value.hash256(ctx);
-      }
-    },
     children: () => [...Object.values(properties), ...indexed.flatMap(({ key, value }) => [key, value])],
   });
 }
@@ -2090,30 +1841,6 @@ export function reference(registry: Registry, name: string): Runtype {
       var tmp = to.schema(ctx);
       delete ctx.seen[name];
       return tmp;
-    },
-    hash: (ctx) => {
-      if (ctx.seen[name]) {
-        return generateHashFromString(name);
-      }
-      ctx.seen[name] = true;
-      var tmp = cell.runtype!.hash(ctx);
-      delete ctx.seen[name];
-      return tmp;
-    },
-    hash256: (ctx) => {
-      const to = cell.runtype!;
-      const activeId = ctx.active.get(to);
-      if (activeId != null) {
-        ctx.writer.updateTag("cycleRef");
-        ctx.writer.updateNumber(activeId);
-        return;
-      }
-
-      const id = ctx.nextCycleId;
-      ctx.nextCycleId++;
-      ctx.active.set(to, id);
-      to.hash256(ctx);
-      ctx.active.delete(to);
     },
     children: () => [cell.runtype!],
   });
@@ -2227,19 +1954,6 @@ class ParserFromRuntype implements BeffParser<any> {
     }
     const outPart = renderTypeAlias(`Codec${this.name}`, out);
     return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
-  }
-  hash(): number {
-    return this._runtype.hash({ seen: {} });
-  }
-  hash256(): string {
-    const ctx: Hash256Context = {
-      writer: new Hash256Writer(),
-      active: new Map(),
-      nextCycleId: 0,
-    };
-    ctx.writer.updateTag("beff-hash256-v1");
-    this._runtype.hash256(ctx);
-    return ctx.writer.digestHex();
   }
 }
 

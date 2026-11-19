@@ -27,6 +27,10 @@ importers:
       '@beff/client':
         specifier: workspace:^
         version: link:../packages/beff-client
+    devDependencies:
+      esbuild:
+        specifier: ^0.19.3
+        version: 0.19.12
 
   e2e-tests/behavior:
     dependencies:
@@ -68,21 +72,6 @@ importers:
         version: 3.25.76
 
   e2e-tests/custom-formats:
-    dependencies:
-      '@beff/cli':
-        specifier: workspace:^
-        version: link:../../packages/beff-cli
-      '@beff/client':
-        specifier: workspace:^
-        version: link:../../packages/beff-client
-      vitest:
-        specifier: ^0.34.4
-        version: 0.34.6
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
-
-  e2e-tests/hash:
     dependencies:
       '@beff/cli':
         specifier: workspace:^

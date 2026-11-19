@@ -14,4 +14,4 @@ Visible changes:
 - Loaded parsers use more memory (1.3 to 2.2 times the heap in the benchmarks). The deepest recursive input that does not overflow the stack is up to 11% smaller (`validate`: 3437 levels instead of 3687; `safeParse` of a valid input: 2656 instead of 3000).
 - `createNamedType` now accepts names that are also properties of `Object.prototype`, such as `"constructor"` and `"toString"`. Before, it threw "Named type ... already exists" for these names.
 
-The accepted inputs, the parsed values, the error messages and the output of `describe`, `schema`, `hash` and `hash256` did not change.
+The accepted inputs, the parsed values, the error messages and the output of `describe` and `schema` did not change.

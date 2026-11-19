@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, number, numberKey } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, numberKey } from "../src/codegen-v2.js";
 
 const NumberKey = buildParserFromRuntype(numberKey(), "NumberKey", true);
-const NumberType = buildParserFromRuntype(number(), "Number", true);
 
-describe("numKey", () => {
+describe("numberKey", () => {
   it("accepts numeric strings", () => {
     for (const key of ["0", "1", "-1", "1.5", "1e+21", "1e-7"]) {
       expect(NumberKey.validate(key)).toBe(true);
@@ -17,9 +16,7 @@ describe("numKey", () => {
     }
   });
 
-  it("describes and hashes as number", () => {
+  it("describes as number", () => {
     expect(NumberKey.describe()).toBe("number");
-    expect(NumberKey.hash()).toBe(NumberType.hash());
-    expect(NumberKey.hash256()).toBe(NumberType.hash256());
   });
 });
