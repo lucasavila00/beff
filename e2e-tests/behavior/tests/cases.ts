@@ -286,18 +286,14 @@ const cases: { [K in keyof Codecs]?: Case } = {
     ],
   },
   ProtoKeyObject: {
-    invalid: [at(["toString"], JSON.parse('{"__proto__": "x", "toString": "1"}'))],
-    bugs: [
-      { issue: 438, expect: "invalid", value: { toString: 1 } },
-      { issue: 438, expect: "invalid", value: JSON.parse('{"__proto__": 1, "toString": 1}') },
-      { issue: 438, expect: "strictValid", value: JSON.parse('{"__proto__": "x", "toString": 1}') },
+    invalid: [
+      at(["toString"], JSON.parse('{"__proto__": "x", "toString": "1"}')),
+      { toString: 1 },
+      JSON.parse('{"__proto__": 1, "toString": 1}'),
     ],
-    bugParsed: [
-      {
-        issue: 438,
-        input: JSON.parse('{"__proto__": "x", "toString": 1}'),
-        output: JSON.parse('{"__proto__": "x", "toString": 1}'),
-      },
+    strictValid: [JSON.parse('{"__proto__": "x", "toString": 1}')],
+    parsed: [
+      [JSON.parse('{"__proto__": "x", "toString": 1}'), JSON.parse('{"__proto__": "x", "toString": 1}')],
     ],
   },
 
@@ -425,15 +421,16 @@ const cases: { [K in keyof Codecs]?: Case } = {
     valid: [
       { kind: "toString", a: "x" },
       { kind: "constructor", b: 1 },
+      JSON.parse('{"kind": "__proto__", "c": true}'),
     ],
     invalid: [
       { kind: "toString", b: 1 },
+      JSON.parse('{"kind": "__proto__", "c": 1}'),
       { kind: "constructor", a: "x" },
       { kind: "valueOf", a: "x" },
       { kind: "hasOwnProperty", a: "x" },
       {},
     ],
-    bugs: [{ issue: 438, expect: "valid", value: JSON.parse('{"kind": "__proto__", "c": true}') }],
   },
   MultiValueDiscriminated: {
     valid: [
