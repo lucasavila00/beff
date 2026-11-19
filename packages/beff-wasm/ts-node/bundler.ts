@@ -227,15 +227,6 @@ export class Bundler {
     }
   }
 
-  public diagnostics(
-    parser_entrypoint: string | undefined,
-    settings: BeffUserSettings,
-  ): WasmDiagnostic | null {
-    return JSON.parse(
-      wasm.bundle_to_diagnostics(parser_entrypoint ?? "", JSON.stringify(serializeSettings(settings))),
-    );
-  }
-
   public updateFileContent(file_name: string, content: string) {
     return wasm.update_file_content(file_name, content);
   }
