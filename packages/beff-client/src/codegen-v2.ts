@@ -228,54 +228,20 @@ function deepmergeArray(options: any) {
 
 const deepmerge = deepmergeConstructor({ mergeArray: deepmergeArray }) as (...args: unknown[]) => unknown;
 
-// The depth of the errors inside each union error, so that an outer union does not walk them again.
-const unionErrorDepth = new WeakMap<DecodeError, number>();
-
 function maxErrorDepth(errors: DecodeError[]): number {
   let max = 0;
   for (const err of errors) {
-    const depth = "isUnionError" in err ? err.path.length + unionErrorDepth.get(err)! : err.path.length;
+    const depth = "isUnionError" in err ? err.path.length + maxErrorDepth(err.errors) : err.path.length;
     if (depth > max) max = depth;
   }
   return max;
 }
 
-function prependPath(parentPath: ReportContext["path"], err: DecodeError): DecodeError {
-  for (let i = parentPath.length - 1; i >= 0; i--) {
-    err.path.push(pathItem(parentPath[i]));
+function prependPath(parentPath: string[], err: DecodeError): DecodeError {
+  if ("isUnionError" in err) {
+    return { ...err, path: [...parentPath, ...err.path] };
   }
-  return err;
-}
-
-function pathItem(it: string | number): string {
-  return typeof it === "number" ? `[${it}]` : it;
-}
-
-// While errors are reported, their paths are stored reversed (innermost key first). A union that
-// flattens a single error can then add its own path to it in place, instead of copying the whole
-// path at every level of a recursive type. finishErrors puts the paths back in order.
-function reversedPath(ctx: ReportContext): string[] {
-  const path = [];
-  for (let i = ctx.path.length - 1; i >= 0; i--) {
-    path.push(pathItem(ctx.path[i]));
-  }
-  return path;
-}
-
-function finishErrors(errors: DecodeError[]): DecodeError[] {
-  for (const err of errors) {
-    err.path.reverse();
-    if ("isUnionError" in err) {
-      finishErrors(err.errors);
-    }
-  }
-  return errors;
-}
-
-function pushAll<T>(acc: T[], items: T[]): void {
-  for (let i = 0; i < items.length; i++) {
-    acc.push(items[i]);
-  }
+  return { ...err, path: [...parentPath, ...err.path] };
 }
 
 // JSON.stringify throws on bigint values. Write them as `123n`.
@@ -284,18 +250,6 @@ function stringifyWithBigInt(value: unknown): string {
 }
 
 function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
-  if (errors.length < 2) {
-    return errors;
-  }
-  // Errors with different messages or paths are never equal. Only stringify whole errors, with
-  // their received values and nested errors, when two of them have the same message and path.
-  const messagesAndPaths = new Set<string>();
-  for (const err of errors) {
-    messagesAndPaths.add(JSON.stringify(["message" in err ? err.message : null, err.path]));
-  }
-  if (messagesAndPaths.size === errors.length) {
-    return errors;
-  }
   const seen = new Set<string>();
   return errors.filter((err) => {
     const key = stringifyWithBigInt(err);
@@ -305,47 +259,43 @@ function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
   });
 }
 
-function buildUnionError(
-  ctx: ReportContext,
-  errors: DecodeError[],
-  received: unknown,
-  depth: number,
-): DecodeError[] {
+function buildUnionError(ctx: { path: string[] }, errors: DecodeError[], received: unknown): DecodeError[] {
   const deduplicated = deduplicateErrors(errors);
   // Single branch survived filtering — flatten instead of wrapping
   if (deduplicated.length === 1) {
     return [prependPath(ctx.path, deduplicated[0])];
   }
-  const err: DecodeError = {
-    path: reversedPath(ctx),
-    received,
-    errors: deduplicated,
-    isUnionError: true,
-  };
-  unionErrorDepth.set(err, depth);
-  return [err];
+  return [
+    {
+      path: [...ctx.path],
+      received,
+      errors: deduplicated,
+      isUnionError: true,
+    },
+  ];
 }
-function buildError(ctx: ReportContext, message: string, received: unknown): RegularDecodeError[] {
+function buildError(ctx: { path: string[] }, message: string, received: unknown): RegularDecodeError[] {
   return [
     {
       message,
-      path: reversedPath(ctx),
+      path: [...ctx.path],
       received,
     },
   ];
 }
-// Reports the errors of the child value at `key`. Valid children report no errors, so reporting does
-// not validate a child before it reports on it, and each value is visited once.
+// Reports the errors of the child value at `key`, if it is invalid.
 function reportAtPath(
   ctx: ReportContext,
   acc: DecodeError[],
-  key: string | number,
+  key: string,
   child: Compiled,
   input: unknown,
 ): void {
-  ctx.path.push(key);
-  pushAll(acc, child.report(ctx, input));
-  ctx.path.pop();
+  if (!child.validate(ctx, input)) {
+    pushPath(ctx, key);
+    acc.push(...child.report(ctx, input));
+    popPath(ctx);
+  }
 }
 function pushPath(ctx: { path: string[] }, key: string) {
   ctx.path.push(key);
@@ -580,8 +530,7 @@ type ParseContext = ValidateContext & {
 };
 
 type ReportContext = ValidateContext & {
-  // Array indexes are numbers. See reversedPath.
-  path: Array<string | number>;
+  path: string[];
 };
 
 // Should an intersection check the extra properties of this input against the keys of all its members?
@@ -617,7 +566,7 @@ export interface Runtype {
 type ValidateFn = (ctx: ValidateContext, input: any) => boolean;
 // Only called on inputs that passed validate.
 type ParseFn = (ctx: ParseContext, input: any) => unknown;
-// Returns no errors exactly when validate returns true. The paths of the errors are reversed, see reversedPath.
+// Only called on inputs that failed validate.
 type ReportFn = (ctx: ReportContext, input: any) => DecodeError[];
 
 // A runtype compiled to closures. Each runtype is compiled once and its closures call the closures
@@ -649,15 +598,13 @@ export function getCompiled(runtype: Runtype): Compiled {
 // Incremented by overrideNamedType. Compiled refs look up their target again when it changes.
 let refGeneration = 0;
 
-// Never mutated.
-const NO_ERRORS: DecodeError[] = [];
 const identityParse: ParseFn = (_ctx, input) => input;
 
 function leafCompiled(kinds: number, validate: ValidateFn, message: (input: any) => string): Compiled {
   return new Compiled(
     validate,
     identityParse,
-    (ctx, input) => (validate(ctx, input) ? NO_ERRORS : buildError(ctx, message(input), input)),
+    (ctx, input) => buildError(ctx, message(input), input),
     () => kinds,
   );
 }
@@ -673,6 +620,8 @@ const KIND_ARRAY = 32;
 const KIND_OBJECT = 64;
 const KIND_OTHER = 128;
 const KIND_ALL = 255;
+// `instanceof` only checks the prototype chain, which arrays and functions can also have.
+const KIND_INSTANCE = KIND_ARRAY | KIND_OBJECT | KIND_OTHER;
 
 function kindOfValue(input: unknown): number {
   if (input == null) return KIND_NULLISH;
@@ -890,11 +839,10 @@ export class AnyRuntype extends BaseRuntype {
     return annotateSchema(this.metadata, {});
   }
   compile(): Compiled {
-    return new Compiled(
+    return leafCompiled(
+      KIND_ALL,
       () => true,
-      identityParse,
-      () => NO_ERRORS,
-      () => KIND_ALL,
+      () => "expected any",
     );
   }
   hash(_ctx: HashContext): number {
@@ -1104,7 +1052,7 @@ export class DateRuntype extends BaseRuntype {
   }
   compile(): Compiled {
     return leafCompiled(
-      KIND_OBJECT,
+      KIND_INSTANCE,
       (_ctx, input) => input instanceof Date,
       () => `expected Date`,
     );
@@ -1155,7 +1103,7 @@ export class TypedArrayRuntype extends BaseRuntype {
   compile(): Compiled {
     const ctorName = this.ctorName;
     return leafCompiled(
-      KIND_OBJECT,
+      KIND_INSTANCE,
       (_ctx, input) => {
         const ctor = (globalThis as any)[ctorName];
         return ctor != null && input instanceof ctor;
@@ -1394,14 +1342,14 @@ export class TupleRuntype extends BaseRuntype {
         }
         const acc: DecodeError[] = [];
         for (let i = 0; i < n; i++) {
-          reportAtPath(ctx, acc, i, prefix[i], input[i]);
+          reportAtPath(ctx, acc, `[${i}]`, prefix[i], input[i]);
         }
         if (rest != null) {
           for (let i = n; i < input.length; i++) {
-            reportAtPath(ctx, acc, i, rest, input[i]);
+            reportAtPath(ctx, acc, `[${i}]`, rest, input[i]);
           }
         } else if (input.length > n) {
-          pushAll(acc, buildError(ctx, `expected tuple with ${n} items, got ${input.length}`, input));
+          acc.push(...buildError(ctx, `expected tuple with ${n} items, got ${input.length}`, input));
         }
         return acc;
       },
@@ -1509,24 +1457,19 @@ export class AllOfRuntype extends BaseRuntype {
         ctx.intersectionInput = input;
         const errors: DecodeError[] = [];
         for (let i = 0; i < n; i++) {
-          pushAll(errors, members[i].report(ctx, input));
+          errors.push(...members[i].report(ctx, input));
         }
         ctx.intersectionInput = old;
-        if (errors.length > 0) {
+        if (errors.length > 0 || !checksExtraProperties) {
           return errors;
         }
-        if (n > 0 && typeof input !== "object") {
-          return buildError(ctx, "expected object", input);
-        }
-        if (!checksExtraProperties) {
-          return errors;
-        }
+        const acc: DecodeError[] = [];
         for (const k of extraKeys(input)) {
-          ctx.path.push(k);
-          pushAll(errors, buildError(ctx, `extra property`, input[k]));
-          ctx.path.pop();
+          pushPath(ctx, k);
+          acc.push(...buildError(ctx, `extra property`, input[k]));
+          popPath(ctx);
         }
-        return errors;
+        return acc;
       },
       () => KIND_ALL,
     );
@@ -1677,20 +1620,13 @@ export class AnyOfRuntype extends BaseRuntype {
         return deepmerge(...items);
       },
       (ctx, input) => {
-        // Branch errors have paths relative to the union.
-        const oldPath = ctx.path;
-        ctx.path = [];
         const branchErrors: DecodeError[][] = [];
-        let valid = false;
-        for (let i = 0; i < n && !valid; i++) {
-          const errors = branches[i].report(ctx, input);
-          valid = errors.length === 0;
-          branchErrors.push(errors);
+        const oldPaths = ctx.path;
+        ctx.path = [];
+        for (let i = 0; i < n; i++) {
+          branchErrors.push(branches[i].report(ctx, input));
         }
-        ctx.path = oldPath;
-        if (valid) {
-          return NO_ERRORS;
-        }
+        ctx.path = oldPaths;
 
         // Filter to closest-matching branches by max error depth
         const depths = branchErrors.map((errors) => maxErrorDepth(errors));
@@ -1698,7 +1634,7 @@ export class AnyOfRuntype extends BaseRuntype {
         const filtered =
           bestDepth > 0 ? branchErrors.filter((_, i) => depths[i] === bestDepth).flat() : branchErrors.flat();
 
-        return buildUnionError(ctx, filtered, input, bestDepth > 0 ? bestDepth : 0);
+        return buildUnionError(ctx, filtered, input);
       },
       () => KIND_ALL,
     );
@@ -1761,7 +1697,7 @@ export class ArrayRuntype extends BaseRuntype {
         }
         const acc: DecodeError[] = [];
         for (let i = 0; i < input.length; i++) {
-          reportAtPath(ctx, acc, i, item, input[i]);
+          reportAtPath(ctx, acc, `[${i}]`, item, input[i]);
         }
         return acc;
       },
@@ -1833,7 +1769,7 @@ export class MapRuntype extends BaseRuntype {
         }
         return acc;
       },
-      () => KIND_OBJECT,
+      () => KIND_INSTANCE,
     );
   }
   hash(_ctx: HashContext): number {
@@ -1892,7 +1828,7 @@ export class SetRuntype extends BaseRuntype {
         }
         return acc;
       },
-      () => KIND_OBJECT,
+      () => KIND_INSTANCE,
     );
   }
   hash(_ctx: HashContext): number {
@@ -2060,7 +1996,7 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
         }
         const v = variants.get(String(d));
         if (v === undefined) {
-          ctx.path.push(discriminator);
+          pushPath(ctx, discriminator);
           const errs = buildError(
             ctx,
             "expected one of " +
@@ -2069,12 +2005,13 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
                 .join(", "),
             d,
           );
-          ctx.path.pop();
+          popPath(ctx);
           return errs;
         }
         return v.report(ctx, input);
       },
-      () => KIND_ALL,
+      // Checks `typeof input === "object"`, which is also true for arrays.
+      () => KIND_ARRAY | KIND_OBJECT,
     );
   }
   protected describeTypeExpr(ctx: DescribeContext): string {
@@ -2124,8 +2061,9 @@ export class OptionalFieldRuntype implements Runtype {
     return new Compiled(
       (ctx, input) => input == null || t.validate(ctx, input),
       (ctx, input) => (input == null ? input : t.parse(ctx, input)),
-      // Null and undefined are valid, so only the inner type's errors are relevant.
-      (ctx, input) => (input == null ? NO_ERRORS : t.report(ctx, input)),
+      // Null and undefined are valid, so report is only called on other values. Reporting "expected
+      // nullish value" here would be noise: only the inner type's errors are relevant.
+      (ctx, input) => t.report(ctx, input),
       () => KIND_ALL,
     );
   }
@@ -2375,21 +2313,20 @@ export class ObjectRuntype extends BaseRuntype {
             if (byKey.has(k) || leavesKeyToIntersection(ctx, input, k)) {
               continue;
             }
-            // The key is valid if one index signature accepts it and its value. Otherwise report
-            // the errors of every index signature.
-            ctx.path.push(k);
-            const errors: DecodeError[] = [];
-            let isValid = false;
-            for (let j = 0; j < m && !isValid; j++) {
-              const keyErrors = indexed[j].key.report(ctx, k);
-              const valueErrors = indexed[j].value.report(ctx, input[k]);
-              isValid = keyErrors.length === 0 && valueErrors.length === 0;
-              pushAll(errors, keyErrors);
-              pushAll(errors, valueErrors);
-            }
-            ctx.path.pop();
-            if (!isValid) {
-              pushAll(acc, errors);
+            for (let j = 0; j < m; j++) {
+              const p = indexed[j];
+              const keyOk = p.key.validate(ctx, k);
+              const valueOk = p.value.validate(ctx, input[k]);
+              if (!keyOk || !valueOk) {
+                pushPath(ctx, k);
+                if (!keyOk) {
+                  acc.push(...p.key.report(ctx, k));
+                }
+                if (!valueOk) {
+                  acc.push(...p.value.report(ctx, input[k]));
+                }
+                popPath(ctx);
+              }
             }
           }
         } else if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
@@ -2397,9 +2334,9 @@ export class ObjectRuntype extends BaseRuntype {
           if (extraKeys.length > 0) {
             const extra: DecodeError[] = [];
             for (const k of extraKeys) {
-              ctx.path.push(k);
-              pushAll(extra, buildError(ctx, `extra property`, input[k]));
-              ctx.path.pop();
+              pushPath(ctx, k);
+              extra.push(...buildError(ctx, `extra property`, input[k]));
+              popPath(ctx);
             }
             return extra;
           }
@@ -2631,7 +2568,7 @@ class ParserFromRuntype implements BeffParser<any> {
     let ctx = { path: [], disallowExtraProperties };
     return {
       success: false,
-      errors: finishErrors(this.compiled.report(ctx, input).slice(0, 10)),
+      errors: this.compiled.report(ctx, input).slice(0, 10),
     };
   }
   zod(): z.ZodType<any, z.ZodTypeDef, any> {
@@ -2641,7 +2578,7 @@ class ParserFromRuntype implements BeffParser<any> {
       //@ts-ignore
       (val: any) => {
         const errors = this.compiled.report({ path: [], disallowExtraProperties: false }, val);
-        return printErrors(finishErrors(errors), []);
+        return printErrors(errors, []);
       },
     );
   }
