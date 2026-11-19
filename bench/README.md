@@ -1,6 +1,8 @@
 # bench
 
-Manual stress tests and benchmarks for the compiler and the generated validators. They are not part of `pnpm test` or CI.
+Manual stress tests and benchmarks for the compiler and the generated validators.
+
+The benchmarks are manual. They are not part of `pnpm test`, and they do not run automatically in CI. Do not add them to the Tests workflow, and do not add push or pull request triggers to the Bench workflow. Start them on purpose when you need numbers. Run them in CI, as described in [Running in CI](#running-in-ci), so that results come from the same kind of machine. Run them on your own machine only to debug a script.
 
 Build first. Use a release build for numbers, because `DEBUG=true` builds are much slower:
 
@@ -48,6 +50,27 @@ node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6]
 # Also prints the deepest recursive input that does not overflow the stack.
 node stress.mjs [--shape records] [--scale 8] [--runs 500] [--seed 1]
 ```
+
+## Running in CI
+
+`.github/workflows/bench.yml` runs only when you start it. It does a release build, runs `compile.mjs`, `runtime.mjs` and `stress.mjs`, writes the tables to the job summary, and uploads the raw output as the `bench-results` artifact. The job fails if `stress.mjs` finds failures.
+
+1. Push the branch with the change to measure.
+2. Start the workflow on that branch. With no inputs it runs all shapes with default options:
+
+   ```sh
+   gh workflow run bench.yml --ref <branch>
+   gh workflow run bench.yml --ref <branch> -f shape=recursive -f runtime_args="--scale 32" -f stress_args="--runs 2000"
+   ```
+
+3. Read the results:
+
+   ```sh
+   gh run list --workflow bench.yml --branch <branch> --limit 1
+   gh run download <id> -n bench-results
+   ```
+
+CI runners differ by 1.1x to 1.5x between runs. To compare two versions, run both in the same job, or start both runs at the same time. Do not compare against an old run.
 
 ## Profiling
 
