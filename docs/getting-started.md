@@ -26,16 +26,30 @@ Beff reads its configuration from a JSON file. The file can have any name. The u
 
 ### Configuration options
 
-| Option          | Required | Description                                                                          |
-| --------------- | -------- | ------------------------------------------------------------------------------------ |
-| `parser`        | Yes      | The path to the parser file. Beff reads the types from this file.                    |
-| `outputDir`     | Yes      | The directory for the generated files.                                               |
-| `module`        | No       | The module format of the generated code: `"esm"` or `"cjs"`. The default is `"esm"`. |
-| `stringFormats` | No       | A list of custom string formats. Refer to [Custom formats](./custom-formats.md).     |
-| `numberFormats` | No       | A list of custom number formats. Refer to [Custom formats](./custom-formats.md).     |
-| `codegen.maxValidateFunctionSize` | No | The largest generated `validate` code for one type, in characters of JavaScript, with the functions of its inline types. A type within the limit is validated by a generated function. A larger type is validated by the runtime validator, which is slower but adds no code. `0` generates no functions, for the smallest `parser.js`. The default is `2000`. |
+| Option          | Required | Description                                                                                      |
+| --------------- | -------- | ------------------------------------------------------------------------------------------------ |
+| `parser`        | Yes      | The path to the parser file. Beff reads the types from this file.                                |
+| `outputDir`     | Yes      | The directory for the generated files.                                                           |
+| `module`        | No       | The module format of the generated code: `"esm"` or `"cjs"`. The default is `"esm"`.             |
+| `stringFormats` | No       | A list of custom string formats. Refer to [Custom formats](./custom-formats.md).                 |
+| `numberFormats` | No       | A list of custom number formats. Refer to [Custom formats](./custom-formats.md).                 |
+| `codegen`       | No       | Code generation options. Refer to [Generated validate functions](#generated-validate-functions). |
 
 All paths are relative to the configuration file.
+
+### Generated validate functions
+
+Beff writes a JavaScript `validate` function for each type whose generated code is small enough. These functions are faster than the runtime validator, but they make `parser.js` larger. Other types use the runtime validator.
+
+```json
+{
+  "parser": "./src/parser.ts",
+  "outputDir": "./src/generated",
+  "codegen": { "maxValidateFunctionSize": 2000 }
+}
+```
+
+`maxValidateFunctionSize` is the largest generated `validate` code for one type, in characters of JavaScript, including the functions of its inline types. The default is `2000`. Set it to `0` to generate no functions and get the smallest `parser.js`.
 
 ## Create the parser file
 
