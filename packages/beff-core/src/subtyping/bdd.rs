@@ -16,13 +16,13 @@ use super::{
     subtype::{ProperSubtype, StringLitOrFormat, SubType, SubTypeTag},
 };
 #[derive(Debug, Clone)]
-pub struct IndexedPropertiesAtomic {
+pub(crate) struct IndexedPropertiesAtomic {
     pub key: Rc<SemType>,
     pub value: Rc<SemType>,
 }
 #[derive(Debug, Clone)]
 
-pub struct MappingAtomicType {
+pub(crate) struct MappingAtomicType {
     pub vs: BTreeMap<String, Rc<SemType>>,
     pub indexed_properties: Option<IndexedPropertiesAtomic>,
 }
@@ -33,7 +33,7 @@ impl Default for MappingAtomicType {
 }
 
 impl MappingAtomicType {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             vs: BTreeMap::new(),
             indexed_properties: None,
@@ -42,13 +42,13 @@ impl MappingAtomicType {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub struct ListAtomic {
+pub(crate) struct ListAtomic {
     pub prefix_items: Vec<Rc<SemType>>,
     pub items: Rc<SemType>,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
-pub enum Atom {
+pub(crate) enum Atom {
     Mapping(usize),
     List(usize),
     Map(usize),
@@ -60,7 +60,7 @@ fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub enum Bdd {
+pub(crate) enum Bdd {
     True,
     False,
     Node {
@@ -72,7 +72,7 @@ pub enum Bdd {
 }
 
 impl Bdd {
-    pub fn from_atom(atom: Atom) -> Bdd {
+    pub(crate) fn from_atom(atom: Atom) -> Bdd {
         Bdd::Node {
             atom,
             left: Bdd::True.into(),
@@ -81,7 +81,7 @@ impl Bdd {
         }
     }
 
-    pub fn from_node(atom: Atom, left: Rc<Bdd>, middle: Rc<Bdd>, right: Rc<Bdd>) -> Rc<Bdd> {
+    pub(crate) fn from_node(atom: Atom, left: Rc<Bdd>, middle: Rc<Bdd>, right: Rc<Bdd>) -> Rc<Bdd> {
         if *middle == Bdd::True {
             return Bdd::True.into();
         }
@@ -97,7 +97,7 @@ impl Bdd {
     }
 }
 
-pub trait BddOps {
+pub(crate) trait BddOps {
     fn intersect(&self, b2: &Rc<Bdd>) -> Rc<Bdd>;
     fn union(&self, b2: &Rc<Bdd>) -> Rc<Bdd>;
     fn diff(&self, b2: &Rc<Bdd>) -> Rc<Bdd>;
@@ -505,7 +505,7 @@ fn list_formula_is_empty(
         ListInhabited::No => Ok(IsEmptyStatus::IsEmpty),
     }
 }
-pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> Result<IsEmptyStatus> {
+pub(crate) fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> Result<IsEmptyStatus> {
     match builder.list_memo.get(bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return Ok(IsEmptyStatus::IsEmpty),
@@ -699,7 +699,7 @@ fn bdd_mapped_record_member_type_inner_val(
 // This computes the spec operation called "member type of K in T",
 // for when T is a subtype of mapping, and K is either `string` or a singleton string.
 // This is what Castagna calls projection.
-pub fn mapping_indexed_access(
+pub(crate) fn mapping_indexed_access(
     ctx: &mut SemTypeContext,
     obj_st: Rc<SemType>,
     idx_st: Rc<SemType>,
@@ -710,7 +710,7 @@ pub fn mapping_indexed_access(
 
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::Mapping);
     match b {
-        SubType::False(_) => Ok(SemTypeContext::never().into()),
+        SubType::False => Ok(SemTypeContext::never().into()),
         SubType::True(_) => {
             bail!("not a mapping - true")
         }
@@ -723,7 +723,7 @@ pub fn mapping_indexed_access(
             };
             let idx_clone = idx_st.clone();
             let string_key: Option<MappingStrKey> = match SemTypeContext::string_sub_type(idx_st) {
-                SubType::False(_) => None,
+                SubType::False => None,
                 SubType::True(_) => Some(MappingStrKey::True),
                 SubType::Proper(proper) => match proper.as_ref() {
                     ProperSubtype::String { allowed, values } => {
@@ -896,7 +896,7 @@ fn bdd_list_member_type_inner_val(
 // This is what Castagna calls projection.
 // We will extend this to allow `key` to be a SemType, which will turn into an IntSubtype.
 // If `t` is not a list, NEVER is returned
-pub fn list_indexed_access(
+pub(crate) fn list_indexed_access(
     ctx: &SemTypeContext,
     obj_st: Rc<SemType>,
     idx_st: Rc<SemType>,
@@ -906,7 +906,7 @@ pub fn list_indexed_access(
     //     }
 
     let k: ListNumberKey = match SemTypeContext::number_sub_type(idx_st) {
-        SubType::False(_) => return Ok(SemTypeContext::never().into()),
+        SubType::False => return Ok(SemTypeContext::never().into()),
         SubType::True(_) => ListNumberKey::True,
         SubType::Proper(proper) => match proper.as_ref() {
             ProperSubtype::Number { allowed, values } => {
@@ -935,7 +935,7 @@ pub fn list_indexed_access(
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::List);
 
     match b {
-        SubType::False(_) => Ok(SemTypeContext::never().into()),
+        SubType::False => Ok(SemTypeContext::never().into()),
         SubType::True(_) => {
             bail!("not a list - true")
         }
@@ -951,7 +951,7 @@ pub fn list_indexed_access(
     }
 }
 
-pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
+pub(crate) fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
     let mut acc: Option<Rc<SemType>> = None;
 
     let intersect_with = |acc: &mut Option<Rc<SemType>>, ty: Rc<SemType>| -> anyhow::Result<()> {

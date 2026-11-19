@@ -30,7 +30,7 @@ fn ts_syntax_for_file(bff_fname: &BffFileName) -> TsSyntax {
 }
 
 #[allow(clippy::arc_with_non_send_sync)]
-pub fn parse_with_swc(
+pub(crate) fn parse_with_swc(
     fm: &Rc<SourceFile>,
     cm: SourceMap,
     bff_fname: &BffFileName,

@@ -8,23 +8,24 @@ use crate::subtyping::subtype::NumberRepresentationOrFormat;
 use crate::{NamedSchema, ast::runtype::Runtype};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
-pub mod bdd;
-pub mod dnf;
-pub mod mapping;
-pub mod semtype;
-pub mod subtype;
-pub mod to_schema;
+pub(crate) mod bdd;
+pub(crate) mod dnf;
+pub(crate) mod mapping;
+pub(crate) mod semtype;
+pub(crate) mod subtype;
+pub(crate) mod to_schema;
 use anyhow::Result;
 use anyhow::{anyhow, bail};
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
-pub enum IsEmptyStatus {
+pub(crate) enum IsEmptyStatus {
     NotEmpty,
     IsEmpty,
 }
 
 impl IsEmptyStatus {
-    pub fn is_empty(&self) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_empty(&self) -> bool {
         matches!(self, IsEmptyStatus::IsEmpty)
     }
 }
@@ -330,7 +331,7 @@ impl<'a> ToSemTypeConverter<'a> {
     }
 }
 
-pub trait ToSemType {
+pub(crate) trait ToSemType {
     fn to_sem_type(
         &self,
         validators: &[&NamedSchema],

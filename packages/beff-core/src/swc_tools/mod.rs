@@ -5,12 +5,12 @@ use swc_ecma_ast::{Expr, TsEnumDecl, TsInterfaceDecl, TsType, TsTypeAliasDecl};
 
 use crate::{Anchor, BffFileName, FileManager};
 
-pub mod bind_exports;
-pub mod bind_locals;
-pub mod parse;
+pub(crate) mod bind_exports;
+pub(crate) mod bind_locals;
+pub(crate) mod parse;
 
 #[derive(Debug, Clone)]
-pub enum SymbolExport {
+pub(crate) enum SymbolExport {
     TsType {
         decl: Rc<TsTypeAliasDecl>,
         original_file: BffFileName,
@@ -28,13 +28,9 @@ pub enum SymbolExport {
     },
     ValueExpr {
         expr: Rc<Expr>,
-        name: String,
-        span: Span,
         original_file: BffFileName,
     },
     ExprDecl {
-        name: String,
-        span: Span,
         original_file: BffFileName,
         ty: Rc<TsType>,
     },
@@ -48,7 +44,7 @@ pub enum SymbolExport {
 }
 
 #[derive(Debug, Clone)]
-pub enum ImportReference {
+pub(crate) enum ImportReference {
     Named {
         original_name: Rc<String>,
         file_name: BffFileName,
@@ -56,7 +52,6 @@ pub enum ImportReference {
     },
     Star {
         file_name: BffFileName,
-        import_statement_anchor: Anchor,
     },
     Default {
         file_name: BffFileName,
@@ -64,21 +59,8 @@ pub enum ImportReference {
     },
 }
 
-impl ImportReference {
-    pub fn file_name(&self) -> &BffFileName {
-        match self {
-            ImportReference::Named {
-                file_name: file, ..
-            } => file,
-            ImportReference::Star {
-                file_name: file, ..
-            } => file,
-            ImportReference::Default { file_name, .. } => file_name,
-        }
-    }
-}
 #[derive(Debug, Clone)]
-pub struct SymbolsExportsModule {
+pub(crate) struct SymbolsExportsModule {
     pub named_types: HashMap<String, Rc<SymbolExport>>,
     pub named_values: HashMap<String, Rc<SymbolExport>>,
 
@@ -94,7 +76,7 @@ impl Default for SymbolsExportsModule {
     }
 }
 impl SymbolsExportsModule {
-    pub fn new() -> SymbolsExportsModule {
+    pub(crate) fn new() -> SymbolsExportsModule {
         SymbolsExportsModule {
             named_types: HashMap::new(),
             named_values: HashMap::new(),
@@ -103,14 +85,14 @@ impl SymbolsExportsModule {
             export_default: None,
         }
     }
-    pub fn set_default_export(&mut self, export: Rc<SymbolExportDefault>) {
+    pub(crate) fn set_default_export(&mut self, export: Rc<SymbolExportDefault>) {
         if self.export_default.is_some() {
             panic!("Default export already set");
         }
         self.export_default = Some(export);
     }
 
-    pub fn insert_value(&mut self, name: String, export: Rc<SymbolExport>) {
+    pub(crate) fn insert_value(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
             self.set_default_export(SymbolExportDefault::Renamed { export }.into());
             return;
@@ -118,7 +100,7 @@ impl SymbolsExportsModule {
         self.named_values.insert(name, export);
     }
 
-    pub fn get_value<R: FileManager>(
+    pub(crate) fn get_value<R: FileManager>(
         &self,
         name: &String,
         files: &mut R,
@@ -137,7 +119,7 @@ impl SymbolsExportsModule {
         known.or_else(|| self.named_unknown.get(name).cloned())
     }
 
-    pub fn insert_type(&mut self, name: String, export: Rc<SymbolExport>) {
+    pub(crate) fn insert_type(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
             self.set_default_export(SymbolExportDefault::Renamed { export }.into());
             return;
@@ -145,7 +127,7 @@ impl SymbolsExportsModule {
         self.named_types.insert(name, export);
     }
 
-    pub fn insert_unknown(&mut self, name: String, export: Rc<SymbolExport>) {
+    pub(crate) fn insert_unknown(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
             self.set_default_export(SymbolExportDefault::Renamed { export }.into());
             return;
@@ -153,7 +135,7 @@ impl SymbolsExportsModule {
         self.named_unknown.insert(name, export);
     }
 
-    pub fn get_type<R: FileManager>(
+    pub(crate) fn get_type<R: FileManager>(
         &self,
         name: &String,
         files: &mut R,
@@ -172,13 +154,13 @@ impl SymbolsExportsModule {
         known.or_else(|| self.named_unknown.get(name).cloned())
     }
 
-    pub fn extend(&mut self, other: BffFileName) {
+    pub(crate) fn extend(&mut self, other: BffFileName) {
         self.extends.push(other);
     }
 }
 
 #[derive(Debug)]
-pub enum SymbolExportDefault {
+pub(crate) enum SymbolExportDefault {
     Expr {
         export_expr: Rc<Expr>,
         anchor: Anchor,

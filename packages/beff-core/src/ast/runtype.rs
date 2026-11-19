@@ -6,7 +6,6 @@ use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::SemTypeContext;
 use crate::subtyping::semtype::SemTypeOps;
 use anyhow::Result;
-use anyhow::anyhow;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
@@ -14,35 +13,30 @@ use std::hash::Hash;
 use std::hash::Hasher;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Hash)]
-pub enum Optionality<T> {
+pub(crate) enum Optionality<T> {
     Optional(T),
     Required(T),
 }
 
 impl<T> Optionality<T> {
-    pub fn inner(&self) -> &T {
+    pub(crate) fn inner(&self) -> &T {
         match self {
             Optionality::Optional(t) | Optionality::Required(t) => t,
         }
     }
-    pub fn inner_move(self) -> T {
-        match self {
-            Optionality::Optional(t) | Optionality::Required(t) => t,
-        }
-    }
-    pub fn is_required(&self) -> bool {
+    pub(crate) fn is_required(&self) -> bool {
         match self {
             Optionality::Optional(_) => false,
             Optionality::Required(_) => true,
         }
     }
-    pub fn to_required(self) -> Optionality<T> {
+    pub(crate) fn into_required(self) -> Optionality<T> {
         match self {
             Optionality::Optional(t) => Optionality::Required(t),
             Optionality::Required(t) => Optionality::Required(t),
         }
     }
-    pub fn to_optional(self) -> Optionality<T> {
+    pub(crate) fn into_optional(self) -> Optionality<T> {
         match self {
             Optionality::Optional(t) => Optionality::Optional(t),
             Optionality::Required(t) => Optionality::Optional(t),
@@ -50,45 +44,30 @@ impl<T> Optionality<T> {
     }
 }
 
-impl Optionality<Runtype> {
-    pub fn negated(self) -> Optionality<Runtype> {
-        match self {
-            Optionality::Optional(it) => Runtype::st_not(it.into()).optional(),
-            Optionality::Required(it) => Runtype::st_not(it.into()).required(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum RuntypeConst {
+pub(crate) enum RuntypeConst {
     Bool(bool),
     Number(N),
 }
 
 impl RuntypeConst {
-    pub fn to_json(self) -> Json {
+    pub(crate) fn into_json(self) -> Json {
         match self {
             RuntypeConst::Bool(b) => Json::Bool(b),
             RuntypeConst::Number(n) => Json::Number(n),
         }
     }
-    pub fn from_json(it: &Json) -> Result<Self> {
-        match it {
-            Json::Bool(b) => Ok(RuntypeConst::Bool(*b)),
-            Json::Number(n) => Ok(RuntypeConst::Number(n.clone())),
-            _ => Err(anyhow!("not a const")),
-        }
-    }
-    pub fn parse_int(it: i64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn parse_int(it: i64) -> Self {
         Self::Number(N::parse_int(it))
     }
-    pub fn parse_f64(value: f64) -> RuntypeConst {
+    pub(crate) fn parse_f64(value: f64) -> RuntypeConst {
         Self::Number(N::parse_f64(value))
     }
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub enum TplLitTypeItem {
+pub(crate) enum TplLitTypeItem {
     String,
     Number,
     Boolean,
@@ -117,7 +96,7 @@ fn escape_regex(lit: &str) -> String {
 }
 
 impl TplLitTypeItem {
-    pub fn one_of(vs: Vec<TplLitTypeItem>) -> TplLitTypeItem {
+    pub(crate) fn one_of(vs: Vec<TplLitTypeItem>) -> TplLitTypeItem {
         let vs = vs.into_iter().collect::<BTreeSet<_>>();
         if vs.len() == 1 {
             vs.into_iter().next().expect("we just checked len")
@@ -126,7 +105,7 @@ impl TplLitTypeItem {
         }
     }
 
-    pub fn regex_expr(&self) -> String {
+    pub(crate) fn regex_expr(&self) -> String {
         match self {
             // `[\s\S]` also matches line breaks, without relying on the `s` flag.
             TplLitTypeItem::String => r"([\s\S]*)".to_string(),
@@ -159,13 +138,13 @@ impl TplLitTypeItem {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub struct CustomFormat(pub String, pub Vec<String>);
+pub(crate) struct CustomFormat(pub String, pub Vec<String>);
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub struct TplLitType(pub Vec<TplLitTypeItem>);
+pub(crate) struct TplLitType(pub Vec<TplLitTypeItem>);
 
 impl TplLitType {
-    pub fn describe(&self) -> String {
+    pub(crate) fn describe(&self) -> String {
         match self.0.as_slice() {
             [TplLitTypeItem::StringConst(single_str)] => {
                 let inner = single_str.clone();
@@ -196,7 +175,7 @@ impl TplLitType {
             }
         }
     }
-    pub fn regex_expr(&self) -> String {
+    pub(crate) fn regex_expr(&self) -> String {
         // Anchor the expression: the full string must match, as in TypeScript.
         let mut regex_exp = String::from("^");
 
@@ -208,8 +187,10 @@ impl TplLitType {
     }
 }
 
+// The variant names match the JavaScript typed array names.
+#[allow(clippy::enum_variant_names)]
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
-pub enum TypedArrayKind {
+pub(crate) enum TypedArrayKind {
     Uint8Array,
     Uint8ClampedArray,
     Uint16Array,
@@ -224,7 +205,7 @@ pub enum TypedArrayKind {
 }
 
 impl TypedArrayKind {
-    pub fn js_name(&self) -> &'static str {
+    pub(crate) fn js_name(&self) -> &'static str {
         match self {
             TypedArrayKind::Uint8Array => "Uint8Array",
             TypedArrayKind::Uint8ClampedArray => "Uint8ClampedArray",
@@ -240,7 +221,7 @@ impl TypedArrayKind {
         }
     }
 
-    pub fn all() -> Vec<TypedArrayKind> {
+    pub(crate) fn all() -> Vec<TypedArrayKind> {
         vec![
             TypedArrayKind::Uint8Array,
             TypedArrayKind::Uint8ClampedArray,
@@ -258,12 +239,12 @@ impl TypedArrayKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct RuntypeMetadata {
+pub(crate) struct RuntypeMetadata {
     pub description: Option<String>,
 }
 
 #[derive(Debug, Clone)]
-pub struct Runtype {
+pub(crate) struct Runtype {
     pub kind: RuntypeKind,
     pub metadata: RuntypeMetadata,
 }
@@ -295,13 +276,13 @@ impl Hash for Runtype {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct IndexedProperty {
+pub(crate) struct IndexedProperty {
     pub key: Runtype,
     pub value: Optionality<Runtype>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum RuntypeKind {
+pub(crate) enum RuntypeKind {
     Null,
     Undefined,
     Void,
@@ -339,88 +320,88 @@ pub enum RuntypeKind {
 }
 
 impl Runtype {
-    pub const fn new(kind: RuntypeKind) -> Self {
+    pub(crate) const fn new(kind: RuntypeKind) -> Self {
         Self {
             kind,
             metadata: RuntypeMetadata { description: None },
         }
     }
 
-    pub fn with_description(mut self, description: String) -> Self {
+    pub(crate) fn with_description(mut self, description: String) -> Self {
         self.metadata.description = Some(description);
         self
     }
 
-    pub const fn null() -> Self {
+    pub(crate) const fn null() -> Self {
         Self::new(RuntypeKind::Null)
     }
-    pub const fn undefined() -> Self {
+    pub(crate) const fn undefined() -> Self {
         Self::new(RuntypeKind::Undefined)
     }
-    pub const fn void() -> Self {
+    pub(crate) const fn void() -> Self {
         Self::new(RuntypeKind::Void)
     }
-    pub const fn boolean() -> Self {
+    pub(crate) const fn boolean() -> Self {
         Self::new(RuntypeKind::Boolean)
     }
-    pub const fn string() -> Self {
+    pub(crate) const fn string() -> Self {
         Self::new(RuntypeKind::String)
     }
-    pub const fn number() -> Self {
+    pub(crate) const fn number() -> Self {
         Self::new(RuntypeKind::Number)
     }
-    pub const fn any() -> Self {
+    pub(crate) const fn any() -> Self {
         Self::new(RuntypeKind::Any)
     }
-    pub const fn any_array_like() -> Self {
+    pub(crate) const fn any_array_like() -> Self {
         Self::new(RuntypeKind::AnyArrayLike)
     }
-    pub const fn never() -> Self {
+    pub(crate) const fn never() -> Self {
         Self::new(RuntypeKind::Never)
     }
-    pub const fn function() -> Self {
+    pub(crate) const fn function() -> Self {
         Self::new(RuntypeKind::Function)
     }
-    pub const fn date() -> Self {
+    pub(crate) const fn date() -> Self {
         Self::new(RuntypeKind::Date)
     }
-    pub const fn bigint() -> Self {
+    pub(crate) const fn bigint() -> Self {
         Self::new(RuntypeKind::BigInt)
     }
-    pub fn string_with_format(format: CustomFormat) -> Self {
+    pub(crate) fn string_with_format(format: CustomFormat) -> Self {
         Self::new(RuntypeKind::StringWithFormat(format))
     }
-    pub fn number_with_format(format: CustomFormat) -> Self {
+    pub(crate) fn number_with_format(format: CustomFormat) -> Self {
         Self::new(RuntypeKind::NumberWithFormat(format))
     }
-    pub fn tpl_lit_type(tpl: TplLitType) -> Self {
+    pub(crate) fn tpl_lit_type(tpl: TplLitType) -> Self {
         Self::new(RuntypeKind::TplLitType(tpl))
     }
-    pub fn array(item: Box<Runtype>) -> Self {
+    pub(crate) fn array(item: Box<Runtype>) -> Self {
         Self::new(RuntypeKind::Array(item))
     }
-    pub fn tuple(prefix_items: Vec<Runtype>, items: Option<Box<Runtype>>) -> Self {
+    pub(crate) fn tuple(prefix_items: Vec<Runtype>, items: Option<Box<Runtype>>) -> Self {
         Self::new(RuntypeKind::Tuple {
             prefix_items,
             items,
         })
     }
-    pub fn ref_(name: RuntypeUUID) -> Self {
+    pub(crate) fn ref_(name: RuntypeUUID) -> Self {
         Self::new(RuntypeKind::Ref(name))
     }
-    pub fn const_(value: RuntypeConst) -> Self {
+    pub(crate) fn const_(value: RuntypeConst) -> Self {
         Self::new(RuntypeKind::Const(value))
     }
-    pub fn st_not(inner: Box<Runtype>) -> Self {
+    pub(crate) fn st_not(inner: Box<Runtype>) -> Self {
         Self::new(RuntypeKind::StNot(inner))
     }
-    pub fn typed_array(kind: TypedArrayKind) -> Self {
+    pub(crate) fn typed_array(kind: TypedArrayKind) -> Self {
         Self::new(RuntypeKind::TypedArray(kind))
     }
-    pub fn map(key: Box<Runtype>, value: Box<Runtype>) -> Self {
+    pub(crate) fn map(key: Box<Runtype>, value: Box<Runtype>) -> Self {
         Self::new(RuntypeKind::Map(key, value))
     }
-    pub fn set(value: Box<Runtype>) -> Self {
+    pub(crate) fn set(value: Box<Runtype>) -> Self {
         Self::new(RuntypeKind::Set(value))
     }
 }
@@ -445,18 +426,18 @@ impl UnionMerger {
         }
     }
 
-    pub fn schema(vs: Vec<Runtype>) -> Runtype {
+    pub(crate) fn schema(vs: Vec<Runtype>) -> Runtype {
         let mut acc = Self::new();
         acc.consume(vs);
         Runtype::new(RuntypeKind::AnyOf(acc.0))
     }
 }
-pub struct DebugPrintCtx<'a> {
+pub(crate) struct DebugPrintCtx<'a> {
     pub all_names: &'a [&'a RuntypeUUID],
     pub type_with_args_names: &'a mut BTreeMap<RuntypeUUID, String>,
 }
 impl Runtype {
-    pub fn as_string_const(&self) -> Option<&str> {
+    pub(crate) fn as_string_const(&self) -> Option<&str> {
         match &self.kind {
             RuntypeKind::TplLitType(TplLitType(items)) => match items.as_slice() {
                 [TplLitTypeItem::StringConst(s)] => Some(s),
@@ -465,19 +446,19 @@ impl Runtype {
             _ => None,
         }
     }
-    pub fn object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
+    pub(crate) fn object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
         Self::new(RuntypeKind::Object {
             vs: vs.into_iter().collect(),
             indexed_properties: None,
         })
     }
-    pub fn record(key: Runtype, value: Optionality<Runtype>) -> Self {
+    pub(crate) fn record(key: Runtype, value: Optionality<Runtype>) -> Self {
         Self::new(RuntypeKind::Object {
             vs: BTreeMap::new(),
             indexed_properties: Some(Box::new(IndexedProperty { key, value })),
         })
     }
-    pub fn any_object() -> Runtype {
+    pub(crate) fn any_object() -> Runtype {
         let mut vs = BTreeSet::new();
         vs.insert(Runtype::number());
         vs.insert(Runtype::string());
@@ -486,7 +467,7 @@ impl Runtype {
             Optionality::Required(Runtype::any()),
         )
     }
-    pub fn extract_single_string_const(&self) -> Option<String> {
+    pub(crate) fn extract_single_string_const(&self) -> Option<String> {
         match &self.kind {
             RuntypeKind::TplLitType(TplLitType(items)) => match items.as_slice() {
                 [TplLitTypeItem::StringConst(s)] => Some(s.clone()),
@@ -497,34 +478,34 @@ impl Runtype {
     }
 
     /// A string or number literal used as an object key, in its JS string form (`1` -> `"1"`).
-    pub fn extract_single_property_key_const(&self) -> Option<String> {
+    pub(crate) fn extract_single_property_key_const(&self) -> Option<String> {
         match &self.kind {
             RuntypeKind::Const(RuntypeConst::Number(n)) => Some(n.to_js_string()),
             _ => self.extract_single_string_const(),
         }
     }
 
-    pub fn single_string_const(it: &str) -> Self {
+    pub(crate) fn single_string_const(it: &str) -> Self {
         Runtype::tpl_lit_type(TplLitType(vec![TplLitTypeItem::StringConst(
             it.to_string(),
         )]))
     }
 
-    pub fn required(self) -> Optionality<Runtype> {
+    pub(crate) fn required(self) -> Optionality<Runtype> {
         Optionality::Required(self)
     }
-    pub fn optional(self) -> Optionality<Runtype> {
+    pub(crate) fn optional(self) -> Optionality<Runtype> {
         Optionality::Optional(self)
     }
 
-    pub fn any_of(vs: Vec<Runtype>) -> Self {
+    pub(crate) fn any_of(vs: Vec<Runtype>) -> Self {
         match vs.len() {
             0 => Runtype::never(),
             1 => vs.into_iter().next().expect("we just checked len"),
             _ => UnionMerger::schema(vs),
         }
     }
-    pub fn all_of(all_of_items: Vec<Runtype>) -> Self {
+    pub(crate) fn all_of(all_of_items: Vec<Runtype>) -> Self {
         match all_of_items.len() {
             1 => all_of_items
                 .into_iter()
@@ -576,7 +557,7 @@ impl Runtype {
         }
     }
 
-    pub fn remove_nots_of_intersections_and_empty_of_union(
+    pub(crate) fn remove_nots_of_intersections_and_empty_of_union(
         self,
         validators: &[&NamedSchema],
         ctx: &mut SemTypeContext,
@@ -625,7 +606,7 @@ impl Runtype {
         }
     }
 
-    pub fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
+    pub(crate) fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
         match &self.kind {
             RuntypeKind::Undefined => "undefined".to_string(),
             RuntypeKind::Null => "null".to_string(),
@@ -654,7 +635,7 @@ impl Runtype {
                 acc
             }
             RuntypeKind::TplLitType(tpl_lit_type_items) => tpl_lit_type_items.describe(),
-            RuntypeKind::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
+            RuntypeKind::Const(runtype_const) => runtype_const.clone().into_json().debug_print(),
             RuntypeKind::Date => "Date".to_string(),
             RuntypeKind::BigInt => "bigint".to_string(),
             RuntypeKind::TypedArray(kind) => kind.js_name().to_string(),

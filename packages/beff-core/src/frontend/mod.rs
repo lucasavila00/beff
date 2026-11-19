@@ -250,7 +250,7 @@ fn find_cached_jsdoc_description(
     }
 }
 
-pub struct FrontendCtx<'a, R: FileManager> {
+pub(crate) struct FrontendCtx<'a, R: FileManager> {
     pub files: &'a mut R,
     pub settings: &'a BeffUserSettings,
 
@@ -303,7 +303,7 @@ impl AddressedType {
     }
 }
 
-pub enum AddressedQualifiedType {
+pub(crate) enum AddressedQualifiedType {
     StarImport(BffFileName),
     WillBeUsedForEnumItem {
         enum_type: Rc<TsEnumDecl>,
@@ -311,7 +311,7 @@ pub enum AddressedQualifiedType {
     },
 }
 
-pub enum AddressedValue {
+pub(crate) enum AddressedValue {
     ValueExpr(Rc<Expr>, BffFileName),
     TypeDecl(Rc<TsType>, BffFileName),
     Enum(Rc<TsEnumDecl>, BffFileName),
@@ -319,14 +319,13 @@ pub enum AddressedValue {
 }
 
 #[derive(Debug)]
-pub enum AddressedQualifiedValue {
+pub(crate) enum AddressedQualifiedValue {
     StarOfFile(BffFileName),
     ValueExpr(Rc<Expr>, BffFileName),
     ExprDecl(Rc<TsType>, BffFileName),
     MemberExpr {
         base: Box<AddressedQualifiedValue>,
         member: String,
-        file_name: BffFileName,
     },
     Enum(Rc<TsEnumDecl>, BffFileName),
 }
@@ -428,7 +427,6 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
             }
             ImportReference::Star {
                 file_name,
-                import_statement_anchor: _,
             } => self.handle_import_star(file_name.clone(), err_anchor),
             ImportReference::Default {
                 file_name,
@@ -505,10 +503,10 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     }
 }
 
-pub struct TypeWalker<'a, 'b, R: FileManager> {
+pub(crate) struct TypeWalker<'a, 'b, R: FileManager> {
     pub ctx: &'b mut FrontendCtx<'a, R>,
 }
-pub struct QualifiedTypeWalker<'a, 'b, R: FileManager> {
+pub(crate) struct QualifiedTypeWalker<'a, 'b, R: FileManager> {
     pub ctx: &'b mut FrontendCtx<'a, R>,
 }
 
@@ -808,7 +806,6 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             }
             ImportReference::Star {
                 file_name,
-                import_statement_anchor: _,
             } => self.handle_import_star(file_name.clone(), anchor),
             ImportReference::Default {
                 file_name,
@@ -896,15 +893,11 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
             SymbolExport::ValueExpr {
                 expr,
                 original_file,
-                span: _,
-                name: _,
             } => Ok(AddressedValue::ValueExpr(
                 expr.clone(),
                 original_file.clone(),
             )),
             SymbolExport::ExprDecl {
-                name: _,
-                span: _,
                 original_file,
                 ty,
             } => Ok(AddressedValue::TypeDecl(ty.clone(), original_file.clone())),
@@ -997,16 +990,12 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
             )),
             SymbolExport::ValueExpr {
                 expr,
-                name: _,
-                span: _,
                 original_file,
             } => Ok(AddressedQualifiedValue::ValueExpr(
                 expr.clone(),
                 original_file.clone(),
             )),
             SymbolExport::ExprDecl {
-                name: _,
-                span: _,
                 original_file,
                 ty,
             } => Ok(AddressedQualifiedValue::ExprDecl(
@@ -1067,7 +1056,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
 }
 
 impl<'a, R: FileManager> FrontendCtx<'a, R> {
-    pub fn new(files: &'a mut R, parser_file: BffFileName, settings: &'a BeffUserSettings) -> Self {
+    pub(crate) fn new(files: &'a mut R, parser_file: BffFileName, settings: &'a BeffUserSettings) -> Self {
         FrontendCtx {
             files,
             parser_file,
@@ -1084,7 +1073,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
     fn build_error(&self, anchor: &Anchor, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
         let file_content = self.files.get_existing_file(&anchor.f);
-        Location::build(file_content, &anchor.s, &anchor.f).to_info(msg)
+        Location::build(file_content, &anchor.s, &anchor.f).into_info(msg)
     }
     fn push_error(&mut self, anchor: &Anchor, msg: DiagnosticInfoMessage) {
         self.errors.push(self.build_error(anchor, msg));
@@ -1398,7 +1387,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
-            acc.push((k.clone(), v.clone().to_required()));
+            acc.push((k.clone(), v.clone().into_required()));
         }
         Runtype::object(acc)
     }
@@ -1410,12 +1399,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             } => {
                 let new_vs = vs
                     .iter()
-                    .map(|(k, v)| (k.clone(), v.clone().to_optional()))
+                    .map(|(k, v)| (k.clone(), v.clone().into_optional()))
                     .collect();
                 let new_indexed = indexed_properties.as_ref().map(|ip| {
                     Box::new(IndexedProperty {
                         key: ip.key.clone(),
-                        value: ip.value.clone().to_optional(),
+                        value: ip.value.clone().into_optional(),
                     })
                 });
                 Ok(Runtype::new(RuntypeKind::Object {
@@ -1437,7 +1426,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let extracted = self.extract_object_from_runtype(obj, anchor)?;
                 let new_vs = extracted
                     .into_iter()
-                    .map(|(k, v)| (k, v.to_optional()))
+                    .map(|(k, v)| (k, v.into_optional()))
                     .collect();
                 Ok(Runtype::new(RuntypeKind::Object {
                     vs: new_vs,
@@ -2198,7 +2187,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    pub fn typeof_expr(&mut self, e: &Expr, as_const: bool, file: BffFileName) -> Res<Runtype> {
+    pub(crate) fn typeof_expr(&mut self, e: &Expr, as_const: bool, file: BffFileName) -> Res<Runtype> {
         let anchor = Anchor {
             f: file.clone(),
             s: e.span(),
@@ -2540,7 +2529,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     return self.get_addressed_qualified_value(&new_addr, &anchor);
                 }
                 Ok(AddressedQualifiedValue::MemberExpr {
-                    file_name: file.clone(),
                     base: Box::new(left_part),
                     member: ts_qualified_name.right.sym.to_string(),
                 })
@@ -2586,7 +2574,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             AddressedQualifiedValue::MemberExpr {
                 base: inner,
                 member: member2,
-                file_name: _,
             } => {
                 let obj = self.member_access_qualified_value(inner, member2, anchor)?;
                 let key = Runtype::single_string_const(member);
@@ -3464,7 +3451,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
-    pub fn extract_built_decoders_from_call_v2(
+    pub(crate) fn extract_built_decoders_from_call_v2(
         &mut self,
         params: &TsTypeParamInstantiation,
     ) -> Result<Vec<BuiltDecoder>> {

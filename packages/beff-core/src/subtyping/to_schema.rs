@@ -20,12 +20,12 @@ use std::{
     rc::Rc,
 };
 
-pub enum SchemaMemo {
+pub(crate) enum SchemaMemo {
     Schema(Runtype),
     Undefined(RuntypeUUID),
 }
 
-pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
+pub(crate) struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
 
 struct SchemerContext<'a, 'b> {
     ctx: SemTypeResolverContext<'a>,
@@ -417,7 +417,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
         Ok(Runtype::any_of(acc.into_iter().collect()))
     }
-    pub fn convert_to_schema(
+    pub(crate) fn convert_to_schema(
         &mut self,
         ty: &Rc<SemType>,
         name: Option<&RuntypeUUID>,
@@ -456,7 +456,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     }
 }
 
-pub fn semtype_to_runtypes(
+pub(crate) fn semtype_to_runtypes(
     ctx: &mut SemTypeContext,
     ty: &Rc<SemType>,
     name: &RuntypeUUID,

@@ -1,12 +1,26 @@
-pub mod ast;
-pub mod diag;
-pub mod frontend;
-pub mod parser_extractor;
-pub mod print;
-pub mod subtyping;
-pub mod swc_tools;
+// Items that other crates cannot reach must not be `pub`, so rustc reports
+// unused ones as dead code.
+#![warn(unreachable_pub)]
+
+mod ast;
+mod diag;
+mod frontend;
+mod parser_extractor;
+mod print;
+mod subtyping;
+mod swc_tools;
 pub mod test_tools;
-pub mod wasm_diag;
+mod wasm_diag;
+
+#[cfg(test)]
+mod is_sub_type_tests;
+
+// The public API, used by beff-wasm. Everything else is internal, so rustc
+// reports it as dead code when nothing uses it.
+pub use diag::DiagnosticInformation;
+pub use parser_extractor::ParserExtractResult;
+pub use swc_tools::bind_exports::{FsModuleResolver, parse_and_bind};
+pub use wasm_diag::WasmDiagnostic;
 
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::Runtype;
@@ -15,7 +29,6 @@ use crate::swc_tools::ImportReference;
 use crate::swc_tools::SymbolsExportsModule;
 use crate::swc_tools::bind_locals::ParsedModuleLocals;
 use core::fmt;
-use parser_extractor::ParserExtractResult;
 use parser_extractor::extract_parser;
 use serde::Deserialize;
 use serde::Serialize;
@@ -30,7 +43,7 @@ use swc_common::Span;
 use swc_ecma_ast::Module;
 use swc_node_comments::SwcComments;
 
-pub struct BffModuleData {
+pub(crate) struct BffModuleData {
     pub bff_fname: BffFileName,
     pub fm: Arc<SourceFile>,
     pub source_map: Arc<SourceMap>,
@@ -41,7 +54,7 @@ pub struct BffModuleData {
 pub struct BffFileName(Rc<String>);
 
 #[derive(Debug, Clone)]
-pub struct Anchor {
+pub(crate) struct Anchor {
     f: BffFileName,
     s: Span,
 }
@@ -66,17 +79,16 @@ impl BffFileName {
 }
 
 pub struct ParsedModule {
-    pub locals: ParsedModuleLocals,
-    pub module: BffModuleData,
-    pub imports: HashMap<String, Rc<ImportReference>>,
-    pub comments: SwcComments,
-    pub symbol_exports: SymbolsExportsModule,
+    pub(crate) locals: ParsedModuleLocals,
+    pub(crate) module: BffModuleData,
+    pub(crate) imports: HashMap<String, Rc<ImportReference>>,
+    pub(crate) comments: SwcComments,
+    pub(crate) symbol_exports: SymbolsExportsModule,
 }
 
 #[derive(Debug)]
-pub struct UnresolvedExport {
+pub(crate) struct UnresolvedExport {
     pub name: String,
-    pub span: Span,
     pub renamed: String,
 }
 
@@ -203,25 +215,25 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Pars
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
-pub enum Visibility {
+pub(crate) enum Visibility {
     Local,
     Export,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ModuleItemAddress {
+pub(crate) struct ModuleItemAddress {
     pub file: BffFileName,
     pub name: String,
     pub visibility: Visibility,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct TypeAddress {
+pub(crate) struct TypeAddress {
     pub file: BffFileName,
     pub name: String,
 }
 
-pub fn to_valid_ts_identifier(p: &str) -> String {
+pub(crate) fn to_valid_ts_identifier(p: &str) -> String {
     let mut acc = String::new();
     for c in p.chars() {
         if c.is_ascii_alphanumeric() || c == '_' {
@@ -239,7 +251,7 @@ fn is_valid_ts_identifier(s: &str) -> bool {
 }
 
 impl TypeAddress {
-    pub fn to_module_item_addr(&self) -> ModuleItemAddress {
+    pub(crate) fn to_module_item_addr(&self) -> ModuleItemAddress {
         ModuleItemAddress {
             file: self.file.clone(),
             name: self.name.clone(),
@@ -310,7 +322,7 @@ impl TypeAddress {
 }
 
 impl ModuleItemAddress {
-    pub fn from_ident(
+    pub(crate) fn from_ident(
         ident: &swc_ecma_ast::Ident,
         file: BffFileName,
         visibility: Visibility,
@@ -329,7 +341,7 @@ impl ModuleItemAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
-pub enum TsBuiltIn {
+pub(crate) enum TsBuiltIn {
     Date,
     Array,
     StringFormat,
@@ -360,7 +372,7 @@ impl fmt::Display for TsBuiltIn {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum RuntypeName {
+pub(crate) enum RuntypeName {
     Address(TypeAddress),
     BuiltIn(TsBuiltIn),
     EnumItem {
@@ -391,7 +403,7 @@ impl RuntypeName {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct RuntypeUUID {
+pub(crate) struct RuntypeUUID {
     pub ty: RuntypeName,
     pub type_arguments: Vec<Runtype>,
 }
@@ -473,7 +485,7 @@ impl RuntypeUUID {
 }
 
 #[derive(Debug, Clone)]
-pub struct NamedSchema {
+pub(crate) struct NamedSchema {
     pub name: RuntypeUUID,
     pub schema: Runtype,
 }

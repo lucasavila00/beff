@@ -89,15 +89,15 @@ impl Iterator for SubTypePairIterator {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
-pub struct ComplexSemType {
+pub(crate) struct ComplexSemType {
     pub all: BasicTypeBitSet,
     // some: BasicTypeBitSet,
     pub subtype_data: Vec<Rc<ProperSubtype>>,
 }
 
-pub type SemType = ComplexSemType;
+pub(crate) type SemType = ComplexSemType;
 
-pub trait SemTypeOps {
+pub(crate) trait SemTypeOps {
     fn is_empty(&self, ctx: &mut SemTypeContext) -> Result<bool>;
     fn is_empty_status(&self, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus>;
     fn intersect(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
@@ -263,10 +263,10 @@ impl SemTypeOps for Rc<SemType> {
 }
 
 impl SemType {
-    pub fn has_optional(&self) -> bool {
+    pub(crate) fn has_optional(&self) -> bool {
         (self.all & SubTypeTag::OptionalProp.code()) != 0
     }
-    pub fn is_subtype_of_string(&self) -> bool {
+    pub(crate) fn is_subtype_of_string(&self) -> bool {
         let only_string_sub = self.all == 0
             && self
                 .subtype_data
@@ -277,7 +277,7 @@ impl SemType {
         is_string || only_string_sub
     }
 
-    pub fn is_subtype_of_number(&self) -> bool {
+    pub(crate) fn is_subtype_of_number(&self) -> bool {
         let only_number_sub = self.all == 0
             && self
                 .subtype_data
@@ -288,17 +288,17 @@ impl SemType {
         is_number || only_number_sub
     }
 
-    pub fn is_all_strings(&self) -> bool {
+    pub(crate) fn is_all_strings(&self) -> bool {
         self.all == SubTypeTag::String.code()
     }
 
-    pub fn is_never(&self) -> bool {
+    pub(crate) fn is_never(&self) -> bool {
         self.all == 0 && self.subtype_data.is_empty()
     }
-    pub fn is_any(&self) -> bool {
+    pub(crate) fn is_any(&self) -> bool {
         self.all == VAL
     }
-    pub fn new_basic(all: BasicTypeBitSet) -> SemType {
+    pub(crate) fn new_basic(all: BasicTypeBitSet) -> SemType {
         SemType {
             all,
             subtype_data: vec![],
@@ -313,20 +313,20 @@ impl SemType {
         some
     }
 
-    pub fn new_complex(all: BasicTypeBitSet, subtypes: Vec<Rc<ProperSubtype>>) -> SemType {
+    pub(crate) fn new_complex(all: BasicTypeBitSet, subtypes: Vec<Rc<ProperSubtype>>) -> SemType {
         SemType {
             all,
             subtype_data: subtypes,
         }
     }
 
-    pub fn new_never() -> SemType {
+    pub(crate) fn new_never() -> SemType {
         SemType {
             all: 0,
             subtype_data: vec![],
         }
     }
-    pub fn new_unknown() -> SemType {
+    pub(crate) fn new_unknown() -> SemType {
         SemType {
             all: VAL,
             subtype_data: vec![],
@@ -335,14 +335,14 @@ impl SemType {
 }
 
 #[derive(Debug, Clone)]
-pub enum MemoEmpty {
+pub(crate) enum MemoEmpty {
     True,
     False(IsEmptyStatus),
     Undefined,
 }
 
 impl MemoEmpty {
-    pub fn from_bool(b: &IsEmptyStatus) -> MemoEmpty {
+    pub(crate) fn from_bool(b: &IsEmptyStatus) -> MemoEmpty {
         match b {
             IsEmptyStatus::IsEmpty => MemoEmpty::True,
             IsEmptyStatus::NotEmpty => MemoEmpty::False(*b),
@@ -351,21 +351,18 @@ impl MemoEmpty {
 }
 
 #[derive(Clone, Debug)]
-pub struct BddMemoEmptyRef(pub MemoEmpty);
+pub(crate) struct BddMemoEmptyRef(pub MemoEmpty);
 
-pub struct SemTypeContext {
+pub(crate) struct SemTypeContext {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomicType>>>,
-    pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
     pub mapping_memo_dnf: BTreeMap<Rc<Dnf>, BddMemoEmptyRef>,
 
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
     pub map_definitions: Vec<Option<Rc<MappingAtomicType>>>,
-    pub map_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
     pub set_definitions: Vec<Option<Rc<ListAtomic>>>,
-    pub set_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
     pub mapping_runtype_ref_memo: BTreeMap<RuntypeUUID, usize>,
     pub list_runtype_ref_memo: BTreeMap<RuntypeUUID, usize>,
@@ -379,7 +376,7 @@ impl Default for SemTypeContext {
 }
 
 impl SemTypeContext {
-    pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomicType> {
+    pub(crate) fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomicType> {
         self.mapping_definitions
             .get(idx)
             .expect("should exist")
@@ -387,7 +384,7 @@ impl SemTypeContext {
             .expect("should exist")
             .clone()
     }
-    pub fn get_map_atomic(&self, idx: usize) -> Rc<MappingAtomicType> {
+    pub(crate) fn get_map_atomic(&self, idx: usize) -> Rc<MappingAtomicType> {
         self.map_definitions
             .get(idx)
             .expect("should exist")
@@ -395,7 +392,7 @@ impl SemTypeContext {
             .expect("should exist")
             .clone()
     }
-    pub fn get_set_atomic(&self, idx: usize) -> Rc<ListAtomic> {
+    pub(crate) fn get_set_atomic(&self, idx: usize) -> Rc<ListAtomic> {
         self.set_definitions
             .get(idx)
             .expect("should exist")
@@ -403,7 +400,7 @@ impl SemTypeContext {
             .expect("should exist")
             .clone()
     }
-    pub fn get_list_atomic(&self, idx: usize) -> Rc<ListAtomic> {
+    pub(crate) fn get_list_atomic(&self, idx: usize) -> Rc<ListAtomic> {
         self.list_definitions
             .get(idx)
             .expect("should exist")
@@ -412,24 +409,21 @@ impl SemTypeContext {
             .clone()
     }
 
-    pub fn new() -> SemTypeContext {
+    pub(crate) fn new() -> SemTypeContext {
         SemTypeContext {
             mapping_definitions: vec![],
-            mapping_memo: BTreeMap::new(),
             mapping_memo_dnf: BTreeMap::new(),
             list_definitions: vec![],
             list_memo: BTreeMap::new(),
             map_definitions: vec![],
-            map_memo: BTreeMap::new(),
             set_definitions: vec![],
-            set_memo: BTreeMap::new(),
             mapping_runtype_ref_memo: BTreeMap::new(),
             list_runtype_ref_memo: BTreeMap::new(),
             map_runtype_ref_memo: BTreeMap::new(),
             set_runtype_ref_memo: BTreeMap::new(),
         }
     }
-    pub fn number_const(value: NumberRepresentationOrFormat) -> SemType {
+    pub(crate) fn number_const(value: NumberRepresentationOrFormat) -> SemType {
         SemType::new_complex(
             0x0,
             vec![
@@ -442,7 +436,7 @@ impl SemTypeContext {
         )
     }
 
-    pub fn string_const(value: StringLitOrFormat) -> SemType {
+    pub(crate) fn string_const(value: StringLitOrFormat) -> SemType {
         SemType::new_complex(
             0x0,
             vec![
@@ -454,14 +448,14 @@ impl SemTypeContext {
             ],
         )
     }
-    pub fn mapping_definition_from_idx(idx: usize) -> SemType {
+    pub(crate) fn mapping_definition_from_idx(idx: usize) -> SemType {
         SemType::new_complex(
             0x0,
             vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(idx)).into()).into()],
         )
     }
 
-    pub fn mapping_definition(
+    pub(crate) fn mapping_definition(
         &mut self,
         vs: BTreeMap<String, Rc<SemType>>,
         indexed_properties: Option<IndexedPropertiesAtomic>,
@@ -478,26 +472,26 @@ impl SemTypeContext {
         Self::mapping_definition_from_idx(idx)
     }
 
-    pub fn list_definition_from_idx(idx: usize) -> SemType {
+    pub(crate) fn list_definition_from_idx(idx: usize) -> SemType {
         SemType::new_complex(
             0x0,
             vec![ProperSubtype::List(Bdd::from_atom(Atom::List(idx)).into()).into()],
         )
     }
-    pub fn list_definition(&mut self, vs: Rc<ListAtomic>) -> SemType {
+    pub(crate) fn list_definition(&mut self, vs: Rc<ListAtomic>) -> SemType {
         let idx = self.list_definitions.len();
         self.list_definitions.push(Some(vs.clone()));
 
         Self::list_definition_from_idx(idx)
     }
-    pub fn array(&mut self, v: Rc<SemType>) -> SemType {
+    pub(crate) fn array(&mut self, v: Rc<SemType>) -> SemType {
         let atom = ListAtomic {
             prefix_items: vec![],
             items: v,
         };
         self.list_definition(Rc::new(atom))
     }
-    pub fn tuple(&mut self, prefix_items: Vec<Rc<SemType>>, items: Option<Rc<SemType>>) -> SemType {
+    pub(crate) fn tuple(&mut self, prefix_items: Vec<Rc<SemType>>, items: Option<Rc<SemType>>) -> SemType {
         let atom = ListAtomic {
             prefix_items,
             // todo: should be unknown?
@@ -506,14 +500,14 @@ impl SemTypeContext {
         self.list_definition(Rc::new(atom))
     }
 
-    pub fn map_definition_from_idx(idx: usize) -> SemType {
+    pub(crate) fn map_definition_from_idx(idx: usize) -> SemType {
         SemType::new_complex(
             0x0,
             vec![ProperSubtype::Map(Bdd::from_atom(Atom::Map(idx)).into()).into()],
         )
     }
 
-    pub fn map_definition(
+    pub(crate) fn map_definition(
         &mut self,
         vs: BTreeMap<String, Rc<SemType>>,
         indexed_properties: Option<IndexedPropertiesAtomic>,
@@ -530,21 +524,21 @@ impl SemTypeContext {
         Self::map_definition_from_idx(idx)
     }
 
-    pub fn set_definition_from_idx(idx: usize) -> SemType {
+    pub(crate) fn set_definition_from_idx(idx: usize) -> SemType {
         SemType::new_complex(
             0x0,
             vec![ProperSubtype::Set(Bdd::from_atom(Atom::Set(idx)).into()).into()],
         )
     }
 
-    pub fn set_definition(&mut self, vs: Rc<ListAtomic>) -> SemType {
+    pub(crate) fn set_definition(&mut self, vs: Rc<ListAtomic>) -> SemType {
         let idx = self.set_definitions.len();
         self.set_definitions.push(Some(vs.clone()));
 
         Self::set_definition_from_idx(idx)
     }
 
-    pub fn map(&mut self, k: Rc<SemType>, v: Rc<SemType>) -> SemType {
+    pub(crate) fn map(&mut self, k: Rc<SemType>, v: Rc<SemType>) -> SemType {
         let atom = MappingAtomicType {
             vs: BTreeMap::new(),
             indexed_properties: Some(IndexedPropertiesAtomic { key: k, value: v }),
@@ -552,7 +546,7 @@ impl SemTypeContext {
         self.map_definition(atom.vs, atom.indexed_properties)
     }
 
-    pub fn set(&mut self, v: Rc<SemType>) -> SemType {
+    pub(crate) fn set(&mut self, v: Rc<SemType>) -> SemType {
         let atom = ListAtomic {
             prefix_items: vec![],
             items: v,
@@ -560,22 +554,22 @@ impl SemTypeContext {
         self.set_definition(Rc::new(atom))
     }
 
-    pub fn boolean_const(value: bool) -> SemType {
+    pub(crate) fn boolean_const(value: bool) -> SemType {
         SemType::new_complex(0x0, vec![ProperSubtype::Boolean(value).into()])
     }
-    pub fn boolean() -> SemType {
+    pub(crate) fn boolean() -> SemType {
         SemType::new_basic(SubTypeTag::Boolean.code())
     }
-    pub fn number() -> SemType {
+    pub(crate) fn number() -> SemType {
         SemType::new_basic(SubTypeTag::Number.code())
     }
-    pub fn string() -> SemType {
+    pub(crate) fn string() -> SemType {
         SemType::new_basic(SubTypeTag::String.code())
     }
-    pub fn null() -> SemType {
+    pub(crate) fn null() -> SemType {
         SemType::new_basic(SubTypeTag::Null.code())
     }
-    pub fn undefined() -> SemType {
+    pub(crate) fn undefined() -> SemType {
         SemType::new_complex(
             0x0,
             vec![
@@ -587,7 +581,7 @@ impl SemTypeContext {
             ],
         )
     }
-    pub fn void() -> SemType {
+    pub(crate) fn void() -> SemType {
         SemType::new_complex(
             0x0,
             vec![
@@ -599,17 +593,17 @@ impl SemTypeContext {
             ],
         )
     }
-    pub fn optional_prop() -> SemType {
+    pub(crate) fn optional_prop() -> SemType {
         SemType::new_basic(SubTypeTag::OptionalProp.code())
     }
-    pub fn make_optional(it: Rc<SemType>) -> Result<Rc<SemType>> {
+    pub(crate) fn make_optional(it: Rc<SemType>) -> Result<Rc<SemType>> {
         let t2 = Self::optional_prop();
         Rc::new(it).union(&Rc::new(t2))
     }
-    pub fn never() -> SemType {
+    pub(crate) fn never() -> SemType {
         SemType::new_never()
     }
-    pub fn unknown() -> SemType {
+    pub(crate) fn unknown() -> SemType {
         SemType::new_unknown()
     }
 
@@ -649,23 +643,23 @@ impl SemTypeContext {
                 _ => {}
             }
         }
-        SubType::False(tag)
+        SubType::False
     }
-    pub fn sub_type_data(s: Rc<SemType>, tag: SubTypeTag) -> SubType {
+    pub(crate) fn sub_type_data(s: Rc<SemType>, tag: SubTypeTag) -> SubType {
         if (s.all & tag.code()) > 0 {
             return SubType::True(tag);
         }
         Self::get_complex_sub_type_data(&s.subtype_data, tag)
     }
 
-    pub fn number_sub_type(s: Rc<SemType>) -> SubType {
+    pub(crate) fn number_sub_type(s: Rc<SemType>) -> SubType {
         Self::sub_type_data(s, SubTypeTag::Number)
     }
-    pub fn string_sub_type(s: Rc<SemType>) -> SubType {
+    pub(crate) fn string_sub_type(s: Rc<SemType>) -> SubType {
         Self::sub_type_data(s, SubTypeTag::String)
     }
 
-    pub fn indexed_access(
+    pub(crate) fn indexed_access(
         &mut self,
         obj_st: Rc<SemType>,
         idx_st: Rc<SemType>,
@@ -680,7 +674,7 @@ impl SemTypeContext {
         Ok(acc)
     }
 
-    pub fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
+    pub(crate) fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
         keyof(self, st)
     }
 }

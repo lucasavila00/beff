@@ -1,7 +1,7 @@
 use crate::subtyping::IsEmptyStatus;
 use crate::subtyping::mapping::mapping_is_empty_impl;
 use crate::subtyping::{
-    bdd::{Atom, Bdd, BddOps},
+    bdd::{Atom, Bdd},
     semtype::{BddMemoEmptyRef, MemoEmpty, SemTypeContext},
 };
 use anyhow::Result;
@@ -9,12 +9,12 @@ use std::rc::Rc;
 
 // A DNF is a disjunction (OR) of Conjunctions
 // An empty DNF represents false (bottom, never)
-pub type Dnf = Vec<Conjunction>;
+pub(crate) type Dnf = Vec<Conjunction>;
 
 // A Conjunction is an AND of positive atoms and negated atoms
 // Represents: (atom1 AND atom2 ...) AND (NOT atom3 AND NOT atom4 ...)
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub struct Conjunction {
+pub(crate) struct Conjunction {
     pub positive: Vec<Atom>,
     pub negative: Vec<Atom>,
 }
@@ -54,7 +54,7 @@ pub struct Conjunction {
 //     }
 // }
 
-pub fn bdd_to_dnf(bdd: &Rc<Bdd>) -> Dnf {
+pub(crate) fn bdd_to_dnf(bdd: &Rc<Bdd>) -> Dnf {
     let mut acc = Vec::new();
     let mut pos = Vec::new();
     let mut neg = Vec::new();
@@ -99,7 +99,9 @@ fn bdd_to_dnf_recursive(bdd: &Bdd, pos: &mut Vec<Atom>, neg: &mut Vec<Atom>, acc
     }
 }
 
-pub fn dnf_to_bdd(dnf: &Dnf) -> Rc<Bdd> {
+#[cfg(test)]
+pub(crate) fn dnf_to_bdd(dnf: &Dnf) -> Rc<Bdd> {
+    use crate::subtyping::bdd::BddOps;
     let mut bdd = Rc::new(Bdd::False);
     for conj in dnf {
         let mut conj_bdd = Rc::new(Bdd::True);
@@ -146,12 +148,12 @@ fn mapping_is_empty_handle_recusrsion(
     Ok(is_empty)
 }
 
-pub fn dnf_mapping_is_empty(bdd: &Rc<Bdd>, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus> {
+pub(crate) fn dnf_mapping_is_empty(bdd: &Rc<Bdd>, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus> {
     let dnf = Rc::new(bdd_to_dnf(bdd));
     mapping_is_empty_handle_recusrsion(dnf, ctx, false)
 }
 
-pub fn dnf_map_is_empty(bdd: &Rc<Bdd>, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus> {
+pub(crate) fn dnf_map_is_empty(bdd: &Rc<Bdd>, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus> {
     let dnf = Rc::new(bdd_to_dnf(bdd));
     mapping_is_empty_handle_recusrsion(dnf, ctx, true)
 }

@@ -16,13 +16,13 @@ use super::{
     semtype::SemTypeContext,
 };
 
-pub type BasicTypeCode = u32;
-pub type BasicTypeBitSet = u32;
-pub type NumberRepresentation = N;
+pub(crate) type BasicTypeCode = u32;
+pub(crate) type BasicTypeBitSet = u32;
+pub(crate) type NumberRepresentation = N;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 
-pub enum SubTypeTag {
+pub(crate) enum SubTypeTag {
     Boolean = 1 << 1,
     Number = 1 << 2,
     String = 1 << 3,
@@ -38,7 +38,7 @@ pub enum SubTypeTag {
     Set = 1 << 13,
 }
 
-pub const VAL: u32 = 1 << 1
+pub(crate) const VAL: u32 = 1 << 1
     | 1 << 2
     | 1 << 3
     | 1 << 4
@@ -53,11 +53,11 @@ pub const VAL: u32 = 1 << 1
     | 1 << 13;
 
 impl SubTypeTag {
-    pub fn code(&self) -> BasicTypeCode {
+    pub(crate) fn code(&self) -> BasicTypeCode {
         *self as u32
     }
 
-    pub fn all() -> Vec<SubTypeTag> {
+    pub(crate) fn all() -> Vec<SubTypeTag> {
         // Order matters for decision at materialization time
         vec![
             SubTypeTag::String,
@@ -78,8 +78,8 @@ impl SubTypeTag {
 }
 
 #[derive(Debug)]
-pub enum SubType {
-    False(SubTypeTag),
+pub(crate) enum SubType {
+    False,
     True(SubTypeTag),
     Proper(Rc<ProperSubtype>),
 }
@@ -88,7 +88,7 @@ impl SubType {
     fn number_subtype(allowed: bool, values: Vec<NumberRepresentationOrFormat>) -> SubType {
         if values.is_empty() {
             if allowed {
-                return SubType::False(SubTypeTag::Number);
+                return SubType::False;
             }
             return SubType::True(SubTypeTag::Number);
         }
@@ -97,7 +97,7 @@ impl SubType {
     fn string_subtype(allowed: bool, values: Vec<StringLitOrFormat>) -> SubType {
         if values.is_empty() {
             if allowed {
-                return SubType::False(SubTypeTag::String);
+                return SubType::False;
             }
             return SubType::True(SubTypeTag::String);
         }
@@ -106,7 +106,7 @@ impl SubType {
     fn typed_array_subtype(allowed: bool, values: Vec<TypedArrayKind>) -> SubType {
         if values.is_empty() {
             if allowed {
-                return SubType::False(SubTypeTag::TypedArray);
+                return SubType::False;
             }
             return SubType::True(SubTypeTag::TypedArray);
         }
@@ -115,7 +115,7 @@ impl SubType {
     fn void_undefined_subtype(allowed: bool, value: Vec<VoidUndefinedSubtype>) -> SubType {
         if value.is_empty() {
             if allowed {
-                return SubType::False(SubTypeTag::VoidUndefined);
+                return SubType::False;
             }
             return SubType::True(SubTypeTag::VoidUndefined);
         }
@@ -157,7 +157,7 @@ impl TplLitType {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub enum StringLitOrFormat {
+pub(crate) enum StringLitOrFormat {
     Format(CustomFormat),
     Tpl(TplLitType),
 }
@@ -177,7 +177,7 @@ impl SubtypeCheck for StringLitOrFormat {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum NumberRepresentationOrFormat {
+pub(crate) enum NumberRepresentationOrFormat {
     Lit(NumberRepresentation),
     Format(CustomFormat),
 }
@@ -194,7 +194,7 @@ impl SubtypeCheck for NumberRepresentationOrFormat {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
-pub enum VoidUndefinedSubtype {
+pub(crate) enum VoidUndefinedSubtype {
     // if it has both, then it's the full type
     Void,
     Undefined,
@@ -216,7 +216,7 @@ impl SubtypeCheck for TypedArrayKind {
     }
 }
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
-pub enum ProperSubtype {
+pub(crate) enum ProperSubtype {
     Boolean(bool),
     Number {
         allowed: bool,
@@ -344,7 +344,7 @@ fn sub_vec_diff<K: SubtypeCheck + Clone + Ord>(v1: &[K], v2: &[K]) -> Result<Vec
     Ok(acc)
 }
 
-pub trait ProperSubtypeOps {
+pub(crate) trait ProperSubtypeOps {
     // fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
     fn is_empty_status(&self, builder: &mut SemTypeContext) -> Result<IsEmptyStatus>;
     fn intersect(&self, t2: &Rc<ProperSubtype>) -> Result<Rc<SubType>>;
@@ -374,7 +374,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 if b1 == b2 {
                     return Ok(SubType::Proper(self.clone()).into());
                 }
-                Ok(SubType::False(SubTypeTag::Boolean).into())
+                Ok(SubType::False.into())
             }
             (
                 ProperSubtype::VoidUndefined {
@@ -580,7 +580,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
         match (&**self, &**t2) {
             (ProperSubtype::Boolean(b1), ProperSubtype::Boolean(b2)) => {
                 if b1 == b2 {
-                    return Ok(SubType::False(SubTypeTag::Boolean).into());
+                    return Ok(SubType::False.into());
                 }
                 Ok(SubType::Proper(self.clone()).into())
             }
@@ -632,7 +632,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
 }
 
 impl ProperSubtype {
-    pub fn tag(&self) -> SubTypeTag {
+    pub(crate) fn tag(&self) -> SubTypeTag {
         match self {
             ProperSubtype::Boolean(_) => SubTypeTag::Boolean,
             ProperSubtype::Number { .. } => SubTypeTag::Number,
@@ -645,7 +645,7 @@ impl ProperSubtype {
             ProperSubtype::Set(_) => SubTypeTag::Set,
         }
     }
-    pub fn to_code(&self) -> BasicTypeCode {
+    pub(crate) fn to_code(&self) -> BasicTypeCode {
         self.tag().code()
     }
 }

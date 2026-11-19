@@ -223,7 +223,7 @@ struct PrintContext {
 }
 
 impl PrintContext {
-    pub fn print_rt_name(&mut self, name: &RuntypeUUID) -> String {
+    pub(crate) fn print_rt_name(&mut self, name: &RuntypeUUID) -> String {
         let mut ctx = DebugPrintCtx {
             all_names: &self.all_names.iter().collect::<Vec<_>>(),
             type_with_args_names: &mut self.type_with_args_names,
@@ -742,9 +742,9 @@ fn maybe_runtype_any_of_consts(
         let consts: Vec<Expr> = flat_values
             .iter()
             .map(|it| match it.extract_single_string_const() {
-                Some(s) => Json::String(s).to_expr(),
+                Some(s) => Json::String(s).into_expr(),
                 None => match &it.kind {
-                    RuntypeKind::Const(c) => c.clone().to_json().to_expr(),
+                    RuntypeKind::Const(c) => c.clone().into_json().into_expr(),
                     _ => unreachable!(),
                 },
             })
@@ -785,7 +785,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         RuntypeKind::Any => no_args_runtype("AnyRuntype", schema),
         RuntypeKind::Never => no_args_runtype("NeverRuntype", schema),
         RuntypeKind::Const(c) => {
-            new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()], schema)
+            new_runtype_class("ConstRuntype", vec![c.clone().into_json().into_expr()], schema)
         }
         RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => {
             formats_runtype("StringWithFormatRuntype", first, rest, schema)
@@ -797,13 +797,13 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         RuntypeKind::BigInt => no_args_runtype("BigIntRuntype", schema),
         RuntypeKind::TypedArray(kind) => new_runtype_class(
             "TypedArrayRuntype",
-            vec![Json::String(kind.js_name().to_string()).to_expr()],
+            vec![Json::String(kind.js_name().to_string()).into_expr()],
             schema,
         ),
         RuntypeKind::TplLitType(t) => match t.0.as_slice() {
             [TplLitTypeItem::StringConst(c)] => new_runtype_class(
                 "ConstRuntype",
-                vec![Json::String(c.clone()).to_expr()],
+                vec![Json::String(c.clone()).into_expr()],
                 schema,
             ),
             _ => new_runtype_class(

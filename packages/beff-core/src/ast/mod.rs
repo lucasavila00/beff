@@ -1,2 +1,2 @@
-pub mod json;
-pub mod runtype;
+pub(crate) mod json;
+pub(crate) mod runtype;
