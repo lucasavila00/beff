@@ -8,7 +8,7 @@ Build first. Use a release build for numbers, because `DEBUG=true` builds are mu
 
 ```sh
 pnpm build
-pnpm bench                 # all three scripts below, with default options
+pnpm bench                 # all four scripts below, with default options
 ```
 
 Each script writes synthetic projects to `bench/out/<shape>-<scale>/` (ignored by git).
@@ -49,11 +49,15 @@ node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6]
 # Random inputs: validate, safeParse and parse must agree and must not throw.
 # Also prints the deepest recursive input that does not overflow the stack.
 node stress.mjs [--shape records] [--scale 8] [--runs 500] [--seed 1]
+
+# Size of the generated parser.js (raw, gzip, minified), and the time and heap that loading it takes.
+# Also prints the size of the @beff/client/codegen-v2 runtime.
+node load.mjs [--shape objects] [--scale 800]
 ```
 
 ## Running in CI
 
-`.github/workflows/bench.yml` runs only when you start it. It does a release build, runs `compile.mjs`, `runtime.mjs` and `stress.mjs`, writes the tables to the job summary, and uploads the raw output as the `bench-results` artifact. The job fails if `stress.mjs` finds failures.
+`.github/workflows/bench.yml` runs only when you start it. It does a release build, runs `compile.mjs`, `runtime.mjs`, `stress.mjs` and `load.mjs`, writes the tables to the job summary, and uploads the raw output as the `bench-results` artifact. The job fails if `stress.mjs` finds failures.
 
 1. Push the branch with the change to measure.
 2. Start the workflow on that branch. With no inputs it runs all shapes with default options:

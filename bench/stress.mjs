@@ -142,27 +142,43 @@ for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
   failed += failures.length;
 }
 
-// The deepest recursive input that each call handles without a stack overflow.
+// The deepest recursive input that each call handles without a stack overflow, to within 2%.
 const Rec = (await build("recursive", 4)).Root;
-const deepest = {};
-for (let depth = 250; depth <= 64000; depth *= 2) {
+const calls = {
+  validate: (valid) => Rec.validate(valid),
+  "safeParse (valid)": (valid) => Rec.safeParse(valid),
+  "safeParse (invalid)": (_, invalid) => Rec.safeParse(invalid),
+};
+const overflows = (f, depth) => {
   const valid = shapes.recursive.value(4, depth);
   const invalid = corrupt(shapes.recursive.value(4, depth));
-  const calls = {
-    validate: () => Rec.validate(valid),
-    "safeParse (valid)": () => Rec.safeParse(valid),
-    "safeParse (invalid)": () => Rec.safeParse(invalid),
-  };
-  for (const [name, f] of Object.entries(calls)) {
-    try {
-      f();
-      deepest[name] = depth;
-    } catch (e) {
-      if (!(e instanceof RangeError)) throw e;
-    }
+  try {
+    f(valid, invalid);
+    return false;
+  } catch (e) {
+    if (!(e instanceof RangeError)) throw e;
+    return true;
   }
+};
+console.log(`\nDeepest recursive input without a stack overflow (tried 250 to 64000):`);
+for (const [name, f] of Object.entries(calls)) {
+  let ok = 0;
+  let bad = 250;
+  while (bad <= 64000 && !overflows(f, bad)) {
+    ok = bad;
+    bad *= 2;
+  }
+  // No depth up to the limit overflows. Do not try deeper inputs.
+  if (bad > 64000) {
+    console.log(`  ${name}: 64000 or more`);
+    continue;
+  }
+  while (bad - ok > Math.max(1, ok / 50)) {
+    const mid = Math.floor((ok + bad) / 2);
+    if (overflows(f, mid)) bad = mid;
+    else ok = mid;
+  }
+  console.log(`  ${name}: ${ok}`);
 }
-console.log(`\nDeepest recursive input without a stack overflow (tried 250 to 64000, doubling):`);
-for (const [name, depth] of Object.entries(deepest)) console.log(`  ${name}: ${depth}`);
 
 process.exitCode = failed > 0 ? 1 : 0;

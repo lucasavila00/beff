@@ -143,7 +143,7 @@ export function corrupt(value) {
 }
 
 // Format validators passed to buildParsers.
-function formatArgs(shape, N) {
+export function formatArgs(shape, N) {
   const f = shapes[shape].formats?.(N) ?? { stringFormats: [], numberFormats: [] };
   return {
     stringFormats: Object.fromEntries(f.stringFormats.map((k) => [k, (s) => s.length > 0])),
