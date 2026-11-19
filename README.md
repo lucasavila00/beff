@@ -15,7 +15,7 @@ Beff is a validator generator. It reads your TypeScript types and writes runtime
 1. Install the packages:
 
    ```shell
-   npm i @beff/cli @beff/client zod@3
+   npm i @beff/cli @beff/client
    ```
 
 2. Create the file `beff.json`:
@@ -66,7 +66,7 @@ For more information, read [Getting started](./docs/getting-started.md).
 | Page                                               | Contents                                                                          |
 | -------------------------------------------------- | --------------------------------------------------------------------------------- |
 | [Getting started](./docs/getting-started.md)       | Installation, `beff.json`, and the CLI.                                           |
-| [Parsers](./docs/parsers.md)                       | `parse`, `safeParse`, `validate`, parse options, and `zod`.                       |
+| [Parsers](./docs/parsers.md)                       | `parse`, `safeParse`, `validate`, and parse options.                              |
 | [Errors](./docs/errors.md)                         | The error format and `printErrors`.                                               |
 | [JSON Schema](./docs/json-schema.md)               | `schema`, `schemaWithContext`, and `SchemaPrintingContext`.                       |
 | [Custom formats](./docs/custom-formats.md)         | `StringFormat`, `NumberFormat`, `StringFormatExtends`, and `NumberFormatExtends`. |

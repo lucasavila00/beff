@@ -52,9 +52,6 @@ importers:
       '@beff/client':
         specifier: workspace:^
         version: link:../../packages/beff-client
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
 
   e2e-tests/codegen-tests:
     dependencies:
@@ -67,9 +64,6 @@ importers:
       vitest:
         specifier: ^0.34.4
         version: 0.34.6
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
 
   e2e-tests/custom-formats:
     dependencies:
@@ -82,9 +76,6 @@ importers:
       vitest:
         specifier: ^0.34.4
         version: 0.34.6
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
 
   e2e-tests/json-schema:
     dependencies:
@@ -97,9 +88,6 @@ importers:
       vitest:
         specifier: ^0.34.4
         version: 0.34.6
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
 
   e2e-tests/openapi-schema:
     dependencies:
@@ -112,9 +100,6 @@ importers:
       vitest:
         specifier: ^0.34.4
         version: 0.34.6
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
 
   e2e-tests/standalone-parser:
     dependencies:
@@ -127,9 +112,6 @@ importers:
       vitest:
         specifier: ^0.34.4
         version: 0.34.6
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
 
   e2e-tests/ts-describe:
     dependencies:
@@ -142,9 +124,6 @@ importers:
       vitest:
         specifier: ^0.34.4
         version: 0.34.6
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
 
   e2e-tests/ts-describe-2:
     dependencies:
@@ -157,9 +136,6 @@ importers:
       vitest:
         specifier: ^0.34.4
         version: 0.34.6
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
 
   packages/beff-cli: {}
 
@@ -168,9 +144,6 @@ importers:
       '@beff/cli':
         specifier: workspace:^0.0.154
         version: link:../beff-cli
-      zod:
-        specifier: ^3.23.5
-        version: 3.25.76
     devDependencies:
       typescript:
         specifier: ^5.2.2
@@ -1660,9 +1633,6 @@ packages:
     resolution: {integrity: sha512-AyeEbWOu/TAXdxlV9wmGcR0+yh2j3vYPGOECcIj2S7MkrLyC7ne+oye2BKTItt0ii2PHk4cDy+95+LshzbXnGg==}
     engines: {node: '>=12.20'}
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-
 snapshots:
 
   '@babel/code-frame@7.27.1':
@@ -2933,5 +2903,3 @@ snapshots:
   yaml@2.9.1: {}
 
   yocto-queue@1.2.1: {}
-
-  zod@3.25.76: {}

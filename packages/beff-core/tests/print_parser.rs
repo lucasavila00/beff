@@ -839,6 +839,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "DiscriminatedUnion4", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ConstRuntype(undefined, "a1");
@@ -903,6 +905,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "WorkflowSource", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new NullishRuntype(undefined, "undefined");
@@ -1466,6 +1470,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         Object.assign(namedRuntypes, {
@@ -1486,6 +1492,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ArrayRuntype(undefined, direct_hoist_1);
@@ -1521,6 +1529,8 @@ mod tests {
             )
         ]), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "KnownConstants", namedRuntypes);
         const direct_hoist_1 = new AnyOfConstsRuntype(undefined, [
             "blue",
@@ -1551,10 +1561,12 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new StringWithFormatRuntype(undefined, [
             "password"
-        ]);
+        ], stringFormatters);
         Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
         });
@@ -1574,11 +1586,13 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "PassLenghts", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "number");
         const direct_hoist_2 = new StringWithFormatRuntype(undefined, [
             "password"
-        ]);
+        ], stringFormatters);
         const direct_hoist_3 = new ObjectRuntype(undefined, {}, [
             {
                 "key": direct_hoist_2,
@@ -1606,11 +1620,13 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "PassLengthGet", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "number");
         const direct_hoist_2 = new StringWithFormatRuntype(undefined, [
             "password"
-        ]);
+        ], stringFormatters);
         const direct_hoist_3 = new ObjectRuntype(undefined, {}, [
             {
                 "key": direct_hoist_2,
@@ -1638,6 +1654,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "NumberRecGet", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ObjectRuntype(undefined, {}, [
@@ -1667,21 +1685,23 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "User", namedRuntypes);
         const direct_hoist_1 = new RefRuntype(undefined, "ReadAuthorizedUser", namedRuntypes);
         const direct_hoist_2 = new RefRuntype(undefined, "WriteAuthorizedUser", namedRuntypes);
         const direct_hoist_3 = new StringWithFormatRuntype(undefined, [
             "User",
             "ReadAuthorizedUser"
-        ]);
+        ], stringFormatters);
         const direct_hoist_4 = new StringWithFormatRuntype(undefined, [
             "User"
-        ]);
+        ], stringFormatters);
         const direct_hoist_5 = new StringWithFormatRuntype(undefined, [
             "User",
             "ReadAuthorizedUser",
             "WriteAuthorizedUser"
-        ]);
+        ], stringFormatters);
         Object.assign(namedRuntypes, {
             "ReadAuthorizedUser": direct_hoist_3,
             "User": direct_hoist_4,
@@ -1706,21 +1726,23 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "NonInfiniteNumber", namedRuntypes);
         const direct_hoist_1 = new RefRuntype(undefined, "NonNegativeNumber", namedRuntypes);
         const direct_hoist_2 = new RefRuntype(undefined, "Rate", namedRuntypes);
         const direct_hoist_3 = new NumberWithFormatRuntype(undefined, [
             "NonInfiniteNumber"
-        ]);
+        ], numberFormatters);
         const direct_hoist_4 = new NumberWithFormatRuntype(undefined, [
             "NonInfiniteNumber",
             "NonNegativeNumber"
-        ]);
+        ], numberFormatters);
         const direct_hoist_5 = new NumberWithFormatRuntype(undefined, [
             "NonInfiniteNumber",
             "NonNegativeNumber",
             "Rate"
-        ]);
+        ], numberFormatters);
         Object.assign(namedRuntypes, {
             "NonInfiniteNumber": direct_hoist_3,
             "NonNegativeNumber": direct_hoist_4,
@@ -1768,6 +1790,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new ConstRuntype(undefined, "some_string_const");
         Object.assign(namedRuntypes, {
@@ -1787,6 +1811,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new DateRuntype(undefined);
         Object.assign(namedRuntypes, {
@@ -1806,6 +1832,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(__)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}__${number}`");
         Object.assign(namedRuntypes, {
@@ -1825,6 +1853,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "number");
         const direct_hoist_2 = new TupleRuntype(undefined, [
@@ -1848,6 +1878,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ObjectRuntype(undefined, {
@@ -1874,6 +1906,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype({
             "description": "Stable user id."
@@ -1902,6 +1936,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype({
             "description": "New payload."
@@ -1925,6 +1961,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         Object.assign(namedRuntypes, {
@@ -1946,6 +1984,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         Object.assign(namedRuntypes, {
@@ -1972,6 +2012,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Wrapper", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype({
             "description": "Declared alias."
@@ -2003,6 +2045,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype({
             "description": "Quoted property."
@@ -2027,6 +2071,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new TypeofRuntype(undefined, "number");
@@ -2051,6 +2097,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new TypeofRuntype(undefined, "number");
@@ -2074,6 +2122,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new TypeofRuntype(undefined, "string");
         Object.assign(namedRuntypes, {});
         const buildParsersInput = {
@@ -2091,6 +2141,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         Object.assign(namedRuntypes, {
@@ -2322,6 +2374,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper", namedRuntypes);
         const direct_hoist_1 = new NullishRuntype(undefined, "null");
         const direct_hoist_2 = new RefRuntype(undefined, "GenericWrapper_string", namedRuntypes);
@@ -2390,6 +2444,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper", namedRuntypes);
         const direct_hoist_1 = new RefRuntype(undefined, "GenericWrapper_string", namedRuntypes);
         const direct_hoist_2 = new TypeofRuntype(undefined, "string");
@@ -2447,6 +2503,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ObjectRuntype(undefined, {
@@ -2501,6 +2559,8 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "X", namedRuntypes);
         const direct_hoist_1 = new RefRuntype(undefined, "EditableLogicalConditionsAstLogicalOp_string", namedRuntypes);
         const direct_hoist_2 = new ConstRuntype(undefined, "none");
@@ -2621,6 +2681,8 @@ mod tests {
   "#;
         insta::assert_snapshot!(print_cgen(from), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "ProtoDiscriminated", namedRuntypes);
         const direct_hoist_1 = new RefRuntype(undefined, "ProtoKeyObject", namedRuntypes);
         const direct_hoist_2 = new RefRuntype(undefined, "__proto__", namedRuntypes);

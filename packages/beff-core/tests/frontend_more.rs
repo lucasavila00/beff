@@ -563,6 +563,8 @@ mod tests {
             parse.buildParsers<{ T: T }>();
         "#), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "T", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         Object.assign(namedRuntypes, {
@@ -1220,6 +1222,8 @@ mod tests {
             parse.buildParsers<{ Dec: Alias }>();
         "#), @r#"
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
         const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypedArrayRuntype(undefined, "Uint8Array");
         Object.assign(namedRuntypes, {

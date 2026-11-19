@@ -60,7 +60,17 @@ const finalizeParserV2File = (
   numberFormats: string[],
 ) => {
   const exports = `${exportCode(mod)} {
-  buildParsers: (args) => buildParsers(buildParsersInput, RequiredStringFormats, RequiredNumberFormats, args),
+  buildParsers: (args) =>
+    buildParsers(
+      {
+        parsers: buildParsersInput,
+        stringFormatters,
+        numberFormatters,
+        requiredStringFormats: RequiredStringFormats,
+        requiredNumberFormats: RequiredNumberFormats,
+      },
+      args,
+    ),
 };`;
 
   const stringFormatsCode = `const RequiredStringFormats = ${JSON.stringify(stringFormats)};`;

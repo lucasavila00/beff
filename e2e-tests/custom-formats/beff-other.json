@@ -1,0 +1,9 @@
+{
+  "parser": "./src/other-parser.ts",
+  "outputDir": "./src/generated/other",
+  "stringFormats": [
+    {
+      "name": "ValidCurrency"
+    }
+  ]
+}

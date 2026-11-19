@@ -29,6 +29,8 @@ import {
 const RequiredStringFormats = ["UserId","AdminId"];
 const RequiredNumberFormats = ["NonNegative","Rate"];
 const namedRuntypes = {};
+const stringFormatters = {};
+const numberFormatters = {};
 const direct_hoist_0 = new TypeofRuntype(undefined, "string");
 const direct_hoist_1 = new TypeofRuntype(undefined, "number");
 const direct_hoist_2 = new TypeofRuntype(undefined, "boolean");
@@ -290,7 +292,7 @@ const direct_hoist_115 = new ObjectRuntype(undefined, {
 const direct_hoist_116 = new StringWithFormatRuntype(undefined, [
     "UserId",
     "AdminId"
-]);
+], stringFormatters);
 const direct_hoist_117 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
     "b": direct_hoist_1,
@@ -507,7 +509,7 @@ const direct_hoist_165 = new AnyOfDiscriminatedRuntype(undefined, [
 });
 const direct_hoist_166 = new NumberWithFormatRuntype(undefined, [
     "NonNegative"
-]);
+], numberFormatters);
 const direct_hoist_167 = new ObjectRuntype(undefined, {}, [
     {
         "key": new NumberKeyRuntype(undefined),
@@ -588,7 +590,7 @@ const direct_hoist_185 = new AnyOfDiscriminatedRuntype(undefined, [
 const direct_hoist_186 = new NumberWithFormatRuntype(undefined, [
     "NonNegative",
     "Rate"
-]);
+], numberFormatters);
 const direct_hoist_187 = new ArrayRuntype(undefined, direct_hoist_92);
 const direct_hoist_188 = new AnyOfRuntype(undefined, [
     direct_hoist_0,
@@ -654,7 +656,7 @@ const direct_hoist_201 = new ObjectRuntype(undefined, {
 }, []);
 const direct_hoist_202 = new StringWithFormatRuntype(undefined, [
     "UserId"
-]);
+], stringFormatters);
 const direct_hoist_203 = new ArrayRuntype(undefined, direct_hoist_2);
 const direct_hoist_204 = new ObjectRuntype(undefined, {
     "a": direct_hoist_2,
@@ -807,5 +809,15 @@ const buildParsersInput = {
 };
 
 export default {
-  buildParsers: (args) => buildParsers(buildParsersInput, RequiredStringFormats, RequiredNumberFormats, args),
+  buildParsers: (args) =>
+    buildParsers(
+      {
+        parsers: buildParsersInput,
+        stringFormatters,
+        numberFormatters,
+        requiredStringFormats: RequiredStringFormats,
+        requiredNumberFormats: RequiredNumberFormats,
+      },
+      args,
+    ),
 };

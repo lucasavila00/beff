@@ -33,6 +33,8 @@ const {
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
 const namedRuntypes = {};
+const stringFormatters = {};
+const numberFormatters = {};
 const direct_hoist_0 = new TypeofRuntype(undefined, "string");
 const direct_hoist_1 = new TypeofRuntype(undefined, "number");
 const direct_hoist_2 = new TypeofRuntype(undefined, "boolean");
@@ -176,7 +178,7 @@ const direct_hoist_55 = new AllOfRuntype(undefined, [
 ]);
 const direct_hoist_56 = new StringWithFormatRuntype(undefined, [
     "ValidCurrency"
-]);
+], stringFormatters);
 const direct_hoist_57 = new ObjectRuntype(undefined, {
     "evaluationEndDate": direct_hoist_0,
     "evaluationStartDate": direct_hoist_0,
@@ -227,5 +229,15 @@ const buildParsersInput = {
 };
 
 exports.default = {
-  buildParsers: (args) => buildParsers(buildParsersInput, RequiredStringFormats, RequiredNumberFormats, args),
+  buildParsers: (args) =>
+    buildParsers(
+      {
+        parsers: buildParsersInput,
+        stringFormatters,
+        numberFormatters,
+        requiredStringFormats: RequiredStringFormats,
+        requiredNumberFormats: RequiredNumberFormats,
+      },
+      args,
+    ),
 };

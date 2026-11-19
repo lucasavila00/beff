@@ -415,6 +415,7 @@ fn no_args_runtype(class_name: &str, original_runtype: &Runtype) -> Expr {
 
 fn formats_runtype(
     constructor: &str,
+    formatters: &str,
     first: &String,
     rest: &[String],
     original_runtype: &Runtype,
@@ -425,7 +426,11 @@ fn formats_runtype(
             .map(|it| string_lit(it))
             .collect(),
     );
-    new_runtype_class(constructor, vec![vs_arr], original_runtype)
+    new_runtype_class(
+        constructor,
+        vec![vs_arr, Expr::Ident(identifier(formatters))],
+        original_runtype,
+    )
 }
 
 // Object keys are always strings. A `number` key is printed as a runtype
@@ -805,12 +810,20 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
         RuntypeKind::Const(c) => {
             new_runtype_class("ConstRuntype", vec![c.clone().into_json().into_expr()], schema)
         }
-        RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => {
-            formats_runtype("StringWithFormatRuntype", first, rest, schema)
-        }
-        RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => {
-            formats_runtype("NumberWithFormatRuntype", first, rest, schema)
-        }
+        RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => formats_runtype(
+            "StringWithFormatRuntype",
+            "stringFormatters",
+            first,
+            rest,
+            schema,
+        ),
+        RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => formats_runtype(
+            "NumberWithFormatRuntype",
+            "numberFormatters",
+            first,
+            rest,
+            schema,
+        ),
         RuntypeKind::Date => no_args_runtype("DateRuntype", schema),
         RuntypeKind::BigInt => no_args_runtype("BigIntRuntype", schema),
         RuntypeKind::TypedArray(kind) => new_runtype_class(
@@ -998,8 +1011,13 @@ impl ParserExtractResult {
             build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
         );
 
-        // The refs read namedRuntypes, so it is declared before them and filled after them.
-        let declare_named_runtypes = const_decl("namedRuntypes", object_lit(vec![]));
+        // The runtypes get these objects when they are created, so they are declared first.
+        // namedRuntypes is filled after the runtypes. buildParsers fills the format tables.
+        let declare_tables = vec![
+            const_decl("namedRuntypes", object_lit(vec![])),
+            const_decl("stringFormatters", object_lit(vec![])),
+            const_decl("numberFormatters", object_lit(vec![])),
+        ];
         let fill_named_runtypes = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
             span: DUMMY_SP,
             expr: Box::new(Expr::Call(CallExpr {
@@ -1032,7 +1050,8 @@ impl ParserExtractResult {
             .map(|(id, expr)| const_decl(&hoist_name(id), expr))
             .collect();
 
-        let module_items = std::iter::once(declare_named_runtypes)
+        let module_items = declare_tables
+            .into_iter()
             .chain(hoisted_direct_decls)
             .chain(vec![
                 //

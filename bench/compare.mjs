@@ -1,5 +1,5 @@
-// Compares two versions of beff on the same machine: the runtime of the generated `Root` parser, and the
-// time, heap and size of loading `parser.js`.
+// Compares two versions of beff on the same machine: the runtime of the generated `Root` parser, the time,
+// heap and size of loading `parser.js`, and the heap after the first use of the parsers.
 //
 //   node compare.mjs --baseline <checkout> [--candidate <checkout>] [--shape union] [--rounds 5]
 //                    [--scale 16] [--load-scale 800]
@@ -172,8 +172,10 @@ if (process.argv[2] === "--child") {
   );
 
   console.log(`\n### Load: candidate / baseline (scale ${loadScale}; ${header})\n`);
-  console.log("| shape | minified | minified + gzip | load time | heap (median) |");
-  console.log("| --- | --- | --- | --- | --- |");
+  console.log(
+    "| shape | minified | minified + gzip | load time | heap after load (median) | heap after first use (median) |",
+  );
+  console.log("| --- | --- | --- | --- | --- | --- |");
   const loadScript = path.join(benchDir, "load.mjs");
   for (const shape of selectedShapes) {
     const files = Object.fromEntries(versions.map((it) => [it.label, compileProject(it, shape, loadScale)]));
@@ -196,12 +198,13 @@ if (process.argv[2] === "--child") {
       results.baseline.map((it) => it.ms),
       results.candidate.map((it) => it.ms),
     );
-    const heap = sizeCell(
-      median(results.baseline.map((it) => it.heap)),
-      median(results.candidate.map((it) => it.heap)),
-    );
+    const heapCell = (field) =>
+      sizeCell(
+        median(results.baseline.map((it) => it[field])),
+        median(results.candidate.map((it) => it[field])),
+      );
     console.log(
-      `| ${shape} | ${sizeCell(sizes.baseline.minified, sizes.candidate.minified)} | ${sizeCell(sizes.baseline.minifiedGzip, sizes.candidate.minifiedGzip)} | ${loadTime} | ${heap} |`,
+      `| ${shape} | ${sizeCell(sizes.baseline.minified, sizes.candidate.minified)} | ${sizeCell(sizes.baseline.minifiedGzip, sizes.candidate.minifiedGzip)} | ${loadTime} | ${heapCell("heap")} | ${heapCell("heapAfterFirstUse")} |`,
     );
   }
 }

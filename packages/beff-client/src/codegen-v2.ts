@@ -1,5 +1,4 @@
 import { type BeffParser, type DecodeError, type ParseOptions, type RegularDecodeError } from "./types.js";
-import { z } from "zod";
 import { JSONSchema7, JSONSchema7Definition } from "./json-schema.js";
 import { removeNullUnionBranch } from "./openapi-pp.js";
 import { printErrors } from "./err.js";
@@ -305,13 +304,16 @@ type UserProvidedStringFormat =
       errorMessage?: UserProvidedStringErrorMessageFn;
       jsonSchemaFormat?: string;
     };
-type RegisteredStringFormat = {
+export type RegisteredStringFormat = {
   validator: UserProvidedStringValidatorFn;
   errorMessage?: UserProvidedStringErrorMessageFn;
   jsonSchemaFormat?: string;
 };
-const stringFormatters: Record<string, RegisteredStringFormat> = {};
-export function registerStringFormatter(name: string, value: UserProvidedStringFormat) {
+export function registerStringFormatter(
+  stringFormatters: Record<string, RegisteredStringFormat>,
+  name: string,
+  value: UserProvidedStringFormat,
+) {
   if (typeof value === "function") {
     stringFormatters[name] = {
       validator: value,
@@ -330,13 +332,16 @@ type UserProvidedNumberFormat =
       errorMessage?: UserProvidedNumberErrorMessageFn;
       jsonSchemaFormat?: string;
     };
-type RegisteredNumberFormat = {
+export type RegisteredNumberFormat = {
   validator: UserProvidedNumberValidatorFn;
   errorMessage?: UserProvidedNumberErrorMessageFn;
   jsonSchemaFormat?: string;
 };
-const numberFormatters: Record<string, RegisteredNumberFormat> = {};
-export function registerNumberFormatter(name: string, value: UserProvidedNumberFormat) {
+export function registerNumberFormatter(
+  numberFormatters: Record<string, RegisteredNumberFormat>,
+  name: string,
+  value: UserProvidedNumberFormat,
+) {
   if (typeof value === "function") {
     numberFormatters[name] = {
       validator: value,
@@ -881,19 +886,28 @@ export class TypedArrayRuntype extends BaseRuntype {
 
 export class StringWithFormatRuntype extends BaseRuntype {
   private formats: string[];
+  private stringFormatters: Record<string, RegisteredStringFormat>;
 
-  constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
+  constructor(
+    metadata: RuntypeMetadata | undefined,
+    formats: string[],
+    stringFormatters: Record<string, RegisteredStringFormat>,
+  ) {
     super(metadata);
     this.formats = formats;
+    this.stringFormatters = stringFormatters;
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return describeFormats("String", this.formats);
+  }
+  getStringFormatters(): Record<string, RegisteredStringFormat> {
+    return this.stringFormatters;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     const finalFormat = this.formats[this.formats.length - 1];
     return annotateSchema(this.metadata, {
       type: "string",
-      format: stringFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
+      format: this.getStringFormatters()[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
     });
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
@@ -902,7 +916,7 @@ export class StringWithFormatRuntype extends BaseRuntype {
     }
 
     for (const f of this.formats) {
-      const formatter = stringFormatters[f];
+      const formatter = this.getStringFormatters()[f];
       const validator = formatter?.validator;
 
       if (validator == null) {
@@ -923,7 +937,7 @@ export class StringWithFormatRuntype extends BaseRuntype {
     return buildError(
       ctx,
       typeof input === "string"
-        ? (resolveFormatErrorMessage(stringFormatters, this.formats, input) ??
+        ? (resolveFormatErrorMessage(this.getStringFormatters(), this.formats, input) ??
             `expected string with format "${this.formats.join(" and ")}"`)
         : `expected string with format "${this.formats.join(" and ")}"`,
       input,
@@ -933,18 +947,27 @@ export class StringWithFormatRuntype extends BaseRuntype {
 
 export class NumberWithFormatRuntype extends BaseRuntype {
   private formats: string[];
-  constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
+  private numberFormatters: Record<string, RegisteredNumberFormat>;
+  constructor(
+    metadata: RuntypeMetadata | undefined,
+    formats: string[],
+    numberFormatters: Record<string, RegisteredNumberFormat>,
+  ) {
     super(metadata);
     this.formats = formats;
+    this.numberFormatters = numberFormatters;
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return describeFormats("Number", this.formats);
+  }
+  getNumberFormatters(): Record<string, RegisteredNumberFormat> {
+    return this.numberFormatters;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     const finalFormat = this.formats[this.formats.length - 1];
     return annotateSchema(this.metadata, {
       type: "number",
-      format: numberFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
+      format: this.getNumberFormatters()[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
     });
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
@@ -953,7 +976,7 @@ export class NumberWithFormatRuntype extends BaseRuntype {
     }
 
     for (const f of this.formats) {
-      const formatter = numberFormatters[f];
+      const formatter = this.getNumberFormatters()[f];
       const validator = formatter?.validator;
 
       if (validator == null) {
@@ -974,7 +997,7 @@ export class NumberWithFormatRuntype extends BaseRuntype {
     return buildError(
       ctx,
       typeof input === "number"
-        ? (resolveFormatErrorMessage(numberFormatters, this.formats, input) ??
+        ? (resolveFormatErrorMessage(this.getNumberFormatters(), this.formats, input) ??
             `expected number with format "${this.formats.join(" and ")}"`)
         : `expected number with format "${this.formats.join(" and ")}"`,
       input,
@@ -2137,17 +2160,6 @@ class ParserFromRuntype implements BeffParser<any> {
       errors: this._runtype.reportDecodeError(ctx, input).slice(0, 10),
     };
   }
-  zod(): z.ZodType<any, z.ZodTypeDef, any> {
-    //@ts-ignore
-    return z.custom(
-      (data: any) => this.validate(data),
-      //@ts-ignore
-      (val: any) => {
-        const errors = this._runtype.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
-        return printErrors(errors, []);
-      },
-    );
-  }
   validate(input: any, options?: ParseOptions): input is any {
     const disallowExtraProperties = options?.disallowExtraProperties ?? false;
     const ctx = { disallowExtraProperties };
@@ -2203,39 +2215,43 @@ export const buildParserFromRuntype = (
   hideTypeNameInDescribe: boolean,
 ): BeffParser<any> => new ParserFromRuntype(runtype, name, hideTypeNameInDescribe);
 
-// The generated parser.js calls this with its runtypes and the format names that the project settings require.
+// The generated parser.js calls this with its own runtypes, format tables and required format names.
 export const buildParsers = (
-  parsersInput: Record<string, Runtype>,
-  requiredStringFormats: string[],
-  requiredNumberFormats: string[],
+  generated: {
+    parsers: Record<string, Runtype>;
+    stringFormatters: Record<string, RegisteredStringFormat>;
+    numberFormatters: Record<string, RegisteredNumberFormat>;
+    requiredStringFormats: string[];
+    requiredNumberFormats: string[];
+  },
   args?: {
     stringFormats?: Record<string, UserProvidedStringFormat>;
     numberFormats?: Record<string, UserProvidedNumberFormat>;
   },
 ): Record<string, BeffParser<any>> => {
   const stringFormats = args?.stringFormats ?? {};
-  for (const k of requiredStringFormats) {
+  for (const k of generated.requiredStringFormats) {
     if (stringFormats[k] == null) {
       throw new Error(`Missing custom format ${k}`);
     }
   }
   Object.keys(stringFormats).forEach((k) => {
     const v = stringFormats[k];
-    registerStringFormatter(k, v);
+    registerStringFormatter(generated.stringFormatters, k, v);
   });
   const numberFormats = args?.numberFormats ?? {};
-  for (const k of requiredNumberFormats) {
+  for (const k of generated.requiredNumberFormats) {
     if (numberFormats[k] == null) {
       throw new Error(`Missing custom format ${k}`);
     }
   }
   Object.keys(numberFormats).forEach((k) => {
     const v = numberFormats[k];
-    registerNumberFormatter(k, v);
+    registerNumberFormatter(generated.numberFormatters, k, v);
   });
   let acc: Record<string, BeffParser<any>> = {};
-  for (const k of Object.keys(parsersInput)) {
-    const it = buildParserFromRuntype(parsersInput[k], k, false);
+  for (const k of Object.keys(generated.parsers)) {
+    const it = buildParserFromRuntype(generated.parsers[k], k, false);
     acc[k] = it;
   }
   return acc;
