@@ -28,6 +28,18 @@ importers:
         specifier: workspace:^
         version: link:../packages/beff-client
 
+  e2e-tests/behavior:
+    dependencies:
+      '@beff/cli':
+        specifier: workspace:^
+        version: link:../../packages/beff-cli
+      '@beff/client':
+        specifier: workspace:^
+        version: link:../../packages/beff-client
+      vitest:
+        specifier: ^0.34.4
+        version: 0.34.6
+
   e2e-tests/bug-rust-repro:
     dependencies:
       '@beff/cli':
