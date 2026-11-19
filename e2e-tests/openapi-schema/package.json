@@ -1,6 +1,6 @@
 {
   "name": "openapi-schema-generator",
-  "version": "1.0.118",
+  "version": "1.0.119",
   "description": "",
   "scripts": {
     "beff": "beff -p beff.json",

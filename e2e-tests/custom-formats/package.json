@@ -1,6 +1,6 @@
 {
   "name": "custom-formats",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "",
   "scripts": {
     "beff": "beff -p beff.json && beff -p beff-other.json",

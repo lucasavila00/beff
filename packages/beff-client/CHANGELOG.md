@@ -1,5 +1,30 @@
 # @beff/client
 
+## 1.0.0
+
+### Major Changes
+
+- c59f47b: `hash()` and `hash256()` are removed from parsers. In OpenAPI and JSON Schema output, the number at the end of the names of inline discriminated union variants changes.
+- 637f463: `zod()` is removed from parsers. `@beff/client` does not have a peer dependency on `zod` now.
+
+### Patch Changes
+
+- 36a5fd4: Bundlers can now remove the parts of `@beff/client` that your code does not use.
+- 255787c: `disallowExtraProperties` no longer rejects valid values of intersection types.
+- 255787c: An index signature in an intersection now checks only the keys that it matches.
+- d763302: Validation is faster for objects that have an index signature, and with `disallowExtraProperties`.
+- e2fd05f: Two parser files that use a custom format with the same name now each use their own format function.
+- 127edf7: Generated parser files are smaller.
+- Updated dependencies [4997bba]
+- Updated dependencies [3eae117]
+- Updated dependencies [e2fd05f]
+- Updated dependencies [497f925]
+- Updated dependencies [726fac4]
+- Updated dependencies [c59f47b]
+- Updated dependencies [127edf7]
+- Updated dependencies [26f60b5]
+  - @beff/cli@1.0.0
+
 ## 0.0.154
 
 ### Patch Changes
