@@ -31,6 +31,9 @@ const main = async () => {
   await makeJsBundle();
 
   const mode = isDebug ? "--dev" : "--release";
+  // The WASM stack defaults to 1 MB. Deeply nested types need more (#424).
+  // Set in RUSTFLAGS because a RUSTFLAGS set by CI would override `rustflags` in .cargo/config.toml.
+  const rustFlags = [process.env.RUSTFLAGS, "-C link-arg=-zstack-size=8388608"].filter(Boolean).join(" ");
 
   const cmds = {
     "build-rust": `wasm-pack build ${mode} --target nodejs`,
@@ -42,7 +45,7 @@ const main = async () => {
 
   for (const [name, cmd] of Object.entries(cmds)) {
     console.log(name);
-    await execAsync(cmd);
+    await execAsync(cmd, { env: { ...process.env, RUSTFLAGS: rustFlags } });
   }
 };
 

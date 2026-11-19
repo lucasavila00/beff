@@ -175,8 +175,14 @@ type WasmDiagnostic = {
   diagnostics: WasmDiagnosticInformation[];
 };
 
+// The compiler recurses on nested types. Very deep nesting overflows the stack of the parser or the
+// compiler, which surfaces as one of these errors.
+const isStackOverflow = (e: unknown): boolean =>
+  e instanceof Error && /Maximum call stack size exceeded|memory access out of bounds/.test(e.message);
+
 export class Bundler {
   cbs: ((path: string) => void)[];
+  lastFileRead: string | undefined;
   constructor(verbose: boolean) {
     (globalThis as any).verbose = verbose;
     wasm.init(verbose);
@@ -186,6 +192,7 @@ export class Bundler {
     (globalThis as any).read_file_content = (file_name: string) => {
       try {
         const source_file = fs.readFileSync(file_name, "utf-8");
+        this.lastFileRead = file_name;
         for (const cb of this.cbs) {
           cb(file_name);
         }
@@ -204,7 +211,20 @@ export class Bundler {
   }
 
   public bundle_v2(parser_entrypoint: string | undefined, settings: BeffUserSettings): string | undefined {
-    return wasm.bundle_to_string_v2(parser_entrypoint ?? "", JSON.stringify(serializeSettings(settings)));
+    try {
+      return wasm.bundle_to_string_v2(parser_entrypoint ?? "", JSON.stringify(serializeSettings(settings)));
+    } catch (e) {
+      if (!isStackOverflow(e)) {
+        throw e;
+      }
+      console.error(chalk.red.bold("Error: Types are nested too deeply"));
+      console.error(
+        ` The compiler ran out of stack (${String(e)}) while compiling ${parser_entrypoint}.` +
+          ` The last file it read was ${this.lastFileRead}.` +
+          ` Move parts of deeply nested inline types into named types.`,
+      );
+      return undefined;
+    }
   }
 
   public diagnostics(

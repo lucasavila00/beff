@@ -125,6 +125,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                         if let Ok(x) = ctx.extract_built_decoders_from_call_v2(params.as_ref()) {
                             self.built_decoders = Some(x)
                         }
+                        ctx.extract_pending_named_types();
                         self.recursive_generic_uuids = ctx.recursive_generic_uuids;
                         self.errors.extend(ctx.errors);
                         let mut kvs = vec![];
