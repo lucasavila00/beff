@@ -56,11 +56,33 @@ export const shapes = {
   },
   // N mutually recursive types. Root is a linked list n items deep.
   recursive: {
+    from: 125, // probe (#425): the baseline is quadratic in the depth
     types: (N) =>
       repeat(N, (i) => `type R${i} = { name: string; tags: string[]; next: R${(i + 1) % N} | null };`).join(
         "\n",
       ) + `\ntype Root = R0;`,
     value: (_N, n) => range(n).reduce((next) => ({ name: "r", tags: ["a"], next }), null),
+  },
+  // Probe (#425): like recursive, but the list ends in a string instead of null.
+  recursiveString: {
+    from: 125, // probe (#425): the baseline is quadratic in the depth
+    types: (N) =>
+      repeat(N, (i) => `type S${i} = { name: string; tags: string[]; next: S${(i + 1) % N} | string };`).join(
+        "\n",
+      ) + `\ntype Root = S0;`,
+    value: (_N, n) => range(n).reduce((next) => ({ name: "r", tags: ["a"], next }), "end"),
+  },
+  // Probe (#425): two recursive object branches without a discriminator.
+  recursiveTwo: {
+    from: 125, // probe (#425): the baseline is quadratic in the depth
+    types: (N) =>
+      [
+        ...repeat(N, (i) => `type A${i} = { a: string; next: A${(i + 1) % N} | B${(i + 1) % N} | null };`),
+        ...repeat(N, (i) => `type B${i} = { b: number; next: A${(i + 1) % N} | B${(i + 1) % N} | null };`),
+        `type Root = A0;`,
+      ].join("\n"),
+    value: (_N, n) =>
+      range(n).reduce((next, i) => ((n - 1 - i) % 2 === 0 ? { a: "s", next } : { b: i, next }), null),
   },
   // Two generic types instantiated with N different arguments.
   generics: {

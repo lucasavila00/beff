@@ -65,7 +65,7 @@ for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
   console.log(`| n | ${Object.keys(ops).join(" | ")} |`);
   console.log(`|${" --- |".repeat(Object.keys(ops).length + 1)}`);
   let prev = {};
-  for (let i = 0, n = from; i < rows; i++, n *= 2) {
+  for (let i = 0, n = shapes[shape].from ?? from; i < rows; i++, n *= 2) {
     const valid = shapes[shape].value(N, n);
     const bad = corrupt(shapes[shape].value(N, n));
     const cells = Object.entries(ops).map(([name, op]) => {
