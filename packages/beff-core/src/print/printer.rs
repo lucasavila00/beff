@@ -1,223 +1,23 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Ok, Result, anyhow};
-use swc_common::DUMMY_SP;
-use swc_common::SourceMap;
-use swc_common::SyntaxContext;
-use swc_common::{FilePathMapping, sync::Lrc};
-use swc_ecma_ast::Module;
-use swc_ecma_ast::{
-    ArrayLit, BindingIdent, ComputedPropName, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit,
-    ModuleItem, NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str,
-    VarDecl, VarDeclKind, VarDeclarator,
-};
-use swc_ecma_codegen::Config;
-use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
 
 use crate::NameIndex;
 use crate::RuntypeUUID;
-use crate::ast::json::Json;
 use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
     NamedSchema,
-    ast::runtype::{
-        IndexedProperty, Optionality, Runtype, RuntypeConst, RuntypeKind, RuntypeMetadata,
-        TplLitType, TypedArrayKind,
-    },
+    ast::runtype::{Optionality, Runtype, RuntypeConst, RuntypeKind},
     parser_extractor::BuiltDecoder,
 };
 
-fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
-    let ast = Module {
-        span: DUMMY_SP,
-        body,
-        shebang: None,
-    };
-    let cm = Lrc::new(SourceMap::new(FilePathMapping::empty()));
-
-    let code = {
-        let mut buf = vec![];
-
-        {
-            let mut emitter = Emitter {
-                cfg: Config::default(),
-                cm: cm.clone(),
-                comments: None,
-                wr: JsWriter::new(cm, "\n", &mut buf, None),
-            };
-
-            emitter.emit_module(&ast)?;
-        }
-
-        String::from_utf8_lossy(&buf).to_string()
-    };
-
-    Ok(code)
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct PrintableRuntypeKey {
-    metadata: RuntypeMetadata,
-    kind: PrintableRuntypeKindKey,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-enum PrintableOptionalityKey {
-    Optional(PrintableRuntypeKey),
-    Required(PrintableRuntypeKey),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct PrintableIndexedPropertyKey {
-    key: PrintableRuntypeKey,
-    value: PrintableOptionalityKey,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-enum PrintableRuntypeKindKey {
-    Null,
-    Undefined,
-    Void,
-    Boolean,
-    String,
-    Number,
-    Any,
-    AnyArrayLike,
-    StringWithFormat(CustomFormat),
-    NumberWithFormat(CustomFormat),
-    TplLitType(TplLitType),
-    Object {
-        vs: BTreeMap<String, PrintableOptionalityKey>,
-        indexed_properties: Option<Box<PrintableIndexedPropertyKey>>,
-    },
-    Array(Box<PrintableRuntypeKey>),
-    Tuple {
-        prefix_items: Vec<PrintableRuntypeKey>,
-        items: Option<Box<PrintableRuntypeKey>>,
-    },
-    Ref(RuntypeUUID),
-    AnyOf(BTreeSet<PrintableRuntypeKey>),
-    AllOf(BTreeSet<PrintableRuntypeKey>),
-    Const(RuntypeConst),
-    Never,
-    StNot(Box<PrintableRuntypeKey>),
-    Function,
-    Date,
-    BigInt,
-    TypedArray(TypedArrayKind),
-    Map(Box<PrintableRuntypeKey>, Box<PrintableRuntypeKey>),
-    Set(Box<PrintableRuntypeKey>),
-}
-
-impl PrintableRuntypeKey {
-    fn from_runtype(schema: &Runtype) -> Self {
-        Self {
-            metadata: schema.metadata.clone(),
-            kind: PrintableRuntypeKindKey::from_kind(&schema.kind),
-        }
-    }
-}
-
-impl PrintableOptionalityKey {
-    fn from_optionality(optionality: &Optionality<Runtype>) -> Self {
-        match optionality {
-            Optionality::Optional(schema) => {
-                Self::Optional(PrintableRuntypeKey::from_runtype(schema))
-            }
-            Optionality::Required(schema) => {
-                Self::Required(PrintableRuntypeKey::from_runtype(schema))
-            }
-        }
-    }
-}
-
-impl PrintableIndexedPropertyKey {
-    fn from_indexed_property(indexed_property: &IndexedProperty) -> Self {
-        Self {
-            key: PrintableRuntypeKey::from_runtype(&indexed_property.key),
-            value: PrintableOptionalityKey::from_optionality(&indexed_property.value),
-        }
-    }
-}
-
-impl PrintableRuntypeKindKey {
-    fn from_kind(kind: &RuntypeKind) -> Self {
-        match kind {
-            RuntypeKind::Null => Self::Null,
-            RuntypeKind::Undefined => Self::Undefined,
-            RuntypeKind::Void => Self::Void,
-            RuntypeKind::Boolean => Self::Boolean,
-            RuntypeKind::String => Self::String,
-            RuntypeKind::Number => Self::Number,
-            RuntypeKind::Any => Self::Any,
-            RuntypeKind::AnyArrayLike => Self::AnyArrayLike,
-            RuntypeKind::StringWithFormat(format) => Self::StringWithFormat(format.clone()),
-            RuntypeKind::NumberWithFormat(format) => Self::NumberWithFormat(format.clone()),
-            RuntypeKind::TplLitType(tpl_lit_type) => Self::TplLitType(tpl_lit_type.clone()),
-            RuntypeKind::Object {
-                vs,
-                indexed_properties,
-            } => Self::Object {
-                vs: vs
-                    .iter()
-                    .map(|(key, value)| {
-                        (
-                            key.clone(),
-                            PrintableOptionalityKey::from_optionality(value),
-                        )
-                    })
-                    .collect(),
-                indexed_properties: indexed_properties
-                    .as_ref()
-                    .map(|it| Box::new(PrintableIndexedPropertyKey::from_indexed_property(it))),
-            },
-            RuntypeKind::Array(item) => {
-                Self::Array(Box::new(PrintableRuntypeKey::from_runtype(item)))
-            }
-            RuntypeKind::Tuple {
-                prefix_items,
-                items,
-            } => Self::Tuple {
-                prefix_items: prefix_items
-                    .iter()
-                    .map(PrintableRuntypeKey::from_runtype)
-                    .collect(),
-                items: items
-                    .as_ref()
-                    .map(|it| Box::new(PrintableRuntypeKey::from_runtype(it))),
-            },
-            RuntypeKind::Ref(name) => Self::Ref(name.clone()),
-            RuntypeKind::AnyOf(vs) => {
-                Self::AnyOf(vs.iter().map(PrintableRuntypeKey::from_runtype).collect())
-            }
-            RuntypeKind::AllOf(vs) => {
-                Self::AllOf(vs.iter().map(PrintableRuntypeKey::from_runtype).collect())
-            }
-            RuntypeKind::Const(value) => Self::Const(value.clone()),
-            RuntypeKind::Never => Self::Never,
-            RuntypeKind::StNot(inner) => {
-                Self::StNot(Box::new(PrintableRuntypeKey::from_runtype(inner)))
-            }
-            RuntypeKind::Function => Self::Function,
-            RuntypeKind::Date => Self::Date,
-            RuntypeKind::BigInt => Self::BigInt,
-            RuntypeKind::TypedArray(kind) => Self::TypedArray(*kind),
-            RuntypeKind::Map(key, value) => Self::Map(
-                Box::new(PrintableRuntypeKey::from_runtype(key)),
-                Box::new(PrintableRuntypeKey::from_runtype(value)),
-            ),
-            RuntypeKind::Set(value) => {
-                Self::Set(Box::new(PrintableRuntypeKey::from_runtype(value)))
-            }
-        }
-    }
-}
-
 struct PrintContext {
-    hoisted: BTreeMap<PrintableRuntypeKey, (usize, Expr)>,
+    // The printed text of each hoisted runtype, and the number of its `direct_hoist_N` name.
+    // The children of a runtype are printed as hoisted names, so the text is short.
+    hoisted: BTreeMap<String, usize>,
     all_names: NameIndex,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
     inlined: BTreeSet<RuntypeUUID>,
@@ -233,30 +33,8 @@ impl PrintContext {
     }
 }
 
-fn const_decl(name: &str, init: Expr) -> ModuleItem {
-    ModuleItem::Stmt(Stmt::Decl(Decl::Var(
-        VarDecl {
-            span: DUMMY_SP,
-            ctxt: SyntaxContext::empty(),
-            kind: VarDeclKind::Const,
-            declare: false,
-            decls: vec![VarDeclarator {
-                span: DUMMY_SP,
-                name: Pat::Ident(BindingIdent {
-                    id: Ident {
-                        span: DUMMY_SP,
-                        sym: name.into(),
-                        optional: false,
-                        ctxt: SyntaxContext::empty(),
-                    },
-                    type_ann: None,
-                }),
-                init: Some(Box::new(init)),
-                definite: false,
-            }],
-        }
-        .into(),
-    )))
+fn const_decl(name: &str, init: &str) -> String {
+    format!("const {name}={init};\n")
 }
 
 /// Any type with the same name must be identical
@@ -279,103 +57,85 @@ fn validate_type_uniqueness(parser: &[NamedSchema]) -> Result<Vec<NamedSchema>> 
     Ok(acc)
 }
 
-fn identifier(name: &str) -> Ident {
-    Ident {
-        span: DUMMY_SP,
-        sym: name.into(),
-        optional: false,
-        ctxt: SyntaxContext::empty(),
-    }
+fn new_runtime_class(constructor: &str, args: Vec<String>) -> String {
+    format!("new {constructor}({})", args.join(","))
 }
 
-fn new_runtime_class(constructor: &str, args: Vec<Expr>) -> Expr {
-    Expr::New(NewExpr {
-        ctxt: SyntaxContext::empty(),
-        span: DUMMY_SP,
-        callee: Expr::Ident(identifier(constructor)).into(),
-        args: Some(
-            args.into_iter()
-                .map(|arg| ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(arg),
-                })
-                .collect(),
-        ),
-        type_args: None,
-    })
-}
-
-fn new_runtype_class(constructor: &str, mut args: Vec<Expr>, original_runtype: &Runtype) -> Expr {
+fn new_runtype_class(constructor: &str, mut args: Vec<String>, original_runtype: &Runtype) -> String {
     args.insert(0, runtype_metadata_arg(original_runtype));
 
     new_runtime_class(constructor, args)
 }
 
+fn is_ascii_identifier(key: &str) -> bool {
+    let mut chars = key.chars();
+    chars
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_' || c == '$')
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
+}
+
 // A non-computed "__proto__" key in an object literal sets the prototype instead of
 // creating an own property, so that key is emitted as a computed key.
-fn object_lit_key(key: String) -> PropName {
+fn object_lit_key(key: &str) -> String {
     if key == "__proto__" {
-        return PropName::Computed(ComputedPropName {
-            span: DUMMY_SP,
-            expr: Box::new(string_lit(&key)),
-        });
+        return format!("[{}]", string_lit(key));
     }
-    PropName::Str(Str {
-        span: DUMMY_SP,
-        value: key.into(),
-        raw: None,
-    })
+    if is_ascii_identifier(key) {
+        return key.to_string();
+    }
+    string_lit(key)
 }
 
-fn object_lit(props: Vec<(String, Expr)>) -> Expr {
-    Expr::Object(ObjectLit {
-        span: DUMMY_SP,
-        props: props
-            .into_iter()
-            .map(|(key, value)| {
-                PropOrSpread::Prop(
-                    Prop::KeyValue(KeyValueProp {
-                        key: object_lit_key(key),
-                        value: value.into(),
-                    })
-                    .into(),
-                )
-            })
-            .collect(),
-    })
+fn object_lit(props: Vec<(String, String)>) -> String {
+    let props = props
+        .into_iter()
+        .map(|(key, value)| format!("{}:{value}", object_lit_key(&key)))
+        .collect::<Vec<_>>();
+    format!("{{{}}}", props.join(","))
 }
 
-fn runtype_metadata_arg(schema: &Runtype) -> Expr {
+fn runtype_metadata_arg(schema: &Runtype) -> String {
     match schema.metadata.description.as_ref() {
         Some(description) => object_lit(vec![("description".to_string(), string_lit(description))]),
-        None => Expr::Ident(identifier("undefined")),
+        None => "undefined".to_string(),
     }
 }
 
-fn string_lit(s: &str) -> Expr {
-    Expr::Lit(Lit::Str(Str {
-        span: DUMMY_SP,
-        value: s.into(),
-        raw: None,
-    }))
+/// A double-quoted JavaScript string literal.
+fn string_lit(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            // Line terminators that are legal in a string literal only since ES2019.
+            '\u{2028}' => out.push_str("\\u2028"),
+            '\u{2029}' => out.push_str("\\u2029"),
+            c if c.is_ascii_control() => out.push_str(&format!("\\x{:02x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
 }
 
-fn array_lit(elems: Vec<Expr>) -> Expr {
-    Expr::Array(ArrayLit {
-        span: DUMMY_SP,
-        elems: elems
-            .into_iter()
-            .map(|it| {
-                Some(ExprOrSpread {
-                    spread: None,
-                    expr: it.into(),
-                })
-            })
-            .collect(),
-    })
+fn const_lit(c: &RuntypeConst) -> String {
+    match c {
+        RuntypeConst::Bool(v) => v.to_string(),
+        RuntypeConst::Number(n) => n.to_js_string(),
+    }
 }
 
-fn typeof_runtype(t: &str, original_runtype: &Runtype) -> Expr {
+fn array_lit(elems: Vec<String>) -> String {
+    format!("[{}]", elems.join(","))
+}
+
+fn typeof_runtype(t: &str, original_runtype: &Runtype) -> String {
     new_runtype_class(
         "TypeofRuntype",
         vec![
@@ -386,7 +146,7 @@ fn typeof_runtype(t: &str, original_runtype: &Runtype) -> Expr {
     )
 }
 
-fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext, original_runtype: &Runtype) -> Expr {
+fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext, original_runtype: &Runtype) -> String {
     new_runtype_class(
         "RefRuntype",
         vec![
@@ -397,7 +157,7 @@ fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext, original_runtype: &Runt
     )
 }
 
-fn no_args_runtype(class_name: &str, original_runtype: &Runtype) -> Expr {
+fn no_args_runtype(class_name: &str, original_runtype: &Runtype) -> String {
     new_runtype_class(
         class_name,
         vec![
@@ -412,7 +172,7 @@ fn formats_runtype(
     first: &String,
     rest: &[String],
     original_runtype: &Runtype,
-) -> Expr {
+) -> String {
     let vs_arr = array_lit(
         std::iter::once(first)
             .chain(rest.iter())
@@ -424,7 +184,7 @@ fn formats_runtype(
 
 // Object keys are always strings. A `number` key is printed as a runtype
 // that accepts numeric strings.
-fn print_index_key(key: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
+fn print_index_key(key: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> String {
     match &key.kind {
         RuntypeKind::Number => no_args_runtype("NumberKeyRuntype", key),
         RuntypeKind::AnyOf(vs) if vs.iter().any(|it| matches!(it.kind, RuntypeKind::Number)) => {
@@ -444,11 +204,11 @@ fn runtype_union_or_intersection(
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
     original_runtype: &Runtype,
-) -> Expr {
+) -> String {
     let exprs = vs
         .iter()
         .map(|schema| print_runtype(schema, named_schemas, ctx))
-        .collect::<Vec<Expr>>();
+        .collect::<Vec<String>>();
     new_runtype_class(constructor, vec![array_lit(exprs)], original_runtype)
 }
 
@@ -491,7 +251,7 @@ fn runtype_any_of_discriminated(
     object_vs: Vec<BTreeMap<String, Optionality<Runtype>>>,
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
-) -> Expr {
+) -> String {
     let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
     let dbg_ctx = DebugPrintCtx {
         all_names: &ctx.all_names,
@@ -580,7 +340,7 @@ fn maybe_runtype_any_of_discriminated(
     flat_values: &BTreeSet<Runtype>,
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
-) -> Option<Expr> {
+) -> Option<String> {
     let object_vs = flat_values
         .iter()
         .map(|it| extract_object_shape(it, named_schemas))
@@ -745,7 +505,7 @@ fn maybe_runtype_any_of_consts(
     original_runtype: &Runtype,
     flat_values_set: &BTreeSet<Runtype>,
     ctx: &mut PrintContext,
-) -> Option<Expr> {
+) -> Option<String> {
     let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
     let dbg_ctx = DebugPrintCtx {
         all_names: &ctx.all_names,
@@ -758,12 +518,12 @@ fn maybe_runtype_any_of_consts(
         it.extract_single_string_const().is_some() || matches!(it.kind, RuntypeKind::Const(_))
     });
     if all_consts {
-        let consts: Vec<Expr> = flat_values
+        let consts: Vec<String> = flat_values
             .iter()
             .map(|it| match it.extract_single_string_const() {
-                Some(s) => Json::String(s).into_expr(),
+                Some(s) => string_lit(&s),
                 None => match &it.kind {
-                    RuntypeKind::Const(c) => c.clone().into_json().into_expr(),
+                    RuntypeKind::Const(c) => const_lit(c),
                     _ => unreachable!(),
                 },
             })
@@ -781,20 +541,11 @@ fn maybe_runtype_any_of_consts(
 fn hoist_name(name: usize) -> String {
     format!("direct_hoist_{}", name)
 }
-fn hoist_identifier(name: usize) -> Expr {
-    Expr::Ident(identifier(&hoist_name(name)))
-}
-
-fn optionality_wrapper(inner: Expr) -> Expr {
+fn optionality_wrapper(inner: String) -> String {
     new_runtime_class("OptionalFieldRuntype", vec![inner])
 }
 
-fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
-    let hoist_key = PrintableRuntypeKey::from_runtype(schema);
-    if let Some((var_name, _)) = ctx.hoisted.get(&hoist_key) {
-        return hoist_identifier(*var_name);
-    }
-
+fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> String {
     let out = match &schema.kind {
         RuntypeKind::String => typeof_runtype("string", schema),
         RuntypeKind::Boolean => typeof_runtype("boolean", schema),
@@ -803,9 +554,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         RuntypeKind::Ref(to) => ref_runtype(to, ctx, schema),
         RuntypeKind::Any => no_args_runtype("AnyRuntype", schema),
         RuntypeKind::Never => no_args_runtype("NeverRuntype", schema),
-        RuntypeKind::Const(c) => {
-            new_runtype_class("ConstRuntype", vec![c.clone().into_json().into_expr()], schema)
-        }
+        RuntypeKind::Const(c) => new_runtype_class("ConstRuntype", vec![const_lit(c)], schema),
         RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => {
             formats_runtype("StringWithFormatRuntype", first, rest, schema)
         }
@@ -816,25 +565,16 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         RuntypeKind::BigInt => no_args_runtype("BigIntRuntype", schema),
         RuntypeKind::TypedArray(kind) => new_runtype_class(
             "TypedArrayRuntype",
-            vec![Json::String(kind.js_name().to_string()).into_expr()],
+            vec![string_lit(kind.js_name())],
             schema,
         ),
         RuntypeKind::TplLitType(t) => match t.0.as_slice() {
-            [TplLitTypeItem::StringConst(c)] => new_runtype_class(
-                "ConstRuntype",
-                vec![Json::String(c.clone()).into_expr()],
-                schema,
-            ),
+            [TplLitTypeItem::StringConst(c)] => {
+                new_runtype_class("ConstRuntype", vec![string_lit(c)], schema)
+            }
             _ => new_runtype_class(
                 "RegexRuntype",
-                vec![
-                    Expr::Lit(Lit::Regex(Regex {
-                        span: DUMMY_SP,
-                        exp: t.regex_expr().into(),
-                        flags: "".into(),
-                    })),
-                    string_lit(&t.describe()),
-                ],
+                vec![format!("/{}/", t.regex_expr()), string_lit(&t.describe())],
                 schema,
             ),
         },
@@ -888,12 +628,12 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
             let prefix_item_validators = prefix_items
                 .iter()
                 .map(|it| print_runtype(it, named_schemas, ctx))
-                .collect::<Vec<Expr>>();
+                .collect::<Vec<String>>();
             let prefix_arr = array_lit(prefix_item_validators);
 
             let items = match items {
                 Some(item_schema) => print_runtype(item_schema, named_schemas, ctx),
-                None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
+                None => "null".to_string(),
             };
 
             new_runtype_class("TupleRuntype", vec![prefix_arr, items], schema)
@@ -913,7 +653,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                 mapped.insert(k.clone(), r);
             }
 
-            let indexed_properties_props: Vec<Expr> = indexed_properties
+            let indexed_properties_props: Vec<String> = indexed_properties
                 .iter()
                 .map(|it| {
                     let value_rt = match &it.value {
@@ -950,17 +690,17 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         RuntypeKind::Void => new_runtype_class("NullishRuntype", vec![string_lit("void")], schema),
     };
 
+    // Runtypes that print the same text share one hoisted constant.
     let new_id = ctx.hoisted.len();
-    ctx.hoisted.insert(hoist_key, (new_id, out.clone()));
-    hoist_identifier(new_id)
+    hoist_name(*ctx.hoisted.entry(out).or_insert(new_id))
 }
 
 fn build_parsers_input(
     decs: &[BuiltDecoder],
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
-) -> Expr {
-    let mut validator_exprs: Vec<(String, Expr)> = vec![];
+) -> String {
+    let mut validator_exprs: Vec<(String, String)> = vec![];
     for decoder in decs {
         let validator = print_runtype(&decoder.schema, named_schemas, ctx);
         validator_exprs.push((decoder.exported_name.clone(), validator));
@@ -969,14 +709,14 @@ fn build_parsers_input(
     object_lit(validator_exprs)
 }
 
-fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
-    let mut validator_exprs: Vec<(RuntypeUUID, Expr)> = vec![];
+fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> String {
+    let mut validator_exprs: Vec<(RuntypeUUID, String)> = vec![];
     for named_schema in named_schemas {
         let validator = print_runtype(&named_schema.schema, named_schemas, ctx);
         validator_exprs.push((named_schema.name.clone(), validator));
     }
     // filter out the inlined ones
-    let validator_exprs: Vec<(RuntypeUUID, Expr)> = validator_exprs
+    let validator_exprs: Vec<(RuntypeUUID, String)> = validator_exprs
         .into_iter()
         .filter(|(name, _)| !ctx.inlined.contains(name))
         .collect();
@@ -1001,33 +741,69 @@ impl ParserExtractResult {
             inlined: BTreeSet::new(),
         };
 
-        let build_parsers_input: ModuleItem = const_decl(
+        let build_parsers_input = const_decl(
             "buildParsersInput",
-            build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
+            &build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
         );
 
         let build_named_parsers_input = const_decl(
             "namedRuntypes",
-            named_runtypes(&named_schemas, &mut hoisted),
+            &named_runtypes(&named_schemas, &mut hoisted),
         );
 
-        let mut sorted_direct_hoisted_values = hoisted.hoisted.into_values().collect::<Vec<_>>();
-        sorted_direct_hoisted_values.sort_by_key(|it| it.0);
+        let mut sorted_direct_hoisted_values = hoisted.hoisted.into_iter().collect::<Vec<_>>();
+        sorted_direct_hoisted_values.sort_by_key(|it| it.1);
 
-        let hoisted_direct_decls: Vec<ModuleItem> = sorted_direct_hoisted_values
-            .into_iter()
-            .map(|(id, expr)| const_decl(&hoist_name(id), expr))
-            .collect();
+        let mut code = String::new();
+        for (text, id) in sorted_direct_hoisted_values {
+            code.push_str(&const_decl(&hoist_name(id), &text));
+        }
+        code.push_str(&build_named_parsers_input);
+        code.push_str(&build_parsers_input);
 
-        let module_items = hoisted_direct_decls
-            .into_iter()
-            .chain(vec![
-                //
-                build_named_parsers_input,
-                build_parsers_input,
-            ])
-            .collect();
+        Ok(code)
+    }
+}
 
-        Ok(emit_module_items(module_items)?)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn string_lit_escapes() {
+        assert_eq!(string_lit("a"), r#""a""#);
+        assert_eq!(string_lit(r#"it's "q""#), r#""it's \"q\"""#);
+        assert_eq!(string_lit("a\\b"), r#""a\\b""#);
+        assert_eq!(string_lit("a\nb\r\tc"), r#""a\nb\r\tc""#);
+        assert_eq!(string_lit("\u{0}1\u{8}\u{b}\u{1f}\u{7f}"), r#""\x001\x08\x0b\x1f\x7f""#);
+        assert_eq!(string_lit("\u{2028}\u{2029}"), "\"\\u2028\\u2029\"");
+        assert_eq!(string_lit("é ${x} `😀` */ </script>"), "\"é ${x} `😀` */ </script>\"");
+    }
+
+    #[test]
+    fn object_lit_keys() {
+        let key = |k: &str| object_lit(vec![(k.to_string(), "0".to_string())]);
+        assert_eq!(key("a_$1"), "{a_$1:0}");
+        assert_eq!(key("class"), "{class:0}");
+        assert_eq!(key("__proto__"), r#"{["__proto__"]:0}"#);
+        assert_eq!(key(""), r#"{"":0}"#);
+        assert_eq!(key("1"), r#"{"1":0}"#);
+        assert_eq!(key("1a"), r#"{"1a":0}"#);
+        assert_eq!(key("a-b"), r#"{"a-b":0}"#);
+        assert_eq!(key("a\"b"), r#"{"a\"b":0}"#);
+        assert_eq!(key("é"), r#"{"é":0}"#);
+    }
+
+    #[test]
+    fn const_lit_numbers() {
+        let num = |n: f64| const_lit(&RuntypeConst::parse_f64(n));
+        assert_eq!(num(0.0), "0");
+        assert_eq!(num(-0.0), "0");
+        assert_eq!(num(-1.0), "-1");
+        assert_eq!(num(1.5), "1.5");
+        assert_eq!(num(-0.5), "-0.5");
+        assert_eq!(num(0.000001), "0.000001");
+        assert_eq!(num(9007199254740992.0), "9007199254740992");
+        assert_eq!(const_lit(&RuntypeConst::Bool(true)), "true");
     }
 }

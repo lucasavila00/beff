@@ -69,31 +69,16 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "User");
-const direct_hoist_1 = new AnyOfConstsRuntype(undefined, [
-    "ADMIN",
-    "USER"
-]);
-const direct_hoist_2 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}x${number}`");
-const direct_hoist_3 = new RefRuntype(undefined, "AccessLevel");
-const direct_hoist_4 = new RefRuntype(undefined, "AvatarSize");
-const direct_hoist_5 = new TypeofRuntype(undefined, "function");
-const direct_hoist_6 = new ArrayRuntype(undefined, direct_hoist_0);
-const direct_hoist_7 = new TypeofRuntype(undefined, "string");
-const direct_hoist_8 = new ObjectRuntype(undefined, {
-    "accessLevel": direct_hoist_3,
-    "avatarSize": direct_hoist_4,
-    "extra": direct_hoist_5,
-    "friends": direct_hoist_6,
-    "name": direct_hoist_7
-}, []);
-const namedRuntypes = {
-    "AccessLevel": direct_hoist_1,
-    "AvatarSize": direct_hoist_2,
-    "User": direct_hoist_8
-};
-const buildParsersInput = {
-    "User": direct_hoist_0
-};
+const direct_hoist_0=new RefRuntype(undefined,"User");
+const direct_hoist_1=new AnyOfConstsRuntype(undefined,["ADMIN","USER"]);
+const direct_hoist_2=new RegexRuntype(undefined,/^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/,"`${number}x${number}`");
+const direct_hoist_3=new RefRuntype(undefined,"AccessLevel");
+const direct_hoist_4=new RefRuntype(undefined,"AvatarSize");
+const direct_hoist_5=new TypeofRuntype(undefined,"function");
+const direct_hoist_6=new ArrayRuntype(undefined,direct_hoist_0);
+const direct_hoist_7=new TypeofRuntype(undefined,"string");
+const direct_hoist_8=new ObjectRuntype(undefined,{accessLevel:direct_hoist_3,avatarSize:direct_hoist_4,extra:direct_hoist_5,friends:direct_hoist_6,name:direct_hoist_7},[]);
+const namedRuntypes={AccessLevel:direct_hoist_1,AvatarSize:direct_hoist_2,User:direct_hoist_8};
+const buildParsersInput={User:direct_hoist_0};
 
 export default { buildParsers };

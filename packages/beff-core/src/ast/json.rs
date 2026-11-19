@@ -1,9 +1,3 @@
-
-use swc_common::DUMMY_SP;
-use swc_ecma_ast::{
-    Bool, Expr, Lit, Number, Str,
-};
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct N {
     integral: i64,
@@ -54,7 +48,6 @@ impl N {
 pub(crate) enum Json {
     Bool(bool),
     Number(N),
-    String(String),
 }
 
 impl Json {
@@ -62,32 +55,12 @@ impl Json {
         match self {
             Json::Bool(b) => serde_json::Value::Bool(*b),
             Json::Number(n) => n.to_serde(),
-            Json::String(s) => serde_json::Value::String(s.clone()),
         }
     }
 
     pub(crate) fn debug_print(&self) -> String {
         serde_json::to_string_pretty(&self.to_serde())
             .expect("should be possible to serialize json")
-    }
-
-    pub(crate) fn into_expr(self) -> Expr {
-        match self {
-            Json::Bool(v) => Expr::Lit(Lit::Bool(Bool {
-                span: DUMMY_SP,
-                value: v,
-            })),
-            Json::Number(n) => Expr::Lit(Lit::Num(Number {
-                span: DUMMY_SP,
-                value: n.to_f64(),
-                raw: None,
-            })),
-            Json::String(v) => Expr::Lit(Lit::Str(Str {
-                span: DUMMY_SP,
-                value: v.into(),
-                raw: None,
-            })),
-        }
     }
 }
 

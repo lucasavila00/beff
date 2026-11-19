@@ -69,29 +69,13 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "User");
-const direct_hoist_1 = new TypeofRuntype(undefined, "number");
-const direct_hoist_2 = new TypeofRuntype(undefined, "string");
-const direct_hoist_3 = new ObjectRuntype(undefined, {
-    "data1": direct_hoist_1,
-    "data2": direct_hoist_2
-}, []);
-const direct_hoist_4 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_2,
-        "value": direct_hoist_2
-    }
-]);
-const direct_hoist_5 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_2
-}, []);
-const namedRuntypes = {
-    "User": direct_hoist_3,
-    "X": direct_hoist_4,
-    "Y": direct_hoist_5
-};
-const buildParsersInput = {
-    "User": direct_hoist_0
-};
+const direct_hoist_0=new RefRuntype(undefined,"User");
+const direct_hoist_1=new TypeofRuntype(undefined,"number");
+const direct_hoist_2=new TypeofRuntype(undefined,"string");
+const direct_hoist_3=new ObjectRuntype(undefined,{data1:direct_hoist_1,data2:direct_hoist_2},[]);
+const direct_hoist_4=new ObjectRuntype(undefined,{},[{key:direct_hoist_2,value:direct_hoist_2}]);
+const direct_hoist_5=new ObjectRuntype(undefined,{a:direct_hoist_2},[]);
+const namedRuntypes={User:direct_hoist_3,X:direct_hoist_4,Y:direct_hoist_5};
+const buildParsersInput={User:direct_hoist_0};
 
 export default { buildParsers };

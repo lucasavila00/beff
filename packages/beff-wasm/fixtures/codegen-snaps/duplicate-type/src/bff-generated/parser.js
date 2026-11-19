@@ -69,31 +69,17 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "UserObj");
-const direct_hoist_1 = new RefRuntype(undefined, "UserList");
-const direct_hoist_2 = new TypeofRuntype(undefined, "string");
-const direct_hoist_3 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_2
-}, []);
-const direct_hoist_4 = new RefRuntype(undefined, "parser_ts__User");
-const direct_hoist_5 = new ObjectRuntype(undefined, {
-    "x": direct_hoist_4
-}, []);
-const direct_hoist_6 = new TypeofRuntype(undefined, "number");
-const direct_hoist_7 = new ObjectRuntype(undefined, {
-    "b": direct_hoist_6
-}, []);
-const direct_hoist_8 = new RefRuntype(undefined, "types_ts__User");
-const direct_hoist_9 = new ArrayRuntype(undefined, direct_hoist_8);
-const namedRuntypes = {
-    "parser_ts__User": direct_hoist_3,
-    "UserObj": direct_hoist_5,
-    "types_ts__User": direct_hoist_7,
-    "UserList": direct_hoist_9
-};
-const buildParsersInput = {
-    "UserObj": direct_hoist_0,
-    "UserList": direct_hoist_1
-};
+const direct_hoist_0=new RefRuntype(undefined,"UserObj");
+const direct_hoist_1=new RefRuntype(undefined,"UserList");
+const direct_hoist_2=new TypeofRuntype(undefined,"string");
+const direct_hoist_3=new ObjectRuntype(undefined,{a:direct_hoist_2},[]);
+const direct_hoist_4=new RefRuntype(undefined,"parser_ts__User");
+const direct_hoist_5=new ObjectRuntype(undefined,{x:direct_hoist_4},[]);
+const direct_hoist_6=new TypeofRuntype(undefined,"number");
+const direct_hoist_7=new ObjectRuntype(undefined,{b:direct_hoist_6},[]);
+const direct_hoist_8=new RefRuntype(undefined,"types_ts__User");
+const direct_hoist_9=new ArrayRuntype(undefined,direct_hoist_8);
+const namedRuntypes={parser_ts__User:direct_hoist_3,UserObj:direct_hoist_5,types_ts__User:direct_hoist_7,UserList:direct_hoist_9};
+const buildParsersInput={UserObj:direct_hoist_0,UserList:direct_hoist_1};
 
 export default { buildParsers };

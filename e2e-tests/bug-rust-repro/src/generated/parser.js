@@ -69,19 +69,11 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "T");
-const direct_hoist_1 = new RefRuntype(undefined, "A");
-const direct_hoist_2 = new TypeofRuntype(undefined, "string");
-const direct_hoist_3 = new ObjectRuntype(undefined, {
-    "value": direct_hoist_2
-}, []);
-const namedRuntypes = {
-    "A": direct_hoist_2,
-    "T": direct_hoist_3
-};
-const buildParsersInput = {
-    "T": direct_hoist_0,
-    "A": direct_hoist_1
-};
+const direct_hoist_0=new RefRuntype(undefined,"T");
+const direct_hoist_1=new RefRuntype(undefined,"A");
+const direct_hoist_2=new TypeofRuntype(undefined,"string");
+const direct_hoist_3=new ObjectRuntype(undefined,{value:direct_hoist_2},[]);
+const namedRuntypes={A:direct_hoist_2,T:direct_hoist_3};
+const buildParsersInput={T:direct_hoist_0,A:direct_hoist_1};
 
 export default { buildParsers };
