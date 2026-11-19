@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, NumberKeyRuntype, TypeofRuntype } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, num, numKey } from "../src/codegen-v2.js";
 
-const NumberKey = buildParserFromRuntype(new NumberKeyRuntype(undefined), "NumberKey", true);
-const NumberType = buildParserFromRuntype(new TypeofRuntype(undefined, "number"), "Number", true);
+const NumberKey = buildParserFromRuntype(numKey(), "NumberKey", true);
+const NumberType = buildParserFromRuntype(num(), "Number", true);
 
-describe("NumberKeyRuntype", () => {
+describe("numKey", () => {
   it("accepts numeric strings", () => {
     for (const key of ["0", "1", "-1", "1.5", "1e+21", "1e-7"]) {
       expect(NumberKey.validate(key)).toBe(true);

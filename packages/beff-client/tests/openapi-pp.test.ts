@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import { b, createNamedType, overrideNamedType } from "../src/index.js";
 import { removeNullUnionBranch } from "../src/openapi-pp.js";
 import {
-  AllOfRuntype,
-  AnyOfDiscriminatedRuntype,
-  BaseRefRuntype,
-  ConstRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
+  allOf,
+  define,
+  disc,
+  doc,
+  lit,
+  num,
+  obj,
+  opt,
+  ref,
+  type Registry,
   SchemaPrintingContext,
-  TypeofRuntype,
+  str,
 } from "../src/codegen-v2.js";
 
 describe("removeNullUnionBranch", () => {
@@ -75,13 +79,7 @@ describe("removeNullUnionBranch", () => {
 
 describe("discriminated union schemas", () => {
   it("prints runtype metadata descriptions in both schema modes", () => {
-    const schema = new ObjectRuntype(
-      { description: "User payload." },
-      {
-        id: new TypeofRuntype({ description: "Stable user id." }, "string"),
-      },
-      [],
-    );
+    const schema = doc(obj({ id: doc(str(), "Stable user id.") }), "User payload.");
     const printingContext = new SchemaPrintingContext({
       refPathTemplate: "#/components/schemas/{name}",
       definitionContainerKey: null,
@@ -105,13 +103,7 @@ describe("discriminated union schemas", () => {
   });
 
   it("prints runtype metadata descriptions in TypeScript descriptions", () => {
-    const schema = new ObjectRuntype(
-      { description: "User payload." },
-      {
-        id: new TypeofRuntype({ description: "Stable user id." }, "string"),
-      },
-      [],
-    );
+    const schema = doc(obj({ id: doc(str(), "Stable user id.") }), "User payload.");
 
     expect(schema.describe({ measure: false, deps: {}, deps_counter: {} })).toMatchInlineSnapshot(`
       {
@@ -125,50 +117,32 @@ describe("discriminated union schemas", () => {
   });
 
   it("preserves explicit discriminators on discriminated unions", () => {
-    const named = {
-      CronSource: new ObjectRuntype(
-        undefined,
-        {
-          type: new ConstRuntype(undefined, "CRON"),
-          schedule: new TypeofRuntype(undefined, "string"),
-        },
-        [],
-      ),
-      EventSource: new ObjectRuntype(
-        undefined,
-        {
-          type: new ConstRuntype(undefined, "EVENT"),
-          eventName: new TypeofRuntype(undefined, "string"),
-        },
-        [],
-      ),
-    };
+    const named: Registry = new Map();
+    define(named, {
+      CronSource: obj({
+        type: lit("CRON"),
+        schedule: str(),
+      }),
+      EventSource: obj({
+        type: lit("EVENT"),
+        eventName: str(),
+      }),
+    });
 
-    class TestRefRuntype extends BaseRefRuntype {
-      getNamedRuntypes() {
-        return named;
-      }
-    }
-
-    const cron = new TestRefRuntype(undefined, "CronSource");
-    const event = new TestRefRuntype(undefined, "EventSource");
+    const cron = ref(named, "CronSource");
+    const event = ref(named, "EventSource");
     const printingContext = new SchemaPrintingContext({
       refPathTemplate: "#/components/schemas/{name}",
       definitionContainerKey: null,
     });
 
-    const schema = new AnyOfDiscriminatedRuntype(
-      undefined,
-      [cron, event],
+    const schema = disc(
       "type",
       {
         EVENT: event,
         CRON: cron,
       },
-      {
-        EVENT: event,
-        CRON: cron,
-      },
+      [cron, event],
     ).schema({
       path: [],
       seen: {},
@@ -199,39 +173,26 @@ describe("discriminated union schemas", () => {
   });
 
   it("creates synthetic refs for inline discriminated union variants", () => {
-    const cron = new ObjectRuntype(
-      undefined,
-      {
-        type: new ConstRuntype(undefined, "CRON"),
-        schedule: new TypeofRuntype(undefined, "string"),
-      },
-      [],
-    );
-    const event = new ObjectRuntype(
-      undefined,
-      {
-        type: new ConstRuntype(undefined, "EVENT"),
-        eventName: new TypeofRuntype(undefined, "string"),
-      },
-      [],
-    );
+    const cron = obj({
+      type: lit("CRON"),
+      schedule: str(),
+    });
+    const event = obj({
+      type: lit("EVENT"),
+      eventName: str(),
+    });
     const printingContext = new SchemaPrintingContext({
       refPathTemplate: "#/components/schemas/{name}",
       definitionContainerKey: null,
     });
 
-    const schema = new AnyOfDiscriminatedRuntype(
-      undefined,
-      [cron, event],
+    const schema = disc(
       "type",
       {
         EVENT: event,
         CRON: cron,
       },
-      {
-        EVENT: event,
-        CRON: cron,
-      },
+      [cron, event],
     ).schema({
       path: [],
       seen: {},
@@ -271,18 +232,14 @@ describe("discriminated union schemas", () => {
 
 describe("allOf object schema merging", () => {
   it("prints closed object intersections as one object schema", () => {
-    const schema = new AllOfRuntype(undefined, [
-      new ObjectRuntype(undefined, { key: new ConstRuntype(undefined, "stock_picker") }, []),
-      new ObjectRuntype(
-        undefined,
-        {
-          trainingEndDate: new TypeofRuntype(undefined, "string"),
-          evaluationStartDate: new TypeofRuntype(undefined, "string"),
-          evaluationEndDate: new TypeofRuntype(undefined, "string"),
-          optionalNote: new OptionalFieldRuntype(new TypeofRuntype(undefined, "string")),
-        },
-        [],
-      ),
+    const schema = allOf([
+      obj({ key: lit("stock_picker") }),
+      obj({
+        trainingEndDate: str(),
+        evaluationStartDate: str(),
+        evaluationEndDate: str(),
+        optionalNote: opt(str()),
+      }),
     ]).schema({
       path: [],
       seen: {},
@@ -321,10 +278,7 @@ describe("allOf object schema merging", () => {
   });
 
   it("merges duplicate properties with identical schemas", () => {
-    const schema = new AllOfRuntype(undefined, [
-      new ObjectRuntype(undefined, { key: new TypeofRuntype(undefined, "string") }, []),
-      new ObjectRuntype(undefined, { key: new TypeofRuntype(undefined, "string") }, []),
-    ]).schema({
+    const schema = allOf([obj({ key: str() }), obj({ key: str() })]).schema({
       path: [],
       seen: {},
       mode: "flat",
@@ -343,10 +297,7 @@ describe("allOf object schema merging", () => {
   });
 
   it("falls back to allOf for duplicate properties with incompatible schemas", () => {
-    const schema = new AllOfRuntype(undefined, [
-      new ObjectRuntype(undefined, { key: new TypeofRuntype(undefined, "string") }, []),
-      new ObjectRuntype(undefined, { key: new TypeofRuntype(undefined, "number") }, []),
-    ]).schema({
+    const schema = allOf([obj({ key: str() }), obj({ key: num() })]).schema({
       path: [],
       seen: {},
       mode: "flat",
@@ -379,10 +330,7 @@ describe("allOf object schema merging", () => {
   });
 
   it("falls back to allOf for non-object intersections", () => {
-    const schema = new AllOfRuntype(undefined, [
-      new ObjectRuntype(undefined, { key: new TypeofRuntype(undefined, "string") }, []),
-      new TypeofRuntype(undefined, "string"),
-    ]).schema({
+    const schema = allOf([obj({ key: str() }), str()]).schema({
       path: [],
       seen: {},
       mode: "flat",
@@ -408,12 +356,7 @@ describe("allOf object schema merging", () => {
   });
 
   it("falls back to allOf for indexed object schemas", () => {
-    const schema = new AllOfRuntype(undefined, [
-      new ObjectRuntype(undefined, { key: new TypeofRuntype(undefined, "string") }, []),
-      new ObjectRuntype(undefined, {}, [
-        { key: new TypeofRuntype(undefined, "string"), value: new TypeofRuntype(undefined, "number") },
-      ]),
-    ]).schema({
+    const schema = allOf([obj({ key: str() }), obj({}, [{ key: str(), value: num() }])]).schema({
       path: [],
       seen: {},
       mode: "flat",

@@ -1,15 +1,19 @@
 import {
-  AnyOfRuntype,
-  AnyRuntype,
-  ArrayRuntype,
+  any,
+  arr,
+  bool,
   buildParserFromRuntype,
-  ConstRuntype,
-  DateRuntype,
-  NullishRuntype,
-  ObjectRuntype,
+  date,
+  lit,
+  nul,
+  num,
+  obj,
   Runtype,
-  TypedArrayRuntype,
-  TypeofRuntype,
+  str,
+  typedArray,
+  undef,
+  union,
+  voidType,
 } from "./codegen-v2.js";
 import { BeffParser } from "./types.js";
 
@@ -22,112 +26,60 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
   for (const key of Object.keys(fields)) {
     props[key] = (fields[key] as any)._runtype;
   }
-  return buildParserFromRuntype(new ObjectRuntype(undefined, props, []), "b.Object", true);
+  return buildParserFromRuntype(obj(props), "b.Object", true);
 };
-const stringParser = buildParserFromRuntype(new TypeofRuntype(undefined, "string"), "String", true);
+const stringParser = buildParserFromRuntype(str(), "String", true);
 const String_ = (): BeffParser<string> => stringParser;
 
-const numberParser = buildParserFromRuntype(new TypeofRuntype(undefined, "number"), "Number", true);
+const numberParser = buildParserFromRuntype(num(), "Number", true);
 const Number_ = (): BeffParser<number> => numberParser;
 
-const booleanParser = buildParserFromRuntype(new TypeofRuntype(undefined, "boolean"), "Boolean", true);
+const booleanParser = buildParserFromRuntype(bool(), "Boolean", true);
 const Boolean_ = (): BeffParser<boolean> => booleanParser;
 
-const undefinedParser = buildParserFromRuntype(new NullishRuntype(undefined, "undefined"), "Undefined", true);
+const undefinedParser = buildParserFromRuntype(undef(), "Undefined", true);
 const Undefined_ = (): BeffParser<undefined> => undefinedParser;
 
-const voidParser = buildParserFromRuntype(new NullishRuntype(undefined, "void"), "Void", true);
+const voidParser = buildParserFromRuntype(voidType(), "Void", true);
 const Void_ = (): BeffParser<void> => voidParser;
 
-const nullParser = buildParserFromRuntype(new NullishRuntype(undefined, "null"), "Null", true);
+const nullParser = buildParserFromRuntype(nul(), "Null", true);
 const Null_ = (): BeffParser<null> => nullParser;
 
-const anyParser = buildParserFromRuntype(new AnyRuntype(undefined), "Any", true);
+const anyParser = buildParserFromRuntype(any(), "Any", true);
 const Any_ = (): BeffParser<any> => anyParser;
 
-const unknwonParser = buildParserFromRuntype(new AnyRuntype(undefined), "Unknown", true);
+const unknwonParser = buildParserFromRuntype(any(), "Unknown", true);
 const Unknown_ = (): BeffParser<unknown> => unknwonParser;
 
-const dateParser = buildParserFromRuntype(new DateRuntype(undefined), "Date", true);
+const dateParser = buildParserFromRuntype(date(), "Date", true);
 const Date_ = (): BeffParser<Date> => dateParser;
 
-const uint8ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Uint8Array"),
-  "Uint8Array",
-  true,
-);
-const Uint8Array_ = (): BeffParser<Uint8Array> => uint8ArrayParser;
-const uint8ClampedArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Uint8ClampedArray"),
-  "Uint8ClampedArray",
-  true,
-);
-const Uint8ClampedArray_ = (): BeffParser<Uint8ClampedArray> => uint8ClampedArrayParser;
-const uint16ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Uint16Array"),
-  "Uint16Array",
-  true,
-);
-const Uint16Array_ = (): BeffParser<Uint16Array> => uint16ArrayParser;
-const uint32ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Uint32Array"),
-  "Uint32Array",
-  true,
-);
-const Uint32Array_ = (): BeffParser<Uint32Array> => uint32ArrayParser;
-const int8ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Int8Array"),
-  "Int8Array",
-  true,
-);
-const Int8Array_ = (): BeffParser<Int8Array> => int8ArrayParser;
-const int16ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Int16Array"),
-  "Int16Array",
-  true,
-);
-const Int16Array_ = (): BeffParser<Int16Array> => int16ArrayParser;
-const int32ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Int32Array"),
-  "Int32Array",
-  true,
-);
-const Int32Array_ = (): BeffParser<Int32Array> => int32ArrayParser;
-const float32ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Float32Array"),
-  "Float32Array",
-  true,
-);
-const Float32Array_ = (): BeffParser<Float32Array> => float32ArrayParser;
-const float64ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "Float64Array"),
-  "Float64Array",
-  true,
-);
-const Float64Array_ = (): BeffParser<Float64Array> => float64ArrayParser;
-const bigInt64ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "BigInt64Array"),
-  "BigInt64Array",
-  true,
-);
-const BigInt64Array_ = (): BeffParser<BigInt64Array> => bigInt64ArrayParser;
-const bigUint64ArrayParser = buildParserFromRuntype(
-  new TypedArrayRuntype(undefined, "BigUint64Array"),
-  "BigUint64Array",
-  true,
-);
-const BigUint64Array_ = (): BeffParser<BigUint64Array> => bigUint64ArrayParser;
+const typedArrayParser = <T>(ctorName: string) => {
+  const parser: BeffParser<T> = buildParserFromRuntype(typedArray(ctorName), ctorName, true);
+  return () => parser;
+};
+const Uint8Array_ = typedArrayParser<Uint8Array>("Uint8Array");
+const Uint8ClampedArray_ = typedArrayParser<Uint8ClampedArray>("Uint8ClampedArray");
+const Uint16Array_ = typedArrayParser<Uint16Array>("Uint16Array");
+const Uint32Array_ = typedArrayParser<Uint32Array>("Uint32Array");
+const Int8Array_ = typedArrayParser<Int8Array>("Int8Array");
+const Int16Array_ = typedArrayParser<Int16Array>("Int16Array");
+const Int32Array_ = typedArrayParser<Int32Array>("Int32Array");
+const Float32Array_ = typedArrayParser<Float32Array>("Float32Array");
+const Float64Array_ = typedArrayParser<Float64Array>("Float64Array");
+const BigInt64Array_ = typedArrayParser<BigInt64Array>("BigInt64Array");
+const BigUint64Array_ = typedArrayParser<BigUint64Array>("BigUint64Array");
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
-  buildParserFromRuntype(new ArrayRuntype(undefined, (parser as any)._runtype), "b.Array", true);
+  buildParserFromRuntype(arr((parser as any)._runtype), "b.Array", true);
 
 const ReadOnlyArray_ = <T>(parser: BeffParser<T>): BeffParser<readonly T[]> =>
   Array_(parser) as BeffParser<readonly T[]>;
 
 const Const_ = <const T extends string | number | boolean>(value: T): BeffParser<T> => {
-  return buildParserFromRuntype(new ConstRuntype(undefined, value), `b.Const`, true) as BeffParser<T>;
+  return buildParserFromRuntype(lit(value), `b.Const`, true) as BeffParser<T>;
 };
-
 export const b = {
   Object: Object_,
   String: String_,
@@ -157,7 +109,7 @@ export const b = {
 
 const UnionUntyped_ = (...parsers: BeffParser<any>[]): BeffParser<any> => {
   const rts = parsers.map((p) => (p as any)._runtype);
-  return buildParserFromRuntype(new AnyOfRuntype(undefined, rts), "b.UnionUntyped", true);
+  return buildParserFromRuntype(union(rts), "b.UnionUntyped", true);
 };
 export const buntyped = {
   Union: UnionUntyped_,

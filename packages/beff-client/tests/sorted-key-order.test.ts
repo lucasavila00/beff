@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, ObjectRuntype, TypeofRuntype } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, num, obj, str } from "../src/codegen-v2.js";
 
-const Counts = buildParserFromRuntype(
-  new ObjectRuntype(undefined, {}, [
-    { key: new TypeofRuntype(undefined, "string"), value: new TypeofRuntype(undefined, "number") },
-  ]),
-  "Counts",
-  false,
-);
+const Counts = buildParserFromRuntype(obj({}, [{ key: str(), value: num() }]), "Counts", false);
 
 describe('objectKeyOrder: "sorted"', () => {
   it("keeps keys named like Object.prototype members", () => {

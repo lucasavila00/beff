@@ -1,29 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-  AnyOfRuntype,
-  buildParserFromRuntype,
-  MapRuntype,
-  NullishRuntype,
-  ObjectRuntype,
-  SetRuntype,
-  TypeofRuntype,
-} from "../src/codegen-v2.js";
-
-const str = new TypeofRuntype(undefined, "string");
-const num = new TypeofRuntype(undefined, "number");
-const nul = new NullishRuntype(undefined, "null");
+import { buildParserFromRuntype, map, nul, num, obj, set, str, union } from "../src/codegen-v2.js";
 
 describe("parse of a union", () => {
   it("keeps Map and Set values when one member matches", () => {
     const Cache = buildParserFromRuntype(
-      new AnyOfRuntype(undefined, [
-        new ObjectRuntype(
-          undefined,
-          { tags: new SetRuntype(undefined, str), byId: new MapRuntype(undefined, str, num) },
-          [],
-        ),
-        nul,
-      ]),
+      union([obj({ tags: set(str()), byId: map(str(), num()) }), nul()]),
       "Cache",
       false,
     );
@@ -37,14 +18,7 @@ describe("parse of a union", () => {
 
   it("keeps Map and Set values when many members match", () => {
     const Both = buildParserFromRuntype(
-      new AnyOfRuntype(undefined, [
-        new ObjectRuntype(undefined, { m: new MapRuntype(undefined, str, num) }, []),
-        new ObjectRuntype(
-          undefined,
-          { m: new MapRuntype(undefined, str, num), s: new SetRuntype(undefined, str) },
-          [],
-        ),
-      ]),
+      union([obj({ m: map(str(), num()) }), obj({ m: map(str(), num()), s: set(str()) })]),
       "Both",
       false,
     );
@@ -55,23 +29,15 @@ describe("parse of a union", () => {
   });
 
   it("keeps keys named like Object.prototype members", () => {
-    const record = new ObjectRuntype(undefined, {}, [{ key: str, value: num }]);
-    const MaybeCounts = buildParserFromRuntype(
-      new AnyOfRuntype(undefined, [record, nul]),
-      "MaybeCounts",
-      false,
-    );
+    const record = obj({}, [{ key: str(), value: num() }]);
+    const MaybeCounts = buildParserFromRuntype(union([record, nul()]), "MaybeCounts", false);
     expect(MaybeCounts.parse({ constructor: 1, prototype: 2, a: 3 })).toEqual({
       constructor: 1,
       prototype: 2,
       a: 3,
     });
 
-    const TwoRecords = buildParserFromRuntype(
-      new AnyOfRuntype(undefined, [record, record]),
-      "TwoRecords",
-      false,
-    );
+    const TwoRecords = buildParserFromRuntype(union([record, record]), "TwoRecords", false);
     const out: any = TwoRecords.parse({ constructor: 1, prototype: 2, a: 3 });
     expect(Object.getPrototypeOf(out)).toBe(Object.prototype);
     expect(out).toEqual({ constructor: 1, prototype: 2, a: 3 });

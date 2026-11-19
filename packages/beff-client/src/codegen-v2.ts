@@ -24,7 +24,7 @@ import {
   mapHash,
   setHash,
 } from "./hash.js";
-import { JSONSchema7, JSONSchema7Definition } from "./json-schema.js";
+import { JSONSchema7, JSONSchema7Definition, JSONSchema7TypeName } from "./json-schema.js";
 import { removeNullUnionBranch } from "./openapi-pp.js";
 import { printErrors } from "./err.js";
 export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
@@ -285,15 +285,16 @@ function buildError(ctx: { path: string[] }, message: string, received: unknown)
 }
 // Reports the errors of the child value at `key`, if it is invalid.
 function reportAtPath(
-  ctx: ReportContext,
+  ctx: Ctx,
   acc: DecodeError[],
   key: string,
-  runtype: Runtype,
+  v: Validate,
+  r: Report,
   input: unknown,
 ): void {
-  if (!runtype.validate(ctx, input)) {
+  if (!v(ctx, input)) {
     pushPath(ctx, key);
-    acc.push(...runtype.reportDecodeError(ctx, input));
+    acc.push(...r(ctx, input));
     popPath(ctx);
   }
 }
@@ -504,38 +505,33 @@ type SchemaContext = {
   printingContext?: SchemaPrintingContext;
 };
 
-type ValidateContext = {
+type Ctx = {
   disallowExtraProperties: boolean;
+  objectKeyOrder: "input" | "sorted";
   // The input an intersection is checking. Its members leave the keys of this input they do not know to the
   // intersection: another member may know them.
-  intersectionInput?: unknown;
-};
-
-type ParseContext = ValidateContext & {
-  objectKeyOrder: "input" | "sorted";
-};
-
-type ReportContext = ValidateContext & {
+  intersectionInput: unknown;
   path: string[];
 };
 
+// Every call creates the context with all its fields, so that its shape never changes.
+function newCtx(options: ParseOptions | undefined): Ctx {
+  return {
+    disallowExtraProperties: options?.disallowExtraProperties ?? false,
+    objectKeyOrder: options?.objectKeyOrder ?? "input",
+    intersectionInput: undefined,
+    path: [],
+  };
+}
+
 // Should an intersection check the extra properties of this input against the keys of all its members?
-function intersectionChecksExtraProperties(ctx: ValidateContext, input: unknown): boolean {
+function intersectionChecksExtraProperties(ctx: Ctx, input: unknown): boolean {
   return (
     ctx.disallowExtraProperties &&
     typeof input === "object" &&
     input !== null &&
     ctx.intersectionInput !== input
   );
-}
-
-// Run the members of an intersection on its input.
-function withIntersectionInput<T>(ctx: ValidateContext, input: unknown, f: () => T): T {
-  const old = ctx.intersectionInput;
-  ctx.intersectionInput = input;
-  const result = f();
-  ctx.intersectionInput = old;
-  return result;
 }
 
 type HashContext = {
@@ -548,29 +544,92 @@ type Hash256Context = {
   nextCycleId: number;
 };
 
-export interface Runtype {
-  describe(ctx: DescribeContext): TypeDescription;
-  describeChildren(): Runtype[];
-  schema(ctx: SchemaContext): JSONSchema7;
-  hash(ctx: HashContext): number;
-  hash256(ctx: Hash256Context): void;
-  validate(ctx: ValidateContext, input: unknown): boolean;
-  parseAfterValidation(ctx: ParseContext, input: any): unknown;
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
-}
+type Validate = (c: Ctx, i: any) => boolean;
+type Parse = (c: Ctx, i: any) => any;
+type Report = (c: Ctx, i: any) => DecodeError[];
 
-export type RuntypeMetadata = {
-  description?: string;
+// What `t` says about a node, where other nodes need to know it.
+const T_OPT = 1;
+const T_NEVER = 2;
+const T_ANY = 3;
+const T_REF = 4;
+
+// A node of a parser. Every builder below returns one, and all nodes have the same fields.
+export type Runtype = {
+  t: number;
+  // Is the input valid?
+  v: Validate;
+  // Parse an input that `v` accepted.
+  p: Parse;
+  // The errors of an input that `v` rejected.
+  r: Report;
+  describe: (ctx: DescribeContext) => TypeDescription;
+  schema: (ctx: SchemaContext) => JSONSchema7;
+  hash: (ctx: HashContext) => number;
+  hash256: (ctx: Hash256Context) => void;
+  // The name of the type a ref points to.
+  name: string | undefined;
+  // The child nodes. A ref has one child, the type it points to now.
+  kids: () => Runtype[];
 };
 
-function annotateSchema<T extends JSONSchema7>(metadata: RuntypeMetadata | undefined, schema: T): T {
-  if (metadata?.description == null) {
-    return schema;
-  }
+const noKids = (): Runtype[] => [];
+const same: Parse = (_c, i) => i;
+
+function node(
+  t: number,
+  v: Validate,
+  p: Parse,
+  r: Report,
+  describe: Runtype["describe"],
+  schema: Runtype["schema"],
+  hash: Runtype["hash"],
+  hash256: Runtype["hash256"],
+  kids: () => Runtype[],
+): Runtype {
   return {
-    ...schema,
-    description: metadata.description,
+    t,
+    v,
+    p,
+    r,
+    describe,
+    schema,
+    hash,
+    hash256,
+    name: undefined,
+    kids,
   };
+}
+
+// A node without children. Parsing returns the input.
+function leaf(
+  t: number,
+  v: Validate,
+  message: string,
+  typeExpr: string,
+  schema: Runtype["schema"],
+  hash: Runtype["hash"],
+  hash256: Runtype["hash256"],
+): Runtype {
+  return node(
+    t,
+    v,
+    same,
+    (c, i) => buildError(c, message, i),
+    () => ({ typeExpr }),
+    schema,
+    hash,
+    hash256,
+    noKids,
+  );
+}
+
+// Adds a description to a node. It replaces the node's own doc text, and it is added to its schema.
+export function doc(n: Runtype, description: string): Runtype {
+  const { describe, schema } = n;
+  n.describe = (ctx) => ({ typeExpr: describe(ctx).typeExpr, docText: description });
+  n.schema = (ctx) => ({ ...schema(ctx), description });
+  return n;
 }
 
 function jsdocDescription(description: string): string {
@@ -580,38 +639,6 @@ function jsdocDescription(description: string): string {
     return `/** ${lines[0]} */`;
   }
   return ["/**", ...lines.map((line) => ` * ${line}`), " */"].join("\n");
-}
-
-function typeDescription(typeExpr: string, docText?: string): TypeDescription {
-  if (docText == null) {
-    return { typeExpr };
-  }
-  return { typeExpr, docText };
-}
-
-abstract class BaseRuntype implements Runtype {
-  protected metadata: RuntypeMetadata | undefined;
-
-  constructor(metadata: RuntypeMetadata | undefined) {
-    this.metadata = metadata;
-  }
-
-  describe(ctx: DescribeContext): TypeDescription {
-    return typeDescription(this.describeTypeExpr(ctx), this.metadata?.description);
-  }
-
-  describeChildren(): Runtype[] {
-    return [];
-  }
-
-  protected abstract describeTypeExpr(ctx: DescribeContext): string;
-
-  abstract schema(ctx: SchemaContext): JSONSchema7;
-  abstract hash(ctx: HashContext): number;
-  abstract hash256(ctx: Hash256Context): void;
-  abstract validate(ctx: ValidateContext, input: unknown): boolean;
-  abstract parseAfterValidation(ctx: ParseContext, input: any): unknown;
-  abstract reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
 }
 
 function describeTypeExpr(ctx: DescribeContext, runtype: Runtype): string {
@@ -644,7 +671,7 @@ function describeObjectMember(
   key: string,
   value: Runtype,
 ): { docText?: string; member: string } {
-  const optionalMark = value instanceof OptionalFieldRuntype ? "?" : "";
+  const optionalMark = value.t === T_OPT ? "?" : "";
   const description = value.describe(ctx);
 
   return {
@@ -667,171 +694,111 @@ function renderObjectMember(member: { docText?: string; member: string }): strin
 }
 
 function collectDescribeRefs(runtype: Runtype, ctx: DescribeContext): void {
-  if (runtype instanceof BaseRefRuntype) {
-    runtype.collectDescribeRefs(ctx);
+  if (runtype.t === T_REF) {
+    const name = runtype.name!;
+    ctx.refCounts[name] = (ctx.refCounts[name] || 0) + 1;
+    if (ctx.activeRefs.has(name)) {
+      return;
+    }
+    if (ctx.visitedRefs.has(name)) {
+      return;
+    }
+
+    ctx.visitedRefs.add(name);
+    ctx.activeRefs.add(name);
+    collectDescribeRefs(runtype.kids()[0], ctx);
+    ctx.activeRefs.delete(name);
     return;
   }
 
-  for (const child of runtype.describeChildren()) {
+  for (const child of runtype.kids()) {
     collectDescribeRefs(child, ctx);
   }
 }
 
-type TypeOfSupported = "string" | "number" | "boolean";
-export class TypeofRuntype extends BaseRuntype {
-  private typeName: TypeOfSupported;
+const hash256Tag =
+  (tag: string): Runtype["hash256"] =>
+  (ctx) =>
+    ctx.writer.updateTag(tag);
 
-  constructor(metadata: RuntypeMetadata | undefined, typeName: TypeOfSupported) {
-    super(metadata);
-    this.typeName = typeName;
-  }
-
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return this.typeName;
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    return annotateSchema(this.metadata, { type: this.typeName });
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return typeof input === this.typeName;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected " + this.typeName, input);
-  }
-  hash(_ctx: HashContext): number {
-    switch (this.typeName) {
-      case "string":
-        return stringHash;
-      case "number":
-        return numberHash;
-      case "boolean":
-        return booleanHash;
-    }
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("typeof");
-    ctx.writer.updateString(this.typeName);
-  }
+function typeOf(typeName: string, v: Validate, hash: number): Runtype {
+  return leaf(
+    0,
+    v,
+    "expected " + typeName,
+    typeName,
+    () => ({ type: typeName as JSONSchema7TypeName }),
+    () => hash,
+    (ctx) => {
+      ctx.writer.updateTag("typeof");
+      ctx.writer.updateString(typeName);
+    },
+  );
 }
+export const str = (): Runtype => typeOf("string", (_c, i) => typeof i === "string", stringHash);
+export const num = (): Runtype => typeOf("number", (_c, i) => typeof i === "number", numberHash);
+export const bool = (): Runtype => typeOf("boolean", (_c, i) => typeof i === "boolean", booleanHash);
+// A function type has never had a hash of its own.
+export const fn = (): Runtype => typeOf("function", (_c, i) => typeof i === "function", undefined as any);
 
 // The key of a number index signature, such as Record<number, T>.
 // Object keys are always strings, so the key must be a numeric string.
 const NUMBER_KEY_PATTERN = "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$";
 const NUMBER_KEY_REGEX = new RegExp(NUMBER_KEY_PATTERN);
-export class NumberKeyRuntype extends BaseRuntype {
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return "number";
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    return annotateSchema(this.metadata, { type: "string", pattern: NUMBER_KEY_PATTERN });
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return typeof input === "string" && NUMBER_KEY_REGEX.test(input);
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected number key", input);
-  }
-  // Hash as `number`, so the hash of Record<number, T> does not change.
-  hash(_ctx: HashContext): number {
-    return numberHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("typeof");
-    ctx.writer.updateString("number");
-  }
-}
+export const numKey = (): Runtype =>
+  leaf(
+    0,
+    (_c, i) => typeof i === "string" && NUMBER_KEY_REGEX.test(i),
+    "expected number key",
+    "number",
+    () => ({ type: "string", pattern: NUMBER_KEY_PATTERN }),
+    // Hash as `number`, so the hash of Record<number, T> does not change.
+    () => numberHash,
+    (ctx) => {
+      ctx.writer.updateTag("typeof");
+      ctx.writer.updateString("number");
+    },
+  );
 
-export class AnyRuntype extends BaseRuntype {
-  constructor(metadata: RuntypeMetadata | undefined) {
-    super(metadata);
-  }
+export const any = (): Runtype =>
+  leaf(
+    T_ANY,
+    () => true,
+    "expected any",
+    "any",
+    () => ({}),
+    () => unknownHash,
+    hash256Tag("any"),
+  );
 
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return "any";
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    return annotateSchema(this.metadata, {});
-  }
-  validate(_ctx: ValidateContext, _input: unknown): boolean {
-    return true;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected any", input);
-  }
-  hash(_ctx: HashContext): number {
-    return unknownHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("any");
-  }
-}
+const nullish = (description: "undefined" | "null" | "void"): Runtype =>
+  leaf(
+    0,
+    (_c, i) => i == null,
+    "expected nullish value",
+    description,
+    () => ({ type: "null" }),
+    () => nullishHash,
+    hash256Tag("nullish"),
+  );
+export const nul = (): Runtype => nullish("null");
+export const undef = (): Runtype => nullish("undefined");
+export const voidType = (): Runtype => nullish("void");
 
-export class NullishRuntype extends BaseRuntype {
-  description: string;
-  constructor(metadata: RuntypeMetadata | undefined, description: "undefined" | "null" | "void") {
-    super(metadata);
-    this.description = description;
-  }
-
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return this.description;
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    return annotateSchema(this.metadata, { type: "null" });
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return input == null;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected nullish value", input);
-  }
-  hash(_ctx: HashContext): number {
-    return nullishHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("nullish");
-  }
-}
-
-export class NeverRuntype extends BaseRuntype {
-  constructor(metadata: RuntypeMetadata | undefined) {
-    super(metadata);
-  }
-
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return "never";
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    return annotateSchema(this.metadata, { anyOf: [] });
-  }
-  validate(_ctx: ValidateContext, _input: unknown): boolean {
-    return false;
-  }
-  parseAfterValidation(_ctx: ParseContext, _input: unknown): unknown {
-    throw new Error("unreachable");
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected never", input);
-  }
-  hash(_ctx: HashContext): number {
-    return undefinedHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("never");
-  }
-}
+export const never = (): Runtype =>
+  node(
+    T_NEVER,
+    () => false,
+    () => {
+      throw new Error("unreachable");
+    },
+    (c, i) => buildError(c, "expected never", i),
+    () => ({ typeExpr: "never" }),
+    () => ({ anyOf: [] }),
+    () => undefinedHash,
+    hash256Tag("never"),
+    noKids,
+  );
 
 type Const = string | number | boolean | null;
 
@@ -842,6 +809,20 @@ function constSortKey(value: Const): string {
 
 function compareConst(a: Const, b: Const): number {
   return constSortKey(a).localeCompare(constSortKey(b));
+}
+
+function hashConst(value: Const): number {
+  if (value == null) {
+    return nullishHash;
+  }
+  switch (typeof value) {
+    case "string":
+      return generateHashFromString(value);
+    case "number":
+      return generateHashFromNumbers([value]);
+    case "boolean":
+      return generateHashFromString(value ? "true" : "false");
+  }
 }
 
 function hash256Const(ctx: Hash256Context, value: Const): void {
@@ -865,612 +846,378 @@ function hash256Const(ctx: Hash256Context, value: Const): void {
   }
 }
 
-export class ConstRuntype extends BaseRuntype {
-  private value: Const;
-  constructor(metadata: RuntypeMetadata | undefined, value: Const) {
-    super(metadata);
-    this.value = value ?? null;
-  }
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return JSON.stringify(this.value);
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    if (ctx.mode == "contextual") {
-      const tp = typeof this.value;
-      if (tp === "string" || tp === "number" || tp === "boolean") {
-        // OpenAPI mode prefers a type + enum for constant values
-        return annotateSchema(this.metadata, {
-          type: tp,
-          enum: [this.value],
-        });
-      }
-    }
-
-    return annotateSchema(this.metadata, { const: this.value });
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (this.value == null) {
-      return input == this.value;
-    }
-    return input === this.value;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
-  }
-  hash(_ctx: HashContext): number {
-    if (this.value == null) {
-      return nullishHash;
-    }
-    switch (typeof this.value) {
-      case "string":
-        return generateHashFromString(this.value);
-      case "number":
-        return generateHashFromNumbers([this.value]);
-      case "boolean":
-        return generateHashFromString(this.value ? "true" : "false");
-    }
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("const");
-    if (this.value == null) {
-      ctx.writer.updateNull();
-      return;
-    }
-    switch (typeof this.value) {
-      case "string":
-        ctx.writer.updateTag("string");
-        ctx.writer.updateString(this.value);
-        return;
-      case "number":
-        ctx.writer.updateTag("number");
-        ctx.writer.updateNumber(this.value);
-        return;
-      case "boolean":
-        ctx.writer.updateTag("boolean");
-        ctx.writer.updateBoolean(this.value);
-        return;
-    }
-  }
-}
-
-export class RegexRuntype extends BaseRuntype {
-  private regex: RegExp;
-  private description: string;
-
-  constructor(metadata: RuntypeMetadata | undefined, regex: RegExp, description: string) {
-    super(metadata);
-    this.regex = regex;
-    this.description = description;
-  }
-
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return this.description;
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    return annotateSchema(this.metadata, { type: "string", pattern: this.regex.source });
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input === "string") {
-      return this.regex.test(input);
-    }
-    return false;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected string matching ${this.description}`, input);
-  }
-  hash(_ctx: HashContext): number {
-    return generateHashFromString(this.description);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("regex");
-    ctx.writer.updateString(this.description);
-  }
-}
-
-export class DateRuntype extends BaseRuntype {
-  constructor(metadata: RuntypeMetadata | undefined) {
-    super(metadata);
-  }
-
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return "Date";
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Date"));
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return input instanceof Date;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected Date`, input);
-  }
-  hash(_ctx: HashContext): number {
-    return dateHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("date");
-  }
-}
-
-export class BigIntRuntype extends BaseRuntype {
-  constructor(metadata: RuntypeMetadata | undefined) {
-    super(metadata);
-  }
-
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return "BigInt";
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for BigInt"));
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return typeof input === "bigint";
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected BigInt`, input);
-  }
-  hash(_ctx: HashContext): number {
-    return bigintHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("bigint");
-  }
-}
-
-export class TypedArrayRuntype extends BaseRuntype {
-  private ctorName: string;
-  private hashValue: number;
-
-  constructor(metadata: RuntypeMetadata | undefined, ctorName: string) {
-    super(metadata);
-    this.ctorName = ctorName;
-    this.hashValue = generateHashFromString(ctorName.toLowerCase());
-  }
-  private getCtor(): (new (...args: any[]) => ArrayBufferView) | undefined {
-    return (globalThis as any)[this.ctorName];
-  }
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return this.ctorName;
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    throw new Error(buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${this.ctorName}`));
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    const ctor = this.getCtor();
-    if (ctor == null) return false;
-    return input instanceof ctor;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected ${this.ctorName}`, input);
-  }
-  hash(_ctx: HashContext): number {
-    return this.hashValue;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("typedArray");
-    ctx.writer.updateString(this.ctorName);
-  }
-}
-
-export class StringWithFormatRuntype extends BaseRuntype {
-  private formats: string[];
-
-  constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
-    super(metadata);
-    this.formats = formats;
-  }
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return describeFormats("String", this.formats);
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    const finalFormat = this.formats[this.formats.length - 1];
-    return annotateSchema(this.metadata, {
-      type: "string",
-      format: stringFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
-    });
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input !== "string") {
-      return false;
-    }
-
-    for (const f of this.formats) {
-      const formatter = stringFormatters[f];
-      const validator = formatter?.validator;
-
-      if (validator == null) {
-        return false;
-      }
-
-      if (!validator(input)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(
-      ctx,
-      typeof input === "string"
-        ? (resolveFormatErrorMessage(stringFormatters, this.formats, input) ??
-            `expected string with format "${this.formats.join(" and ")}"`)
-        : `expected string with format "${this.formats.join(" and ")}"`,
-      input,
-    );
-  }
-  hash(_ctx: HashContext): number {
-    return hashFormats(stringWithFormatHash, this.formats);
-  }
-  hash256(ctx: Hash256Context): void {
-    hash256Formats(ctx, "stringWithFormat", this.formats);
-  }
-}
-
-export class NumberWithFormatRuntype extends BaseRuntype {
-  private formats: string[];
-  constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
-    super(metadata);
-    this.formats = formats;
-  }
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return describeFormats("Number", this.formats);
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    const finalFormat = this.formats[this.formats.length - 1];
-    return annotateSchema(this.metadata, {
-      type: "number",
-      format: numberFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
-    });
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input !== "number") {
-      return false;
-    }
-
-    for (const f of this.formats) {
-      const formatter = numberFormatters[f];
-      const validator = formatter?.validator;
-
-      if (validator == null) {
-        return false;
-      }
-
-      if (!validator(input)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(
-      ctx,
-      typeof input === "number"
-        ? (resolveFormatErrorMessage(numberFormatters, this.formats, input) ??
-            `expected number with format "${this.formats.join(" and ")}"`)
-        : `expected number with format "${this.formats.join(" and ")}"`,
-      input,
-    );
-  }
-  hash(_ctx: HashContext): number {
-    return hashFormats(numberWithFormatHash, this.formats);
-  }
-  hash256(ctx: Hash256Context): void {
-    hash256Formats(ctx, "numberWithFormat", this.formats);
-  }
-}
-
-export class AnyOfConstsRuntype extends BaseRuntype {
-  private values: Const[];
-  constructor(metadata: RuntypeMetadata | undefined, values: Const[]) {
-    super(metadata);
-    this.values = values;
-  }
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    const parts = this.values.map((it) => JSON.stringify(it));
-    const inner = parts.join(" | ");
-    return `(${inner})`;
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    const isSingleTypeof =
-      this.values.length > 0 && this.values.every((v) => typeof v === typeof this.values[0]);
-    if (isSingleTypeof) {
-      const tp = typeof this.values[0];
-      if (tp == "string" || tp === "number" || tp === "boolean") {
-        return annotateSchema(this.metadata, {
-          type: tp,
-          enum: this.values,
-        });
-      }
-    }
-
-    return annotateSchema(this.metadata, {
-      enum: this.values,
-    });
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (input == null) {
-      if (this.values.includes(null)) {
-        return true;
-      }
-    }
-    return this.values.includes(input as any);
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
-  }
-  hash(_ctx: HashContext): number {
-    let acc: number[] = [anyOfConstsHash];
-    for (const v of [...this.values].sort()) {
-      if (v == null) {
-        acc.push(nullishHash);
-      } else {
-        switch (typeof v) {
-          case "string":
-            acc.push(generateHashFromString(v));
-            break;
-          case "number":
-            acc.push(generateHashFromNumbers([v]));
-            break;
-          case "boolean":
-            acc.push(generateHashFromString(v ? "true" : "false"));
-            break;
+export function lit(constValue: Const): Runtype {
+  const value = constValue ?? null;
+  return leaf(
+    0,
+    value == null ? (_c, i) => i == null : (_c, i) => i === value,
+    `expected ${JSON.stringify(value)}`,
+    JSON.stringify(value),
+    (ctx) => {
+      if (ctx.mode == "contextual") {
+        const tp = typeof value;
+        if (tp === "string" || tp === "number" || tp === "boolean") {
+          // OpenAPI mode prefers a type + enum for constant values
+          return {
+            type: tp,
+            enum: [value],
+          };
         }
       }
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("anyOfConsts");
-    const values = [...this.values].sort((a, b) => compareConst(a, b));
-    ctx.writer.updateNumber(values.length);
-    for (const v of values) {
-      hash256Const(ctx, v);
-    }
-  }
+
+      return { const: value };
+    },
+    () => hashConst(value),
+    (ctx) => {
+      ctx.writer.updateTag("const");
+      hash256Const(ctx, value);
+    },
+  );
 }
 
-export class TupleRuntype extends BaseRuntype {
-  private prefix: Runtype[];
-  private rest: Runtype | null;
-  constructor(metadata: RuntypeMetadata | undefined, prefix: Runtype[], rest: Runtype | null) {
-    super(metadata);
-    this.prefix = prefix;
-    this.rest = rest;
-  }
-  protected describeTypeExpr(ctx: DescribeContext): string {
-    const prefix = this.prefix.map((it) => describeTypeExpr(ctx, it)).join(", ");
-    const rest = this.rest != null ? `...Array<${describeTypeExpr(ctx, this.rest)}>` : null;
+export const regex = (re: RegExp, description: string): Runtype =>
+  leaf(
+    0,
+    (_c, i) => typeof i === "string" && re.test(i),
+    `expected string matching ${description}`,
+    description,
+    () => ({ type: "string", pattern: re.source }),
+    () => generateHashFromString(description),
+    (ctx) => {
+      ctx.writer.updateTag("regex");
+      ctx.writer.updateString(description);
+    },
+  );
 
-    const inner = [prefix, rest].filter((it) => it != null && it.length > 0).join(", ");
-    return `[${inner}]`;
-  }
-  override describeChildren(): Runtype[] {
-    return [...this.prefix, ...(this.rest == null ? [] : [this.rest])];
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    pushPath(ctx, "[]");
-    const prefixItems = this.prefix.map((it) => it.schema(ctx));
-    const items = this.rest != null ? this.rest.schema(ctx) : false;
-    popPath(ctx);
-    return annotateSchema(this.metadata, {
-      type: "array",
-      prefixItems,
-      items,
-    } as any);
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (Array.isArray(input)) {
-      let idx = 0;
-      for (const prefixItem of this.prefix) {
-        if (!prefixItem.validate(ctx, input[idx])) {
+const noSchema =
+  (typeName: string): Runtype["schema"] =>
+  (ctx) => {
+    throw new Error(buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${typeName}`));
+  };
+
+export const date = (): Runtype =>
+  leaf(
+    0,
+    (_c, i) => i instanceof Date,
+    "expected Date",
+    "Date",
+    noSchema("Date"),
+    () => dateHash,
+    hash256Tag("date"),
+  );
+
+export const bigint = (): Runtype =>
+  leaf(
+    0,
+    (_c, i) => typeof i === "bigint",
+    "expected BigInt",
+    "BigInt",
+    noSchema("BigInt"),
+    () => bigintHash,
+    hash256Tag("bigint"),
+  );
+
+export const typedArray = (ctorName: string): Runtype =>
+  leaf(
+    0,
+    (_c, i) => {
+      const ctor = (globalThis as any)[ctorName];
+      if (ctor == null) return false;
+      return i instanceof ctor;
+    },
+    `expected ${ctorName}`,
+    ctorName,
+    noSchema(ctorName),
+    () => generateHashFromString(ctorName.toLowerCase()),
+    (ctx) => {
+      ctx.writer.updateTag("typedArray");
+      ctx.writer.updateString(ctorName);
+    },
+  );
+
+function withFormat(
+  typeName: "string" | "number",
+  formatters: Record<
+    string,
+    { validator: (input: any) => boolean; errorMessage?: (input: any) => string; jsonSchemaFormat?: string }
+  >,
+  formats: string[],
+): Runtype {
+  const expected = `expected ${typeName} with format "${formats.join(" and ")}"`;
+  return node(
+    0,
+    (_c, i) => {
+      if (typeof i !== typeName) {
+        return false;
+      }
+
+      for (const f of formats) {
+        const validator = formatters[f]?.validator;
+
+        if (validator == null) {
           return false;
         }
-        idx++;
-      }
-      if (this.rest != null) {
-        for (let i = idx; i < input.length; i++) {
-          if (!this.rest.validate(ctx, input[i])) {
-            return false;
-          }
+
+        if (!validator(i)) {
+          return false;
         }
-      } else {
-        if (input.length > idx) {
+      }
+
+      return true;
+    },
+    same,
+    (c, i) =>
+      buildError(
+        c,
+        typeof i === typeName ? (resolveFormatErrorMessage(formatters, formats, i) ?? expected) : expected,
+        i,
+      ),
+    () => ({ typeExpr: describeFormats(typeName === "string" ? "String" : "Number", formats) }),
+    () => ({
+      type: typeName,
+      format: formatters[formats[formats.length - 1]]?.jsonSchemaFormat ?? formats.join(" and "),
+    }),
+    () => hashFormats(typeName === "string" ? stringWithFormatHash : numberWithFormatHash, formats),
+    (ctx) => hash256Formats(ctx, `${typeName}WithFormat`, formats),
+    noKids,
+  );
+}
+export const strFormat = (formats: string[]): Runtype => withFormat("string", stringFormatters, formats);
+export const numFormat = (formats: string[]): Runtype => withFormat("number", numberFormatters, formats);
+
+export function lits(values: Const[]): Runtype {
+  const known = new Set<unknown>(values);
+  const hasNull = known.has(null);
+  return leaf(
+    0,
+    (_c, i) => (i == null && hasNull) || known.has(i),
+    `expected one of ${limitedCommaJoinJson(values)}`,
+    `(${values.map((it) => JSON.stringify(it)).join(" | ")})`,
+    () => {
+      const isSingleTypeof = values.length > 0 && values.every((v) => typeof v === typeof values[0]);
+      if (isSingleTypeof) {
+        const tp = typeof values[0];
+        if (tp == "string" || tp === "number" || tp === "boolean") {
+          return {
+            type: tp,
+            enum: values,
+          };
+        }
+      }
+
+      return {
+        enum: values,
+      };
+    },
+    () => generateHashFromNumbers([anyOfConstsHash, ...[...values].sort().map(hashConst)]),
+    (ctx) => {
+      ctx.writer.updateTag("anyOfConsts");
+      const sorted = [...values].sort((a, b) => compareConst(a, b));
+      ctx.writer.updateNumber(sorted.length);
+      for (const v of sorted) {
+        hash256Const(ctx, v);
+      }
+    },
+  );
+}
+
+export function tuple(prefix: Runtype[], rest: Runtype | null): Runtype {
+  const count = prefix.length;
+  const vs = prefix.map((it) => it.v);
+  const ps = prefix.map((it) => it.p);
+  const rs = prefix.map((it) => it.r);
+  const restV = rest?.v;
+  const restP = rest?.p;
+  const restR = rest?.r;
+  return node(
+    0,
+    (c, i) => {
+      if (!Array.isArray(i)) {
+        return false;
+      }
+      for (let k = 0; k < count; k++) {
+        if (!vs[k](c, i[k])) {
+          return false;
+        }
+      }
+      if (restV === undefined) {
+        return i.length <= count;
+      }
+      for (let k = count; k < i.length; k++) {
+        if (!restV(c, i[k])) {
           return false;
         }
       }
       return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    let idx = 0;
-    let acc = [];
-    for (const prefixItem of this.prefix) {
-      acc.push(prefixItem.parseAfterValidation(ctx, input[idx]));
-      idx++;
-    }
-    if (this.rest != null) {
-      for (let i = idx; i < input.length; i++) {
-        acc.push(this.rest.parseAfterValidation(ctx, input[i]));
+    },
+    (c, i) => {
+      const acc = [];
+      for (let k = 0; k < count; k++) {
+        acc.push(ps[k](c, i[k]));
       }
-    }
-    return acc;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!Array.isArray(input)) {
-      return buildError(ctx, "expected tuple", input);
-    }
-
-    let idx = 0;
-
-    let acc: DecodeError[] = [];
-
-    for (const prefixItem of this.prefix) {
-      reportAtPath(ctx, acc, `[${idx}]`, prefixItem, input[idx]);
-      idx++;
-    }
-
-    if (this.rest != null) {
-      for (let i = idx; i < input.length; i++) {
-        reportAtPath(ctx, acc, `[${i}]`, this.rest, input[i]);
+      if (restP !== undefined) {
+        for (let k = count; k < i.length; k++) {
+          acc.push(restP(c, i[k]));
+        }
       }
-    } else if (input.length > idx) {
-      acc.push(...buildError(ctx, `expected tuple with ${idx} items, got ${input.length}`, input));
-    }
+      return acc;
+    },
+    (c, i) => {
+      if (!Array.isArray(i)) {
+        return buildError(c, "expected tuple", i);
+      }
 
-    return acc;
-  }
-  hash(ctx: HashContext): number {
-    let acc: number[] = [tupleHash];
-    for (const p of this.prefix) {
-      acc.push(p.hash(ctx));
-    }
-    if (this.rest != null) {
-      acc.push(this.rest.hash(ctx));
-    } else {
-      acc.push(0);
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("tuple");
-    ctx.writer.updateNumber(this.prefix.length);
-    for (const p of this.prefix) {
-      p.hash256(ctx);
-    }
-    if (this.rest == null) {
-      ctx.writer.updateTag("noRest");
-    } else {
-      ctx.writer.updateTag("rest");
-      this.rest.hash256(ctx);
-    }
-  }
+      const acc: DecodeError[] = [];
+      for (let k = 0; k < count; k++) {
+        reportAtPath(c, acc, `[${k}]`, vs[k], rs[k], i[k]);
+      }
+      if (restV !== undefined) {
+        for (let k = count; k < i.length; k++) {
+          reportAtPath(c, acc, `[${k}]`, restV, restR!, i[k]);
+        }
+      } else if (i.length > count) {
+        acc.push(...buildError(c, `expected tuple with ${count} items, got ${i.length}`, i));
+      }
+
+      return acc;
+    },
+    (ctx) => {
+      const prefixExpr = prefix.map((it) => describeTypeExpr(ctx, it)).join(", ");
+      const restExpr = rest != null ? `...Array<${describeTypeExpr(ctx, rest)}>` : null;
+
+      const inner = [prefixExpr, restExpr].filter((it) => it != null && it.length > 0).join(", ");
+      return { typeExpr: `[${inner}]` };
+    },
+    (ctx) => {
+      pushPath(ctx, "[]");
+      const prefixItems = prefix.map((it) => it.schema(ctx));
+      const items = rest != null ? rest.schema(ctx) : false;
+      popPath(ctx);
+      return {
+        type: "array",
+        prefixItems,
+        items,
+      } as any;
+    },
+    (ctx) => {
+      let acc: number[] = [tupleHash];
+      for (const p of prefix) {
+        acc.push(p.hash(ctx));
+      }
+      if (rest != null) {
+        acc.push(rest.hash(ctx));
+      } else {
+        acc.push(0);
+      }
+      return generateHashFromNumbers(acc);
+    },
+    (ctx) => {
+      ctx.writer.updateTag("tuple");
+      ctx.writer.updateNumber(prefix.length);
+      for (const p of prefix) {
+        p.hash256(ctx);
+      }
+      if (rest == null) {
+        ctx.writer.updateTag("noRest");
+      } else {
+        ctx.writer.updateTag("rest");
+        rest.hash256(ctx);
+      }
+    },
+    () => [...prefix, ...(rest == null ? [] : [rest])],
+  );
 }
 
-export class AllOfRuntype extends BaseRuntype {
-  private schemas: Runtype[];
-  constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[]) {
-    super(metadata);
-    this.schemas = schemas;
-  }
-  protected describeTypeExpr(ctx: DescribeContext): string {
-    return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" & ")})`;
-  }
-  override describeChildren(): Runtype[] {
-    return this.schemas;
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    const schemas = this.schemas.map((it) => it.schema(ctx));
-    const merged = tryMergeAllOfObjectSchemas(schemas);
-    if (merged != null) {
-      return annotateSchema(this.metadata, merged);
-    }
-
-    return annotateSchema(this.metadata, {
-      allOf: schemas,
-    });
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
-    const ok = withIntersectionInput(ctx, input, () => this.validateMembers(ctx, input));
-    return ok && !(checksExtraProperties && this.extraKeys(input as object).length > 0);
-  }
-  private validateMembers(ctx: ValidateContext, input: unknown): boolean {
-    for (const it of this.schemas) {
-      const isObj = typeof input === "object";
-      if (!isObj) {
-        return false;
-      }
-      if (!it.validate(ctx, input)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  // Keys of a valid input that no member of the intersection knows about.
-  private extraKeys(input: object): string[] {
-    const known = this.parseMembers(
-      { disallowExtraProperties: true, objectKeyOrder: "input", intersectionInput: input },
-      input,
-    );
-    return Object.keys(input).filter((k) => !hasOwn.call(known, k));
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    return withIntersectionInput(ctx, input, () => this.parseMembers(ctx, input));
-  }
-  private parseMembers(ctx: ParseContext, input: any): object {
+export function allOf(members: Runtype[]): Runtype {
+  const count = members.length;
+  const vs = members.map((it) => it.v);
+  const ps = members.map((it) => it.p);
+  const rs = members.map((it) => it.r);
+  const parseMembers = (c: Ctx, i: any): object => {
     let acc = {};
-    for (const it of this.schemas) {
-      const parsed = it.parseAfterValidation(ctx, input);
+    for (let k = 0; k < count; k++) {
+      const parsed = ps[k](c, i);
       if (typeof parsed !== "object") {
         throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
       }
       acc = { ...acc, ...parsed };
     }
     return acc;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
-    const errors = withIntersectionInput(ctx, input, () => this.reportMembers(ctx, input));
-    if (errors.length > 0 || !checksExtraProperties) {
-      return errors;
-    }
-    const acc: DecodeError[] = [];
-    for (const k of this.extraKeys(input as object)) {
-      pushPath(ctx, k);
-      acc.push(...buildError(ctx, `extra property`, (input as any)[k]));
-      popPath(ctx);
-    }
-    return acc;
-  }
-  private reportMembers(ctx: ReportContext, input: unknown): DecodeError[] {
-    const acc = [];
-    for (const v of this.schemas) {
-      const errors = v.reportDecodeError(ctx, input);
-      acc.push(...errors);
-    }
-    return acc;
-  }
-  hash(ctx: HashContext): number {
-    let acc: number[] = [allOfHash];
-    for (const s of this.schemas) {
-      acc.push(s.hash(ctx));
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("allOf");
-    ctx.writer.updateNumber(this.schemas.length);
-    for (const s of this.schemas) {
-      s.hash256(ctx);
-    }
-  }
+  };
+  // Keys of a valid input that no member of the intersection knows about.
+  const extraKeys = (i: object): string[] => {
+    const known = parseMembers(
+      { disallowExtraProperties: true, objectKeyOrder: "input", intersectionInput: i, path: [] },
+      i,
+    );
+    return Object.keys(i).filter((k) => !hasOwn.call(known, k));
+  };
+  return node(
+    0,
+    (c, i) => {
+      const checksExtraProperties = intersectionChecksExtraProperties(c, i);
+      // The members run on the input of the intersection.
+      const old = c.intersectionInput;
+      c.intersectionInput = i;
+      let ok = true;
+      for (let k = 0; k < count; k++) {
+        if (typeof i !== "object" || !vs[k](c, i)) {
+          ok = false;
+          break;
+        }
+      }
+      c.intersectionInput = old;
+      return ok && !(checksExtraProperties && extraKeys(i).length > 0);
+    },
+    (c, i) => {
+      const old = c.intersectionInput;
+      c.intersectionInput = i;
+      const parsed = parseMembers(c, i);
+      c.intersectionInput = old;
+      return parsed;
+    },
+    (c, i) => {
+      const checksExtraProperties = intersectionChecksExtraProperties(c, i);
+      const old = c.intersectionInput;
+      c.intersectionInput = i;
+      const errors: DecodeError[] = [];
+      for (let k = 0; k < count; k++) {
+        errors.push(...rs[k](c, i));
+      }
+      c.intersectionInput = old;
+      if (errors.length > 0 || !checksExtraProperties) {
+        return errors;
+      }
+      const acc: DecodeError[] = [];
+      for (const k of extraKeys(i)) {
+        pushPath(c, k);
+        acc.push(...buildError(c, `extra property`, i[k]));
+        popPath(c);
+      }
+      return acc;
+    },
+    (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" & ")})` }),
+    (ctx) => {
+      const schemas = members.map((it) => it.schema(ctx));
+      const merged = tryMergeAllOfObjectSchemas(schemas);
+      if (merged != null) {
+        return merged;
+      }
+
+      return {
+        allOf: schemas,
+      };
+    },
+    (ctx) => generateHashFromNumbers([allOfHash, ...members.map((it) => it.hash(ctx))]),
+    (ctx) => {
+      ctx.writer.updateTag("allOf");
+      ctx.writer.updateNumber(members.length);
+      for (const s of members) {
+        s.hash256(ctx);
+      }
+    },
+    () => members,
+  );
 }
 
 const MERGEABLE_OBJECT_SCHEMA_KEYS = new Set(["type", "properties", "required", "additionalProperties"]);
@@ -1545,488 +1292,372 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
     .join(",")}}`;
 }
 
-export class AnyOfRuntype extends BaseRuntype {
-  private schemas: Runtype[];
-  constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[]) {
-    super(metadata);
-    this.schemas = schemas;
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    return annotateSchema(this.metadata, {
-      anyOf: this.schemas.map((it) => it.schema(ctx)),
-    });
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    for (const it of this.schemas) {
-      if (it.validate(ctx, input)) {
-        return true;
+export function union(members: Runtype[]): Runtype {
+  const count = members.length;
+  const vs = members.map((it) => it.v);
+  const ps = members.map((it) => it.p);
+  const rs = members.map((it) => it.r);
+  return node(
+    0,
+    (c, i) => {
+      for (let k = 0; k < count; k++) {
+        if (vs[k](c, i)) {
+          return true;
+        }
       }
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const items = [];
-    for (const it of this.schemas) {
-      if (it.validate(ctx, input)) {
-        items.push(it.parseAfterValidation(ctx, input));
+      return false;
+    },
+    (c, i) => {
+      const items = [];
+      for (let k = 0; k < count; k++) {
+        if (vs[k](c, i)) {
+          items.push(ps[k](c, i));
+        }
       }
-    }
-    if (items.length === 1) {
-      return items[0];
-    }
-    return deepmerge(...items);
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    const branchErrors: DecodeError[][] = [];
-    const oldPaths = ctx.path;
-    ctx.path = [];
-    for (const v of this.schemas) {
-      branchErrors.push(v.reportDecodeError(ctx, input));
-    }
-    ctx.path = oldPaths;
+      if (items.length === 1) {
+        return items[0];
+      }
+      return deepmerge(...items);
+    },
+    (c, i) => {
+      const branchErrors: DecodeError[][] = [];
+      const oldPaths = c.path;
+      c.path = [];
+      for (let k = 0; k < count; k++) {
+        branchErrors.push(rs[k](c, i));
+      }
+      c.path = oldPaths;
 
-    // Filter to closest-matching branches by max error depth
-    const depths = branchErrors.map((errors) => maxErrorDepth(errors));
-    const bestDepth = Math.max(...depths);
-    const filtered =
-      bestDepth > 0 ? branchErrors.filter((_, i) => depths[i] === bestDepth).flat() : branchErrors.flat();
+      // Filter to closest-matching branches by max error depth
+      const depths = branchErrors.map((errors) => maxErrorDepth(errors));
+      const bestDepth = Math.max(...depths);
+      const filtered =
+        bestDepth > 0 ? branchErrors.filter((_, k) => depths[k] === bestDepth).flat() : branchErrors.flat();
 
-    return buildUnionError(ctx, filtered, input);
-  }
-  protected describeTypeExpr(ctx: DescribeContext): string {
-    return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`;
-  }
-  override describeChildren(): Runtype[] {
-    return this.schemas;
-  }
-  hash(ctx: HashContext): number {
-    let acc: number[] = [anyOfHash];
-    for (const s of this.schemas) {
-      acc.push(s.hash(ctx));
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("anyOf");
-    ctx.writer.updateNumber(this.schemas.length);
-    for (const s of this.schemas) {
-      s.hash256(ctx);
-    }
-  }
+      return buildUnionError(c, filtered, i);
+    },
+    (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
+    (ctx) => ({
+      anyOf: members.map((it) => it.schema(ctx)),
+    }),
+    (ctx) => generateHashFromNumbers([anyOfHash, ...members.map((it) => it.hash(ctx))]),
+    (ctx) => {
+      ctx.writer.updateTag("anyOf");
+      ctx.writer.updateNumber(members.length);
+      for (const s of members) {
+        s.hash256(ctx);
+      }
+    },
+    () => members,
+  );
 }
 
-export class ArrayRuntype extends BaseRuntype {
-  private itemParser: Runtype;
-  constructor(metadata: RuntypeMetadata | undefined, itemParser: Runtype) {
-    super(metadata);
-    this.itemParser = itemParser;
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    pushPath(ctx, "[]");
-    const items = this.itemParser.schema(ctx);
-    popPath(ctx);
-    return annotateSchema(this.metadata, {
-      type: "array",
-      items,
-    });
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (Array.isArray(input)) {
-      for (let i = 0; i < input.length; i++) {
-        const v = input[i];
-        const ok = this.itemParser.validate(ctx, v);
-        if (!ok) {
+export function arr(item: Runtype): Runtype {
+  const itemV = item.v;
+  const itemP = item.p;
+  const itemR = item.r;
+  return node(
+    0,
+    (c, i) => {
+      if (!Array.isArray(i)) {
+        return false;
+      }
+      for (let k = 0; k < i.length; k++) {
+        if (!itemV(c, i[k])) {
           return false;
         }
       }
       return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    return (input as any[]).map((v) => this.itemParser.parseAfterValidation(ctx, v));
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!Array.isArray(input)) {
-      return buildError(ctx, "expected array", input);
-    }
+    },
+    (c, i) => {
+      const acc = new Array(i.length);
+      for (let k = 0; k < i.length; k++) {
+        acc[k] = itemP(c, i[k]);
+      }
+      return acc;
+    },
+    (c, i) => {
+      if (!Array.isArray(i)) {
+        return buildError(c, "expected array", i);
+      }
 
-    let acc: DecodeError[] = [];
-    for (let i = 0; i < input.length; i++) {
-      reportAtPath(ctx, acc, `[${i}]`, this.itemParser, input[i]);
-    }
+      const acc: DecodeError[] = [];
+      for (let k = 0; k < i.length; k++) {
+        reportAtPath(c, acc, `[${k}]`, itemV, itemR, i[k]);
+      }
 
-    return acc;
-  }
-  protected describeTypeExpr(ctx: DescribeContext): string {
-    return `Array<${describeTypeExpr(ctx, this.itemParser)}>`;
-  }
-  override describeChildren(): Runtype[] {
-    return [this.itemParser];
-  }
-  hash(_ctx: HashContext): number {
-    return generateHashFromNumbers([arrayHash, this.itemParser.hash(_ctx)]);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("array");
-    this.itemParser.hash256(ctx);
-  }
+      return acc;
+    },
+    (ctx) => ({ typeExpr: `Array<${describeTypeExpr(ctx, item)}>` }),
+    (ctx) => {
+      pushPath(ctx, "[]");
+      const items = item.schema(ctx);
+      popPath(ctx);
+      return {
+        type: "array",
+        items,
+      };
+    },
+    (ctx) => generateHashFromNumbers([arrayHash, item.hash(ctx)]),
+    (ctx) => {
+      ctx.writer.updateTag("array");
+      item.hash256(ctx);
+    },
+    () => [item],
+  );
 }
 
-export class MapRuntype extends BaseRuntype {
-  private keyParser: Runtype;
-  private valueParser: Runtype;
-  constructor(metadata: RuntypeMetadata | undefined, keyParser: Runtype, valueParser: Runtype) {
-    super(metadata);
-    this.keyParser = keyParser;
-    this.valueParser = valueParser;
-  }
-  protected describeTypeExpr(ctx: DescribeContext): string {
-    return `Map<${describeTypeExpr(ctx, this.keyParser)}, ${describeTypeExpr(ctx, this.valueParser)}>`;
-  }
-  override describeChildren(): Runtype[] {
-    return [this.keyParser, this.valueParser];
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Map"));
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (input instanceof Map) {
-      for (const [k, v] of input) {
-        if (!this.keyParser.validate(ctx, k) || !this.valueParser.validate(ctx, v)) {
+export function map(key: Runtype, value: Runtype): Runtype {
+  const keyV = key.v;
+  const keyP = key.p;
+  const keyR = key.r;
+  const valueV = value.v;
+  const valueP = value.p;
+  const valueR = value.r;
+  return node(
+    0,
+    (c, i) => {
+      if (!(i instanceof Map)) {
+        return false;
+      }
+      for (const [k, v] of i) {
+        if (!keyV(c, k) || !valueV(c, v)) {
           return false;
         }
       }
       return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const res = new Map();
-    for (const [k, v] of input as Map<any, any>) {
-      res.set(this.keyParser.parseAfterValidation(ctx, k), this.valueParser.parseAfterValidation(ctx, v));
-    }
-    return res;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!(input instanceof Map)) {
-      return buildError(ctx, "expected Map", input);
-    }
-    const acc: DecodeError[] = [];
-    for (const [k, v] of input) {
-      reportAtPath(ctx, acc, `key(${stringifyWithBigInt(k)})`, this.keyParser, k);
-      reportAtPath(ctx, acc, `value(${stringifyWithBigInt(k)})`, this.valueParser, v);
-    }
-    return acc;
-  }
-  hash(_ctx: HashContext): number {
-    return generateHashFromNumbers([mapHash, this.keyParser.hash(_ctx), this.valueParser.hash(_ctx)]);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("map");
-    this.keyParser.hash256(ctx);
-    this.valueParser.hash256(ctx);
-  }
+    },
+    (c, i) => {
+      const res = new Map();
+      for (const [k, v] of i as Map<any, any>) {
+        res.set(keyP(c, k), valueP(c, v));
+      }
+      return res;
+    },
+    (c, i) => {
+      if (!(i instanceof Map)) {
+        return buildError(c, "expected Map", i);
+      }
+      const acc: DecodeError[] = [];
+      for (const [k, v] of i) {
+        reportAtPath(c, acc, `key(${stringifyWithBigInt(k)})`, keyV, keyR, k);
+        reportAtPath(c, acc, `value(${stringifyWithBigInt(k)})`, valueV, valueR, v);
+      }
+      return acc;
+    },
+    (ctx) => ({ typeExpr: `Map<${describeTypeExpr(ctx, key)}, ${describeTypeExpr(ctx, value)}>` }),
+    noSchema("Map"),
+    (ctx) => generateHashFromNumbers([mapHash, key.hash(ctx), value.hash(ctx)]),
+    (ctx) => {
+      ctx.writer.updateTag("map");
+      key.hash256(ctx);
+      value.hash256(ctx);
+    },
+    () => [key, value],
+  );
 }
 
-export class SetRuntype extends BaseRuntype {
-  private itemParser: Runtype;
-  constructor(metadata: RuntypeMetadata | undefined, itemParser: Runtype) {
-    super(metadata);
-    this.itemParser = itemParser;
-  }
-  protected describeTypeExpr(ctx: DescribeContext): string {
-    return `Set<${describeTypeExpr(ctx, this.itemParser)}>`;
-  }
-  override describeChildren(): Runtype[] {
-    return [this.itemParser];
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Set"));
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (input instanceof Set) {
-      for (const v of input) {
-        if (!this.itemParser.validate(ctx, v)) {
+export function set(item: Runtype): Runtype {
+  const itemV = item.v;
+  const itemP = item.p;
+  const itemR = item.r;
+  return node(
+    0,
+    (c, i) => {
+      if (!(i instanceof Set)) {
+        return false;
+      }
+      for (const v of i) {
+        if (!itemV(c, v)) {
           return false;
         }
       }
       return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const res = new Set();
-    for (const v of input as Set<any>) {
-      res.add(this.itemParser.parseAfterValidation(ctx, v));
-    }
-    return res;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!(input instanceof Set)) {
-      return buildError(ctx, "expected Set", input);
-    }
-    const acc: DecodeError[] = [];
-    for (const v of input) {
-      reportAtPath(ctx, acc, `item(${stringifyWithBigInt(v)})`, this.itemParser, v);
-    }
-    return acc;
-  }
-  hash(_ctx: HashContext): number {
-    return generateHashFromNumbers([setHash, this.itemParser.hash(_ctx)]);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("set");
-    this.itemParser.hash256(ctx);
-  }
+    },
+    (c, i) => {
+      const res = new Set();
+      for (const v of i as Set<any>) {
+        res.add(itemP(c, v));
+      }
+      return res;
+    },
+    (c, i) => {
+      if (!(i instanceof Set)) {
+        return buildError(c, "expected Set", i);
+      }
+      const acc: DecodeError[] = [];
+      for (const v of i) {
+        reportAtPath(c, acc, `item(${stringifyWithBigInt(v)})`, itemV, itemR, v);
+      }
+      return acc;
+    },
+    (ctx) => ({ typeExpr: `Set<${describeTypeExpr(ctx, item)}>` }),
+    noSchema("Set"),
+    (ctx) => generateHashFromNumbers([setHash, item.hash(ctx)]),
+    (ctx) => {
+      ctx.writer.updateTag("set");
+      item.hash256(ctx);
+    },
+    () => [item],
+  );
 }
 
-export class AnyOfDiscriminatedRuntype extends BaseRuntype {
-  private schemas: Runtype[];
-  private discriminator: string;
-  private mapping: Record<string, Runtype>;
-  private schemaMapping: Record<string, Runtype>;
-  constructor(
-    metadata: RuntypeMetadata | undefined,
-    schemas: Runtype[],
-    discriminator: string,
-    mapping: Record<string, Runtype>,
-    schemaMapping: Record<string, Runtype>,
-  ) {
-    super(metadata);
-    this.schemas = schemas;
-    this.discriminator = discriminator;
-    this.mapping = mapping;
-    this.schemaMapping = schemaMapping;
+function sanitizeComponentNamePart(value: string): string {
+  const cleaned = value.replace(/[^a-zA-Z0-9]+/g, " ").trim();
+  if (cleaned.length === 0) {
+    return "Variant";
   }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    if (ctx.mode === "contextual" && ctx.printingContext != null) {
-      const variantRefs = this.getSchemaVariantRefs(ctx);
+  return cleaned
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+}
 
-      return annotateSchema(this.metadata, {
+function ensureContextualDefinition(
+  printingContext: SchemaPrintingContext,
+  name: string,
+  target: Runtype,
+  ctx: SchemaContext,
+): void {
+  if (printingContext.hasDefinition(name) || printingContext.isDefinitionInProgress(name)) {
+    return;
+  }
+  printingContext.markDefinitionInProgress(name);
+  const body = target.schema(ctx);
+  printingContext.storeDefinition(name, body);
+}
+
+// A union of object types. `mapping` has the type of each value of the `discriminator` property, and
+// `members` has the types of the union as they are described.
+export function disc(discriminator: string, mapping: Record<string, Runtype>, members: Runtype[]): Runtype {
+  const variants = new Map(Object.entries(mapping));
+  const hash: Runtype["hash"] = (ctx) =>
+    generateHashFromNumbers([anyOfHash, ...members.map((it) => it.hash(ctx))]);
+  return node(
+    0,
+    (c, i) => {
+      if (typeof i !== "object" || i == null) {
+        return false;
+      }
+      const d = i[discriminator];
+      if (d == null) {
+        return false;
+      }
+      const variant = variants.get(String(d));
+      return variant !== undefined && variant.v(c, i);
+    },
+    (c, i) => {
+      const variant = variants.get(String(i[discriminator]));
+      if (variant === undefined) {
+        throw new Error(
+          "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(i[discriminator]),
+        );
+      }
+      return {
+        ...(variant.p(c, i) as object),
+        [discriminator]: i[discriminator],
+      };
+    },
+    (c, i) => {
+      if (i == null || typeof i !== "object") {
+        return buildError(c, "expected object", i);
+      }
+
+      const d = i[discriminator];
+      if (d == null) {
+        return buildError(c, "expected discriminator key " + JSON.stringify(discriminator), i);
+      }
+      const variant = variants.get(String(d));
+      if (variant === undefined) {
+        pushPath(c, discriminator);
+        const errs = buildError(
+          c,
+          "expected one of " +
+            Object.keys(mapping)
+              .map((it) => JSON.stringify(it))
+              .join(", "),
+          d,
+        );
+        popPath(c);
+        return errs;
+      }
+      return variant.r(c, i);
+    },
+    (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
+    (ctx) => {
+      const printingContext = ctx.printingContext;
+      if (ctx.mode === "contextual" && printingContext != null) {
+        const unionHash = hash({ seen: {} });
+        const variantRefs = Object.entries(mapping).map(([key, variant]) => {
+          // A variant that is a named type keeps its name. Other variants get a name made from the union.
+          const name =
+            variant.t === T_REF
+              ? variant.name!
+              : `Discriminated${sanitizeComponentNamePart(discriminator)}${sanitizeComponentNamePart(key)}${Math.abs(unionHash)}`;
+          const target = variant.t === T_REF ? variant.kids()[0] : variant;
+          ensureContextualDefinition(printingContext, name, target, ctx);
+          return { key, ref: printingContext.getRef(name) };
+        });
+
+        return {
+          type: "object",
+          discriminator: {
+            propertyName: discriminator,
+            mapping: Object.fromEntries(variantRefs.map(({ key, ref }) => [key, ref])),
+          },
+          oneOf: variantRefs.map(({ ref }) => ({ $ref: ref })),
+        };
+      }
+
+      return {
         type: "object",
         discriminator: {
-          propertyName: this.discriminator,
-          mapping: Object.fromEntries(variantRefs.map(({ key, ref }) => [key, ref])),
+          propertyName: discriminator,
         },
-        oneOf: variantRefs.map(({ ref }) => ({ $ref: ref })),
-      });
-    }
-
-    return annotateSchema(this.metadata, {
-      type: "object",
-      discriminator: {
-        propertyName: this.discriminator,
-      },
-      anyOf: this.schemas.map((it) => it.schema(ctx)),
-    });
-  }
-  private getSchemaVariantRefs(ctx: SchemaContext): Array<{ key: string; ref: string }> {
-    const unionHash = this.hash({ seen: {} });
-    return Object.entries(this.schemaMapping).map(([key, schema]) => ({
-      key,
-      ref: this.ensureSchemaVariantRef(schema, key, unionHash, ctx),
-    }));
-  }
-
-  private getPrintingContext(ctx: SchemaContext): SchemaPrintingContext {
-    const printingContext = ctx.printingContext;
-    if (printingContext == null) {
-      throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
-    }
-    return printingContext;
-  }
-
-  private getRefTarget(runtype: Runtype): { name: string; target: Runtype } | null {
-    if (!(runtype instanceof BaseRefRuntype)) {
-      return null;
-    }
-
-    const name = runtype.refName;
-    return {
-      name,
-      target: runtype.getNamedRuntypes()[name],
-    };
-  }
-
-  private static sanitizeComponentNamePart(value: string): string {
-    const cleaned = value.replace(/[^a-zA-Z0-9]+/g, " ").trim();
-    if (cleaned.length === 0) {
-      return "Variant";
-    }
-    return cleaned
-      .split(/\s+/)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join("");
-  }
-
-  private static getSyntheticRefName(discriminator: string, key: string, unionHash: number): string {
-    const discriminatorPart = AnyOfDiscriminatedRuntype.sanitizeComponentNamePart(discriminator);
-    const keyPart = AnyOfDiscriminatedRuntype.sanitizeComponentNamePart(key);
-    return `Discriminated${discriminatorPart}${keyPart}${Math.abs(unionHash)}`;
-  }
-
-  private ensureContextualDefinition(name: string, target: Runtype, ctx: SchemaContext): void {
-    const printingContext = this.getPrintingContext(ctx);
-    if (printingContext.hasDefinition(name) || printingContext.isDefinitionInProgress(name)) {
-      return;
-    }
-    printingContext.markDefinitionInProgress(name);
-    const body = target.schema(ctx);
-    printingContext.storeDefinition(name, body);
-  }
-
-  private ensureSchemaVariantRef(
-    runtype: Runtype,
-    key: string,
-    unionHash: number,
-    ctx: SchemaContext,
-  ): string {
-    const printingContext = this.getPrintingContext(ctx);
-    const refTarget = this.getRefTarget(runtype);
-    if (refTarget != null) {
-      this.ensureContextualDefinition(refTarget.name, refTarget.target, ctx);
-      return printingContext.getRef(refTarget.name);
-    }
-
-    const syntheticRefName = AnyOfDiscriminatedRuntype.getSyntheticRefName(
-      this.discriminator,
-      key,
-      unionHash,
-    );
-    this.ensureContextualDefinition(syntheticRefName, runtype, ctx);
-    return printingContext.getRef(syntheticRefName);
-  }
-  private getVariant(d: unknown): Runtype | undefined {
-    const key = String(d);
-    return Object.prototype.hasOwnProperty.call(this.mapping, key) ? this.mapping[key] : undefined;
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input !== "object" || input == null) {
-      return false;
-    }
-    const d = (input as any)[this.discriminator];
-    if (d == null) {
-      return false;
-    }
-    const v = this.getVariant(d);
-    if (v == null) {
-      return false;
-    }
-
-    return v.validate(ctx, input);
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const parser = this.getVariant(input[this.discriminator]);
-    if (parser == null) {
-      throw new Error(
-        "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[this.discriminator]),
-      );
-    }
-    return {
-      ...(parser.parseAfterValidation(ctx, input) as object),
-      [this.discriminator]: input[this.discriminator],
-    };
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (input == null || typeof input !== "object") {
-      return buildError(ctx, "expected object", input);
-    }
-
-    const d = (input as any)[this.discriminator];
-    if (d == null) {
-      return buildError(ctx, "expected discriminator key " + JSON.stringify(this.discriminator), input);
-    }
-    const v = this.getVariant(d);
-    if (v == null) {
-      pushPath(ctx, this.discriminator);
-      const errs = buildError(
-        ctx,
-        "expected one of " +
-          Object.keys(this.mapping)
-            .map((it) => JSON.stringify(it))
-            .join(", "),
-        d,
-      );
-      popPath(ctx);
-      return errs;
-    }
-    return v.reportDecodeError(ctx, input);
-  }
-  protected describeTypeExpr(ctx: DescribeContext): string {
-    return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`;
-  }
-  override describeChildren(): Runtype[] {
-    return this.schemas;
-  }
-  hash(ctx: HashContext): number {
-    let acc: number[] = [anyOfHash];
-    for (const s of this.schemas) {
-      acc.push(s.hash(ctx));
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("anyOfDiscriminated");
-    ctx.writer.updateString(this.discriminator);
-    ctx.writer.updateNumber(this.schemas.length);
-    for (const s of this.schemas) {
-      s.hash256(ctx);
-    }
-    const mappingKeys = Object.keys(this.mapping).sort();
-    ctx.writer.updateNumber(mappingKeys.length);
-    for (const key of mappingKeys) {
-      ctx.writer.updateString(key);
-      this.mapping[key].hash256(ctx);
-    }
-  }
+        anyOf: members.map((it) => it.schema(ctx)),
+      };
+    },
+    hash,
+    (ctx) => {
+      ctx.writer.updateTag("anyOfDiscriminated");
+      ctx.writer.updateString(discriminator);
+      ctx.writer.updateNumber(members.length);
+      for (const s of members) {
+        s.hash256(ctx);
+      }
+      const mappingKeys = Object.keys(mapping).sort();
+      ctx.writer.updateNumber(mappingKeys.length);
+      for (const key of mappingKeys) {
+        ctx.writer.updateString(key);
+        mapping[key].hash256(ctx);
+      }
+    },
+    () => members,
+  );
 }
 
-export class OptionalFieldRuntype implements Runtype {
-  readonly t: Runtype;
-
-  constructor(t: Runtype) {
-    this.t = t;
-  }
-
-  schema(ctx: SchemaContext): JSONSchema7 {
-    const inner = this.t.schema(ctx);
-    return {
-      anyOf: [inner, { type: "null" }],
-    };
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (input == null) {
-      return true;
-    }
-    return this.t.validate(ctx, input);
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    if (input == null) {
-      return input;
-    }
-    return this.t.parseAfterValidation(ctx, input);
-  }
-  // validate() returns true for null/undefined, so reportDecodeError is only
-  // called when input is non-null. Reporting "expected nullish value" here
-  // would be noise — only the inner type's errors are relevant.
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return this.t.reportDecodeError(ctx, input);
-  }
-  describe(ctx: DescribeContext): TypeDescription {
-    return this.t.describe(ctx);
-  }
-  describeChildren(): Runtype[] {
-    return [this.t];
-  }
-  hash(ctx: HashContext): number {
-    let acc = [optionalFieldHash, this.t.hash(ctx)];
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("optionalField");
-    this.t.hash256(ctx);
-  }
+// An optional property of an object.
+export function opt(inner: Runtype): Runtype {
+  const innerV = inner.v;
+  const innerP = inner.p;
+  return node(
+    T_OPT,
+    (c, i) => i == null || innerV(c, i),
+    (c, i) => (i == null ? i : innerP(c, i)),
+    // `v` accepts null and undefined, so the input here is neither of them. Only the errors of the inner
+    // type are relevant.
+    inner.r,
+    (ctx) => inner.describe(ctx),
+    (ctx) => ({
+      anyOf: [inner.schema(ctx), { type: "null" }],
+    }),
+    (ctx) => generateHashFromNumbers([optionalFieldHash, inner.hash(ctx)]),
+    (ctx) => {
+      ctx.writer.updateTag("optionalField");
+      inner.hash256(ctx);
+    },
+    () => [inner],
+  );
 }
 
 const hasOwn = Object.prototype.hasOwnProperty;
@@ -2040,441 +1671,377 @@ function setOwnProperty(target: Record<string, unknown>, key: string, value: unk
   target[key] = value;
 }
 
-export class ObjectRuntype extends BaseRuntype {
-  private properties: Record<string, Runtype>;
-  private indexedPropertiesParser: Array<{
-    key: Runtype;
-    value: Runtype;
-  }>;
-  constructor(
-    metadata: RuntypeMetadata | undefined,
-    properties: Record<string, Runtype>,
-    indexedPropertiesParser: Array<{
-      key: Runtype;
-      value: Runtype;
-    }>,
-  ) {
-    super(metadata);
-    this.properties = properties;
-    this.indexedPropertiesParser = indexedPropertiesParser;
-  }
-  protected describeTypeExpr(ctx: DescribeContext): string {
-    const sortedKeys = Object.keys(this.properties).sort();
-    const props = sortedKeys.map((k) => {
-      const it = this.properties[k];
-      return describeObjectMember(ctx, describePropertyKey(k), it);
-    });
-
-    const indexProps = this.indexedPropertiesParser.map(({ key, value }) =>
-      describeIndexObjectMember(ctx, key, value),
-    );
-
-    const members = [...props, ...indexProps];
-    const hasMemberDescriptions = members.some((it) => it.docText != null);
-    if (hasMemberDescriptions) {
-      if (members.length === 0) {
-        return "{}";
+export function obj(
+  properties: Record<string, Runtype>,
+  indexed: Array<{ key: Runtype; value: Runtype }> = [],
+): Runtype {
+  // The properties as parallel arrays. An optional property keeps the functions of its inner type, and
+  // `optional` says that it also accepts null and undefined.
+  const keys = Object.keys(properties);
+  const count = keys.length;
+  const optional = keys.map((k) => properties[k].t === T_OPT);
+  const inner = keys.map((k, j) => (optional[j] ? properties[k].kids()[0] : properties[k]));
+  const vs = inner.map((it) => it.v);
+  const ps = inner.map((it) => it.p);
+  const rs = inner.map((it) => it.r);
+  // The position of each property. It has no prototype, so only the keys of `properties` are in it.
+  const index: Record<string, number | undefined> = Object.create(null);
+  keys.forEach((k, j) => {
+    index[k] = j;
+  });
+  const sortedKeys = [...keys].sort();
+  const hasIndexed = indexed.length > 0;
+  // In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
+  const leavesKeyToIntersection = (c: Ctx, i: object, k: string): boolean =>
+    c.intersectionInput === i && !indexed.some((p) => p.key.v(c, k));
+  const parseIndexed = (c: Ctx, acc: Record<string, unknown>, k: string, v: unknown): void => {
+    for (const p of indexed) {
+      if (p.key.v(c, k) && p.value.v(c, v)) {
+        const itemParsed = p.value.p(c, v);
+        setOwnProperty(acc, p.key.p(c, k), itemParsed);
       }
-      const content = members.map(renderObjectMember).join("\n");
-      return `{\n${content}\n}`;
     }
-
-    const content = members.map((it) => it.member).join(", ");
-    return `{ ${content} }`;
-  }
-  override describeChildren(): Runtype[] {
-    return [
-      ...Object.values(this.properties),
-      ...this.indexedPropertiesParser.flatMap(({ key, value }) => [key, value]),
-    ];
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    const properties: Record<string, JSONSchema7Definition> = {};
-    const optionalized = new Set<string>();
-    for (const k in this.properties) {
-      pushPath(ctx, k);
-      const item = this.properties[k];
-      const raw = item.schema(ctx);
-      const rewrite = removeNullUnionBranch(raw);
-      if (rewrite != null) {
-        properties[k] = rewrite;
-        optionalized.add(k);
-      } else {
-        properties[k] = raw;
+  };
+  return node(
+    0,
+    (c, i) => {
+      if (typeof i !== "object" || i === null || Array.isArray(i)) {
+        return false;
       }
-      popPath(ctx);
-    }
-
-    const required = Object.keys(this.properties).filter((k) => !optionalized.has(k));
-    const base: JSONSchema7 = {
-      type: "object",
-      properties,
-      ...(required.length > 0 ? { required } : {}),
-    };
-
-    const indexSchemas = this.indexedPropertiesParser.map(({ key, value }): JSONSchema7 => {
-      pushPath(ctx, "[key]");
-      const keySchema = key.schema(ctx);
-      popPath(ctx);
-      pushPath(ctx, "[value]");
-      const valueSchema = value.schema(ctx);
-      popPath(ctx);
-
-      return {
-        type: "object",
-        additionalProperties: valueSchema,
-        propertyNames: keySchema,
-      };
-    });
-
-    if (indexSchemas.length === 0) {
-      return annotateSchema(this.metadata, { ...base, additionalProperties: false });
-    }
-
-    // special case for Record<string, T> with no named properties
-    if (Object.keys(properties).length === 0 && indexSchemas.length === 1) {
-      const valueRuntype = this.indexedPropertiesParser[0].value;
-
-      // Record<string, never> -> empty closed object (keys don't matter)
-      if (valueRuntype instanceof NeverRuntype) {
-        return annotateSchema(this.metadata, { type: "object", additionalProperties: false });
-      }
-
-      // Record<string, unknown> -> simplify additionalProperties to true
-      if (valueRuntype instanceof AnyRuntype) {
-        return annotateSchema(this.metadata, { ...indexSchemas[0], additionalProperties: true });
-      }
-
-      return annotateSchema(this.metadata, indexSchemas[0]);
-    }
-
-    return annotateSchema(this.metadata, {
-      allOf: [base, ...indexSchemas],
-    });
-  }
-  validate(ctx: ValidateContext, input: any): boolean {
-    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-      const configKeys = Object.keys(this.properties);
-      for (const k of configKeys) {
-        const validator = this.properties[k];
-        if (!validator.validate(ctx, input[k])) {
+      for (let j = 0; j < count; j++) {
+        const x = i[keys[j]];
+        if (!(x == null && optional[j]) && !vs[j](c, x)) {
           return false;
         }
       }
 
-      if (this.indexedPropertiesParser.length > 0) {
-        const inputKeys = Object.keys(input);
-        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
-        for (const k of extraKeys) {
-          let isValid = false;
-          for (const p of this.indexedPropertiesParser) {
-            if (!p.key.validate(ctx, k)) {
-              continue;
-            }
-            const v = input[k];
-            if (!p.value.validate(ctx, v)) {
-              continue;
-            }
-            isValid = true;
-            break;
+      if (hasIndexed) {
+        for (const k of Object.keys(i)) {
+          if (index[k] !== undefined) {
+            continue;
           }
-          if (!isValid && !this.leavesKeyToIntersection(ctx, input, k)) {
+          let isValid = false;
+          for (const p of indexed) {
+            if (p.key.v(c, k) && p.value.v(c, i[k])) {
+              isValid = true;
+              break;
+            }
+          }
+          if (!isValid && !leavesKeyToIntersection(c, i, k)) {
             return false;
           }
         }
-      } else {
-        if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
-          const inputKeys = Object.keys(input);
-          const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
-
-          if (extraKeys.length > 0) {
+      } else if (c.disallowExtraProperties && c.intersectionInput !== i) {
+        for (const k of Object.keys(i)) {
+          if (index[k] === undefined) {
             return false;
           }
         }
       }
 
       return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    let acc: any = {};
+    },
+    (c, i) => {
+      const acc: any = {};
+      const inputKeys = Object.keys(i);
 
-    const inputKeys = Object.keys(input);
-
-    if (ctx.objectKeyOrder === "input") {
-      for (const k of inputKeys) {
-        if (hasOwn.call(this.properties, k)) {
-          setOwnProperty(acc, k, this.properties[k].parseAfterValidation(ctx, input[k]));
-          continue;
+      if (c.objectKeyOrder === "input") {
+        for (const k of inputKeys) {
+          const x = i[k];
+          const j = index[k];
+          if (j !== undefined) {
+            setOwnProperty(acc, k, x == null && optional[j] ? x : ps[j](c, x));
+          } else if (hasIndexed) {
+            parseIndexed(c, acc, k, x);
+          }
+        }
+      } else {
+        for (const k of sortedKeys) {
+          if (!hasOwn.call(i, k)) {
+            continue;
+          }
+          const x = i[k];
+          const j = index[k]!;
+          setOwnProperty(acc, k, x == null && optional[j] ? x : ps[j](c, x));
         }
 
-        for (const p of this.indexedPropertiesParser) {
-          const v = input[k];
-          const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
-          if (isValid) {
-            const itemParsed = p.value.parseAfterValidation(ctx, v);
-            const keyParsed = p.key.parseAfterValidation(ctx, k);
-            setOwnProperty(acc, keyParsed as string, itemParsed);
+        if (hasIndexed) {
+          for (const k of inputKeys.filter((k) => index[k] === undefined).sort()) {
+            parseIndexed(c, acc, k, i[k]);
           }
         }
       }
-    } else {
-      const configKeys = Object.keys(this.properties).sort();
 
-      for (const k of configKeys) {
-        if (!hasOwn.call(input, k)) {
-          continue;
-        }
-        const v = input[k];
-        const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
-        setOwnProperty(acc, k, itemParsed);
+      return acc;
+    },
+    (c, i) => {
+      if (typeof i !== "object" || Array.isArray(i) || i === null) {
+        return buildError(c, "expected object", i);
       }
 
-      if (this.indexedPropertiesParser.length > 0) {
-        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k)).sort();
-        for (const k of extraKeys) {
-          const v = input[k];
-          for (const p of this.indexedPropertiesParser) {
-            const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
-            if (isValid) {
-              const itemParsed = p.value.parseAfterValidation(ctx, v);
-              const keyParsed = p.key.parseAfterValidation(ctx, k);
-              setOwnProperty(acc, keyParsed as string, itemParsed);
+      const acc: DecodeError[] = [];
+
+      for (let j = 0; j < count; j++) {
+        const x = i[keys[j]];
+        if (!(x == null && optional[j])) {
+          reportAtPath(c, acc, keys[j], vs[j], rs[j], x);
+        }
+      }
+
+      if (hasIndexed) {
+        for (const k of Object.keys(i)) {
+          if (index[k] !== undefined || leavesKeyToIntersection(c, i, k)) {
+            continue;
+          }
+          for (const p of indexed) {
+            const keyOk = p.key.v(c, k);
+            const valueOk = p.value.v(c, i[k]);
+            if (!keyOk || !valueOk) {
+              pushPath(c, k);
+              if (!keyOk) {
+                acc.push(...p.key.r(c, k));
+              }
+              if (!valueOk) {
+                acc.push(...p.value.r(c, i[k]));
+              }
+              popPath(c);
             }
           }
         }
-      }
-    }
-
-    return acc;
-  }
-  reportDecodeError(ctx: ReportContext, input: any): DecodeError[] {
-    if (typeof input !== "object" || Array.isArray(input) || input === null) {
-      return buildError(ctx, "expected object", input);
-    }
-
-    let acc: DecodeError[] = [];
-
-    const configKeys = Object.keys(this.properties);
-
-    for (const k of configKeys) {
-      reportAtPath(ctx, acc, k, this.properties[k], input[k]);
-    }
-
-    if (this.indexedPropertiesParser.length > 0) {
-      const inputKeys = Object.keys(input);
-      const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
-      for (const k of extraKeys) {
-        if (this.leavesKeyToIntersection(ctx, input, k)) {
-          continue;
-        }
-        for (const p of this.indexedPropertiesParser) {
-          const keyOk = p.key.validate(ctx, k);
-          const valueOk = p.value.validate(ctx, input[k]);
-          const ok = keyOk && valueOk;
-          if (!ok) {
-            pushPath(ctx, k);
-            if (!keyOk) {
-              const keyReported = p.key.reportDecodeError(ctx, k);
-              acc.push(...keyReported);
-            }
-            if (!valueOk) {
-              const valueReported = p.value.reportDecodeError(ctx, input[k]);
-              acc.push(...valueReported);
-            }
-            popPath(ctx);
-          }
-        }
-      }
-    } else {
-      if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
-        const inputKeys = Object.keys(input);
-        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
+      } else if (c.disallowExtraProperties && c.intersectionInput !== i) {
+        const extraKeys = Object.keys(i).filter((k) => index[k] === undefined);
         if (extraKeys.length > 0) {
-          return extraKeys
-            .map((k) => {
-              pushPath(ctx, k);
-              const err = buildError(ctx, `extra property`, input[k]);
-              popPath(ctx);
-              return err;
-            })
-            .reduce((a, b) => a.concat(b), []);
+          return extraKeys.flatMap((k) => {
+            pushPath(c, k);
+            const err = buildError(c, `extra property`, i[k]);
+            popPath(c);
+            return err;
+          });
         }
       }
-    }
 
-    return acc;
-  }
-  // In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
-  private leavesKeyToIntersection(ctx: ValidateContext, input: object, k: string): boolean {
-    return (
-      ctx.intersectionInput === input && !this.indexedPropertiesParser.some((p) => p.key.validate(ctx, k))
-    );
-  }
-  hash(ctx: HashContext) {
-    let acc: number[] = [objectHash];
-    for (const key of Object.keys(this.properties).sort()) {
-      acc.push(generateHashFromString(key));
-      const parser = this.properties[key];
-      acc.push(parser.hash(ctx));
-    }
-    if (this.indexedPropertiesParser.length > 0) {
-      for (const p of this.indexedPropertiesParser) {
+      return acc;
+    },
+    (ctx) => {
+      const props = sortedKeys.map((k) => describeObjectMember(ctx, describePropertyKey(k), properties[k]));
+
+      const indexProps = indexed.map(({ key, value }) => describeIndexObjectMember(ctx, key, value));
+
+      const members = [...props, ...indexProps];
+      const hasMemberDescriptions = members.some((it) => it.docText != null);
+      if (hasMemberDescriptions) {
+        if (members.length === 0) {
+          return { typeExpr: "{}" };
+        }
+        const content = members.map(renderObjectMember).join("\n");
+        return { typeExpr: `{\n${content}\n}` };
+      }
+
+      const content = members.map((it) => it.member).join(", ");
+      return { typeExpr: `{ ${content} }` };
+    },
+    (ctx) => {
+      const schemaProperties: Record<string, JSONSchema7Definition> = {};
+      const optionalized = new Set<string>();
+      for (const k of keys) {
+        pushPath(ctx, k);
+        const raw = properties[k].schema(ctx);
+        const rewrite = removeNullUnionBranch(raw);
+        if (rewrite != null) {
+          schemaProperties[k] = rewrite;
+          optionalized.add(k);
+        } else {
+          schemaProperties[k] = raw;
+        }
+        popPath(ctx);
+      }
+
+      const required = keys.filter((k) => !optionalized.has(k));
+      const base: JSONSchema7 = {
+        type: "object",
+        properties: schemaProperties,
+        ...(required.length > 0 ? { required } : {}),
+      };
+
+      const indexSchemas = indexed.map(({ key, value }): JSONSchema7 => {
+        pushPath(ctx, "[key]");
+        const keySchema = key.schema(ctx);
+        popPath(ctx);
+        pushPath(ctx, "[value]");
+        const valueSchema = value.schema(ctx);
+        popPath(ctx);
+
+        return {
+          type: "object",
+          additionalProperties: valueSchema,
+          propertyNames: keySchema,
+        };
+      });
+
+      if (indexSchemas.length === 0) {
+        return { ...base, additionalProperties: false };
+      }
+
+      // special case for Record<string, T> with no named properties
+      if (count === 0 && indexSchemas.length === 1) {
+        const valueRuntype = indexed[0].value;
+
+        // Record<string, never> -> empty closed object (keys don't matter)
+        if (valueRuntype.t === T_NEVER) {
+          return { type: "object", additionalProperties: false };
+        }
+
+        // Record<string, unknown> -> simplify additionalProperties to true
+        if (valueRuntype.t === T_ANY) {
+          return { ...indexSchemas[0], additionalProperties: true };
+        }
+
+        return indexSchemas[0];
+      }
+
+      return {
+        allOf: [base, ...indexSchemas],
+      };
+    },
+    (ctx) => {
+      let acc: number[] = [objectHash];
+      for (const key of sortedKeys) {
+        acc.push(generateHashFromString(key));
+        acc.push(properties[key].hash(ctx));
+      }
+      for (const p of indexed) {
         acc.push(p.key.hash(ctx));
         acc.push(p.value.hash(ctx));
       }
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("object");
-    const keys = Object.keys(this.properties).sort();
-    ctx.writer.updateNumber(keys.length);
-    for (const key of keys) {
-      const parser = this.properties[key];
-      ctx.writer.updateString(key);
-      ctx.writer.updateBoolean(parser instanceof OptionalFieldRuntype);
-      parser.hash256(ctx);
-    }
-    ctx.writer.updateNumber(this.indexedPropertiesParser.length);
-    for (const p of this.indexedPropertiesParser) {
-      p.key.hash256(ctx);
-      p.value.hash256(ctx);
-    }
-  }
+      return generateHashFromNumbers(acc);
+    },
+    (ctx) => {
+      ctx.writer.updateTag("object");
+      ctx.writer.updateNumber(count);
+      for (const key of sortedKeys) {
+        const parser = properties[key];
+        ctx.writer.updateString(key);
+        ctx.writer.updateBoolean(parser.t === T_OPT);
+        parser.hash256(ctx);
+      }
+      ctx.writer.updateNumber(indexed.length);
+      for (const p of indexed) {
+        p.key.hash256(ctx);
+        p.value.hash256(ctx);
+      }
+    },
+    () => [...Object.values(properties), ...indexed.flatMap(({ key, value }) => [key, value])],
+  );
 }
-export abstract class BaseRefRuntype extends BaseRuntype {
-  refName: string;
-  constructor(metadata: RuntypeMetadata | undefined, refName: string) {
-    super(metadata);
-    this.refName = refName;
-  }
-  abstract getNamedRuntypes(): Record<string, Runtype>;
-  protected describeTypeExpr(_ctx: DescribeContext): string {
-    return this.refName;
-  }
-  collectDescribeRefs(ctx: DescribeContext): void {
-    const name = this.refName;
-    ctx.refCounts[name] = (ctx.refCounts[name] || 0) + 1;
-    if (ctx.activeRefs.has(name)) {
-      return;
-    }
-    if (ctx.visitedRefs.has(name)) {
-      return;
-    }
 
-    ctx.visitedRefs.add(name);
-    ctx.activeRefs.add(name);
-    collectDescribeRefs(this.getNamedRuntypes()[name], ctx);
-    ctx.activeRefs.delete(name);
-  }
-  override describe(ctx: DescribeContext): TypeDescription {
-    const name = this.refName;
-    const to = this.getNamedRuntypes()[this.refName];
-    const refDescription = () => typeDescription(name, this.metadata?.description);
-    if (ctx.refCounts[name] > 1) {
-      if (ctx.activeRefs.has(name)) {
-        return refDescription();
-      }
-      if (ctx.definitions[name] == null) {
-        ctx.activeRefs.add(name);
-        ctx.definitions[name] = to.describe(ctx);
-        ctx.activeRefs.delete(name);
-      }
-      return refDescription();
-    }
-    const target = to.describe(ctx);
-    return this.metadata?.description == null
-      ? target
-      : typeDescription(target.typeExpr, this.metadata.description);
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    const name = this.refName;
-    const to = this.getNamedRuntypes()[this.refName];
-    if (ctx.mode === "contextual") {
-      const printingContext = ctx.printingContext;
-      if (printingContext == null) {
-        throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
-      }
-      if (!printingContext.hasDefinition(name) && !printingContext.isDefinitionInProgress(name)) {
-        printingContext.markDefinitionInProgress(name);
-        const schemaTarget = printingContext.getNamedTypeSchemaOverride(name) ?? to;
-        const body = schemaTarget.schema(ctx);
-        printingContext.storeDefinition(name, body);
-      }
-      return annotateSchema(this.metadata, { $ref: printingContext.getRef(name) });
-    }
-    if (ctx.seen[name]) {
-      return annotateSchema(this.metadata, {});
-    }
-    ctx.seen[name] = true;
-    var tmp = to.schema(ctx);
-    delete ctx.seen[name];
-    return annotateSchema(this.metadata, tmp);
-  }
-  hash(ctx: HashContext): number {
-    const name = this.refName;
-    const to = this.getNamedRuntypes()[this.refName];
-    if (ctx.seen[name]) {
-      return generateHashFromString(name);
-    }
-    ctx.seen[name] = true;
-    var tmp = to.hash(ctx);
-    delete ctx.seen[name];
-    return tmp;
-  }
-  hash256(ctx: Hash256Context): void {
-    const to = this.getNamedRuntypes()[this.refName];
-    const activeId = ctx.active.get(to);
-    if (activeId != null) {
-      ctx.writer.updateTag("cycleRef");
-      ctx.writer.updateNumber(activeId);
-      return;
-    }
+// The named types of one module. A ref reads the cell of its name on every call, so it always uses the
+// type that the cell has now.
+export type Registry = Map<string, { n: Runtype | undefined }>;
 
-    const id = ctx.nextCycleId;
-    ctx.nextCycleId++;
-    ctx.active.set(to, id);
-    to.hash256(ctx);
-    ctx.active.delete(to);
+function cellOf(registry: Registry, name: string): { n: Runtype | undefined } {
+  let cell = registry.get(name);
+  if (cell === undefined) {
+    cell = { n: undefined };
+    registry.set(name, cell);
   }
-  validate(ctx: ValidateContext, input: any): boolean {
-    const to = this.getNamedRuntypes()[this.refName];
-    return to.validate(ctx, input);
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): any {
-    const to = this.getNamedRuntypes()[this.refName];
-    return to.parseAfterValidation(ctx, input);
-  }
-  reportDecodeError(ctx: ReportContext, input: any): DecodeError[] {
-    const to = this.getNamedRuntypes()[this.refName];
-    return to.reportDecodeError(ctx, input);
+  return cell;
+}
+
+export function ref(registry: Registry, name: string): Runtype {
+  const cell = cellOf(registry, name);
+  const n = node(
+    T_REF,
+    (c, i) => cell.n!.v(c, i),
+    (c, i) => cell.n!.p(c, i),
+    (c, i) => cell.n!.r(c, i),
+    (ctx) => {
+      const to = cell.n!;
+      if (ctx.refCounts[name] > 1) {
+        if (!ctx.activeRefs.has(name) && ctx.definitions[name] == null) {
+          ctx.activeRefs.add(name);
+          ctx.definitions[name] = to.describe(ctx);
+          ctx.activeRefs.delete(name);
+        }
+        return { typeExpr: name };
+      }
+      return to.describe(ctx);
+    },
+    (ctx) => {
+      const to = cell.n!;
+      if (ctx.mode === "contextual") {
+        const printingContext = ctx.printingContext;
+        if (printingContext == null) {
+          throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
+        }
+        if (!printingContext.hasDefinition(name) && !printingContext.isDefinitionInProgress(name)) {
+          printingContext.markDefinitionInProgress(name);
+          const schemaTarget = printingContext.getNamedTypeSchemaOverride(name) ?? to;
+          const body = schemaTarget.schema(ctx);
+          printingContext.storeDefinition(name, body);
+        }
+        return { $ref: printingContext.getRef(name) };
+      }
+      if (ctx.seen[name]) {
+        return {};
+      }
+      ctx.seen[name] = true;
+      var tmp = to.schema(ctx);
+      delete ctx.seen[name];
+      return tmp;
+    },
+    (ctx) => {
+      if (ctx.seen[name]) {
+        return generateHashFromString(name);
+      }
+      ctx.seen[name] = true;
+      var tmp = cell.n!.hash(ctx);
+      delete ctx.seen[name];
+      return tmp;
+    },
+    (ctx) => {
+      const to = cell.n!;
+      const activeId = ctx.active.get(to);
+      if (activeId != null) {
+        ctx.writer.updateTag("cycleRef");
+        ctx.writer.updateNumber(activeId);
+        return;
+      }
+
+      const id = ctx.nextCycleId;
+      ctx.nextCycleId++;
+      ctx.active.set(to, id);
+      to.hash256(ctx);
+      ctx.active.delete(to);
+    },
+    () => [cell.n!],
+  );
+  n.name = name;
+  return n;
+}
+
+// Sets the named types of a module.
+export function define(registry: Registry, types: Record<string, Runtype>): void {
+  for (const name of Object.keys(types)) {
+    cellOf(registry, name).n = types[name];
   }
 }
 
-const namedRuntypes: Record<string, Runtype> = {};
+const namedRuntypes: Registry = new Map();
 
-class RuntimeRefRuntype extends BaseRefRuntype {
-  getNamedRuntypes(): Record<string, Runtype> {
-    return namedRuntypes;
-  }
-}
-const createNamedTypeImpl = (name: string, runtype: Runtype) => {
-  if (name in namedRuntypes) {
+export const createNamedType = <T>(name: string, p: BeffParser<T>): BeffParser<T> => {
+  const cell = cellOf(namedRuntypes, name);
+  if (cell.n !== undefined) {
     throw new Error(`Named type ${name} already exists`);
   }
-  namedRuntypes[name] = runtype;
-  return buildParserFromRuntype(new RuntimeRefRuntype(undefined, name), name, false);
-};
-export const createNamedType = <T>(name: string, p: BeffParser<T>): BeffParser<T> => {
-  return createNamedTypeImpl(name, (p as ParserFromRuntype)._runtype);
+  cell.n = (p as ParserFromRuntype)._runtype;
+  return buildParserFromRuntype(ref(namedRuntypes, name), name, false);
 };
 export const overrideNamedType = (name: string, runtype: BeffParser<any>): void => {
-  if (!(name in namedRuntypes)) {
+  const cell = namedRuntypes.get(name);
+  if (cell === undefined) {
     throw new Error(`Named type ${name} does not exist`);
   }
-  namedRuntypes[name] = (runtype as ParserFromRuntype)._runtype;
+  cell.n = (runtype as ParserFromRuntype)._runtype;
 };
 
 class ParserFromRuntype implements BeffParser<any> {
@@ -2498,18 +2065,13 @@ class ParserFromRuntype implements BeffParser<any> {
     input: any,
     options?: ParseOptions,
   ): { success: false; errors: DecodeError[] } | { success: true; data: any } {
-    const disallowExtraProperties = options?.disallowExtraProperties ?? false;
-    const objectKeyOrder = options?.objectKeyOrder ?? "input";
-    const ok = this.validate(input, options);
-    if (ok) {
-      let ctx = { disallowExtraProperties, objectKeyOrder };
-      const parsed = this._runtype.parseAfterValidation(ctx, input);
-      return { success: true, data: parsed };
+    const ctx = newCtx(options);
+    if (this._runtype.v(ctx, input)) {
+      return { success: true, data: this._runtype.p(ctx, input) };
     }
-    let ctx = { path: [], disallowExtraProperties };
     return {
       success: false,
-      errors: this._runtype.reportDecodeError(ctx, input).slice(0, 10),
+      errors: this._runtype.r(ctx, input).slice(0, 10),
     };
   }
   zod(): z.ZodType<any, z.ZodTypeDef, any> {
@@ -2518,19 +2080,13 @@ class ParserFromRuntype implements BeffParser<any> {
       (data: any) => this.validate(data),
       //@ts-ignore
       (val: any) => {
-        const errors = this._runtype.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
+        const errors = this._runtype.r(newCtx(undefined), val);
         return printErrors(errors, []);
       },
     );
   }
   validate(input: any, options?: ParseOptions): input is any {
-    const disallowExtraProperties = options?.disallowExtraProperties ?? false;
-    const ctx = { disallowExtraProperties };
-    const ok = this._runtype.validate(ctx, input);
-    if (typeof ok !== "boolean") {
-      throw new Error("INTERNAL ERROR: Expected boolean");
-    }
-    return ok;
+    return this._runtype.v(newCtx(options), input);
   }
   schema(): JSONSchema7 {
     const ctx = {
@@ -2571,10 +2127,7 @@ class ParserFromRuntype implements BeffParser<any> {
     return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
   }
   hash(): number {
-    const ctx = {
-      seen: {},
-    };
-    return this._runtype.hash(ctx);
+    return this._runtype.hash({ seen: {} });
   }
   hash256(): string {
     const ctx: Hash256Context = {
