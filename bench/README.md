@@ -51,10 +51,12 @@ node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6]
 node stress.mjs [--shape records] [--scale 8] [--runs 500] [--seed 1]
 
 # Size of the generated parser.js (raw, gzip, minified), and the time and heap that loading it takes.
+# "heap after first use" is the heap after each parser was also used one time (validate, safeParse, describe,
+# schema). It shows the memory of data that a parser makes on its first call.
 # Also prints the size of the @beff/client/codegen-v2 runtime.
 node load.mjs [--shape objects] [--scale 800]
 
-# Compare two versions on the same machine: runtime, load time, heap and minified sizes.
+# Compare two versions on the same machine: runtime, load time, heap (after load, after first use) and minified sizes.
 # The baseline is another built checkout of beff (a clone or a worktree, after `pnpm install && pnpm build`).
 # The versions take turns, each in a new process, for --rounds rounds.
 node compare.mjs --baseline <checkout> [--shape union] [--rounds 5] [--scale 16] [--load-scale 800]
