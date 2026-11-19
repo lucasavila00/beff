@@ -15,7 +15,7 @@ Each script writes synthetic projects to `bench/out/<shape>-<scale>/` (ignored b
 
 ## Shapes
 
-`gen.mjs` writes `beff.json` and `src/parser.ts` for one shape. `--scale N` sets the number of types, variants or levels:
+`gen.mjs` writes `beff.json` and `src/parser.ts` for one shape. `--scale N` sets the number of types, variants or levels. For `deep` and `recursive`, N is at most 100, because real code does not nest types more deeply:
 
 | shape           | types                                                                                |
 | --------------- | ------------------------------------------------------------------------------------ |
