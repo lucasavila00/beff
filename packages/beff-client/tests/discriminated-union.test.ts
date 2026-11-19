@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, disc, lit, num, obj } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, discriminatedUnion, literal, number, object } from "../src/codegen-v2.js";
 
-const circle = obj({ kind: lit("circle"), radius: num() });
-const square = obj({ kind: lit("square"), size: num() });
-const Shape = buildParserFromRuntype(disc("kind", { circle, square }, [circle, square]), "Shape", false);
+const circle = object({ kind: literal("circle"), radius: number() });
+const square = object({ kind: literal("square"), size: number() });
+const Shape = buildParserFromRuntype(
+  discriminatedUnion("kind", { circle, square }, [circle, square]),
+  "Shape",
+  false,
+);
 
 describe("discriminated union", () => {
   it("rejects discriminator values that are Object.prototype member names", () => {

@@ -562,10 +562,14 @@ mod tests {
             export type T = typeof obj.a.b;
             parse.buildParsers<{ T: T }>();
         "#), @r#"
-        const h0=ref(R,"T");
-        const h1=str();
-        define(R,{T:h1});
-        const buildParsersInput={T:h0};
+        const direct_hoist_0 = reference(registry, "T");
+        const direct_hoist_1 = string();
+        define(registry, {
+            T: direct_hoist_1
+        });
+        const buildParsersInput = {
+            T: direct_hoist_0
+        };
         "#);
     }
 
@@ -1214,10 +1218,14 @@ mod tests {
             export type Alias = Uint8Array;
             parse.buildParsers<{ Dec: Alias }>();
         "#), @r#"
-        const h0=ref(R,"Alias");
-        const h1=typedArray("Uint8Array");
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = typedArray("Uint8Array");
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
 

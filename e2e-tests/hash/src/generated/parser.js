@@ -3,42 +3,42 @@
 "use strict";
 
 import {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } from "@beff/client/codegen-v2";
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -71,39 +71,96 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const h0=ref(R,"StringCodec");
-const h1=ref(R,"NumberCodec");
-const h2=ref(R,"BooleanCodec");
-const h3=ref(R,"StringArrayCodec");
-const h4=ref(R,"UndefinedCodec");
-const h5=ref(R,"NullCodec");
-const h6=ref(R,"AnyCodec");
-const h7=ref(R,"UnknownCodec");
-const h8=ref(R,"VoidCodec");
-const h9=ref(R,"ObjCodec");
-const h10=ref(R,"ObjCodec2");
-const h11=ref(R,"RecursiveA");
-const h12=ref(R,"RecursiveB");
-const h13=ref(R,"MutualA1");
-const h14=ref(R,"MutualB1");
-const h15=ref(R,"MutualA2");
-const h16=ref(R,"MutualB2");
-const h17=any();
-const h18=bool();
-const h19=str();
-const h20=obj({next:opt(h14),value:h19});
-const h21=obj({next:opt(h16),value:h19});
-const h22=obj({next:opt(h13),value:h19});
-const h23=obj({next:opt(h15),value:h19});
-const h24=nul();
-const h25=num();
-const h26=obj({a:h19,b:h25});
-const h27=obj({next:opt(h11),value:h19});
-const h28=obj({next:opt(h12),value:h19});
-const h29=arr(h19);
-const h30=undef();
-const h31=voidType();
-define(R,{AnyCodec:h17,BooleanCodec:h18,MutualA1:h20,MutualA2:h21,MutualB1:h22,MutualB2:h23,NullCodec:h24,NumberCodec:h25,ObjCodec:h26,ObjCodec2:h26,RecursiveA:h27,RecursiveB:h28,StringArrayCodec:h29,StringCodec:h19,UndefinedCodec:h30,UnknownCodec:h17,VoidCodec:h31});
-const buildParsersInput={StringCodec:h0,NumberCodec:h1,BooleanCodec:h2,StringArrayCodec:h3,UndefinedCodec:h4,NullCodec:h5,AnyCodec:h6,UnknownCodec:h7,VoidCodec:h8,ObjCodec:h9,ObjCodec2:h10,RecursiveA:h11,RecursiveB:h12,MutualA1:h13,MutualB1:h14,MutualA2:h15,MutualB2:h16};
+const direct_hoist_0 = reference(registry, "StringCodec");
+const direct_hoist_1 = reference(registry, "NumberCodec");
+const direct_hoist_2 = reference(registry, "BooleanCodec");
+const direct_hoist_3 = reference(registry, "StringArrayCodec");
+const direct_hoist_4 = reference(registry, "UndefinedCodec");
+const direct_hoist_5 = reference(registry, "NullCodec");
+const direct_hoist_6 = reference(registry, "AnyCodec");
+const direct_hoist_7 = reference(registry, "UnknownCodec");
+const direct_hoist_8 = reference(registry, "VoidCodec");
+const direct_hoist_9 = reference(registry, "ObjCodec");
+const direct_hoist_10 = reference(registry, "ObjCodec2");
+const direct_hoist_11 = reference(registry, "RecursiveA");
+const direct_hoist_12 = reference(registry, "RecursiveB");
+const direct_hoist_13 = reference(registry, "MutualA1");
+const direct_hoist_14 = reference(registry, "MutualB1");
+const direct_hoist_15 = reference(registry, "MutualA2");
+const direct_hoist_16 = reference(registry, "MutualB2");
+const direct_hoist_17 = any();
+const direct_hoist_18 = boolean();
+const direct_hoist_19 = string();
+const direct_hoist_20 = object({
+    next: optional(direct_hoist_14),
+    value: direct_hoist_19
+});
+const direct_hoist_21 = object({
+    next: optional(direct_hoist_16),
+    value: direct_hoist_19
+});
+const direct_hoist_22 = object({
+    next: optional(direct_hoist_13),
+    value: direct_hoist_19
+});
+const direct_hoist_23 = object({
+    next: optional(direct_hoist_15),
+    value: direct_hoist_19
+});
+const direct_hoist_24 = nullType();
+const direct_hoist_25 = number();
+const direct_hoist_26 = object({
+    a: direct_hoist_19,
+    b: direct_hoist_25
+});
+const direct_hoist_27 = object({
+    next: optional(direct_hoist_11),
+    value: direct_hoist_19
+});
+const direct_hoist_28 = object({
+    next: optional(direct_hoist_12),
+    value: direct_hoist_19
+});
+const direct_hoist_29 = array(direct_hoist_19);
+const direct_hoist_30 = undefinedType();
+const direct_hoist_31 = voidType();
+define(registry, {
+    AnyCodec: direct_hoist_17,
+    BooleanCodec: direct_hoist_18,
+    MutualA1: direct_hoist_20,
+    MutualA2: direct_hoist_21,
+    MutualB1: direct_hoist_22,
+    MutualB2: direct_hoist_23,
+    NullCodec: direct_hoist_24,
+    NumberCodec: direct_hoist_25,
+    ObjCodec: direct_hoist_26,
+    ObjCodec2: direct_hoist_26,
+    RecursiveA: direct_hoist_27,
+    RecursiveB: direct_hoist_28,
+    StringArrayCodec: direct_hoist_29,
+    StringCodec: direct_hoist_19,
+    UndefinedCodec: direct_hoist_30,
+    UnknownCodec: direct_hoist_17,
+    VoidCodec: direct_hoist_31
+});
+const buildParsersInput = {
+    StringCodec: direct_hoist_0,
+    NumberCodec: direct_hoist_1,
+    BooleanCodec: direct_hoist_2,
+    StringArrayCodec: direct_hoist_3,
+    UndefinedCodec: direct_hoist_4,
+    NullCodec: direct_hoist_5,
+    AnyCodec: direct_hoist_6,
+    UnknownCodec: direct_hoist_7,
+    VoidCodec: direct_hoist_8,
+    ObjCodec: direct_hoist_9,
+    ObjCodec2: direct_hoist_10,
+    RecursiveA: direct_hoist_11,
+    RecursiveB: direct_hoist_12,
+    MutualA1: direct_hoist_13,
+    MutualB1: direct_hoist_14,
+    MutualA2: direct_hoist_15,
+    MutualB2: direct_hoist_16
+};
 
 export default { buildParsers };

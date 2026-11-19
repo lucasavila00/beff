@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, num, numKey } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, number, numberKey } from "../src/codegen-v2.js";
 
-const NumberKey = buildParserFromRuntype(numKey(), "NumberKey", true);
-const NumberType = buildParserFromRuntype(num(), "Number", true);
+const NumberKey = buildParserFromRuntype(numberKey(), "NumberKey", true);
+const NumberType = buildParserFromRuntype(number(), "Number", true);
 
 describe("numKey", () => {
   it("accepts numeric strings", () => {

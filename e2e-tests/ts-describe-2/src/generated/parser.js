@@ -3,42 +3,42 @@
 "use strict";
 
 import {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } from "@beff/client/codegen-v2";
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -71,23 +71,64 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const h0=ref(R,"BeforeRequired");
-const h1=ref(R,"KeyofBeforeRequired");
-const h2=ref(R,"AfterRequired");
-const h3=ref(R,"KeyofAfterRequired");
-const h4=ref(R,"SomeString");
-const h5=ref(R,"SomeChar");
-const h6=str();
-const h7=undef();
-const h8=union([h7,h6]);
-const h9=voidType();
-const h10=union([h9,h6]);
-const h11=nul();
-const h12=union([h11,h6]);
-const h13=obj({a:h6,b:h8,c:h10,d:h12,e:h6});
-const h14=obj({a:h6,b:h8,c:h10,d:h12,e:opt(h6)});
-const h15=lits(["a","b","c","d","e"]);
-define(R,{AfterRequired:h13,BeforeRequired:h14,KeyofAfterRequired:h15,KeyofBeforeRequired:h15,SomeChar:h6,SomeString:h6});
-const buildParsersInput={BeforeRequired:h0,KeyofBeforeRequired:h1,AfterRequired:h2,KeyofAfterRequired:h3,SomeString:h4,SomeChar:h5};
+const direct_hoist_0 = reference(registry, "BeforeRequired");
+const direct_hoist_1 = reference(registry, "KeyofBeforeRequired");
+const direct_hoist_2 = reference(registry, "AfterRequired");
+const direct_hoist_3 = reference(registry, "KeyofAfterRequired");
+const direct_hoist_4 = reference(registry, "SomeString");
+const direct_hoist_5 = reference(registry, "SomeChar");
+const direct_hoist_6 = string();
+const direct_hoist_7 = undefinedType();
+const direct_hoist_8 = union([
+    direct_hoist_7,
+    direct_hoist_6
+]);
+const direct_hoist_9 = voidType();
+const direct_hoist_10 = union([
+    direct_hoist_9,
+    direct_hoist_6
+]);
+const direct_hoist_11 = nullType();
+const direct_hoist_12 = union([
+    direct_hoist_11,
+    direct_hoist_6
+]);
+const direct_hoist_13 = object({
+    a: direct_hoist_6,
+    b: direct_hoist_8,
+    c: direct_hoist_10,
+    d: direct_hoist_12,
+    e: direct_hoist_6
+});
+const direct_hoist_14 = object({
+    a: direct_hoist_6,
+    b: direct_hoist_8,
+    c: direct_hoist_10,
+    d: direct_hoist_12,
+    e: optional(direct_hoist_6)
+});
+const direct_hoist_15 = literals([
+    "a",
+    "b",
+    "c",
+    "d",
+    "e"
+]);
+define(registry, {
+    AfterRequired: direct_hoist_13,
+    BeforeRequired: direct_hoist_14,
+    KeyofAfterRequired: direct_hoist_15,
+    KeyofBeforeRequired: direct_hoist_15,
+    SomeChar: direct_hoist_6,
+    SomeString: direct_hoist_6
+});
+const buildParsersInput = {
+    BeforeRequired: direct_hoist_0,
+    KeyofBeforeRequired: direct_hoist_1,
+    AfterRequired: direct_hoist_2,
+    KeyofAfterRequired: direct_hoist_3,
+    SomeString: direct_hoist_4,
+    SomeChar: direct_hoist_5
+};
 
 export default { buildParsers };

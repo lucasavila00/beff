@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { any, buildParserFromRuntype, obj, str } from "../src/codegen-v2.js";
+import { any, buildParserFromRuntype, object, string } from "../src/codegen-v2.js";
 
-const Rec = buildParserFromRuntype(obj({}, [{ key: str(), value: any() }]), "Rec", false);
+const Rec = buildParserFromRuntype(object({}, [{ key: string(), value: any() }]), "Rec", false);
 
 describe("object with a __proto__ key", () => {
   it("keeps __proto__ as an own property and does not change the prototype", () => {

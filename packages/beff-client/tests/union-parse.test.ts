@@ -1,10 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, map, nul, num, obj, set, str, union } from "../src/codegen-v2.js";
+import {
+  buildParserFromRuntype,
+  map,
+  nullType,
+  number,
+  object,
+  set,
+  string,
+  union,
+} from "../src/codegen-v2.js";
 
 describe("parse of a union", () => {
   it("keeps Map and Set values when one member matches", () => {
     const Cache = buildParserFromRuntype(
-      union([obj({ tags: set(str()), byId: map(str(), num()) }), nul()]),
+      union([object({ tags: set(string()), byId: map(string(), number()) }), nullType()]),
       "Cache",
       false,
     );
@@ -18,7 +27,10 @@ describe("parse of a union", () => {
 
   it("keeps Map and Set values when many members match", () => {
     const Both = buildParserFromRuntype(
-      union([obj({ m: map(str(), num()) }), obj({ m: map(str(), num()), s: set(str()) })]),
+      union([
+        object({ m: map(string(), number()) }),
+        object({ m: map(string(), number()), s: set(string()) }),
+      ]),
       "Both",
       false,
     );
@@ -29,8 +41,8 @@ describe("parse of a union", () => {
   });
 
   it("keeps keys named like Object.prototype members", () => {
-    const record = obj({}, [{ key: str(), value: num() }]);
-    const MaybeCounts = buildParserFromRuntype(union([record, nul()]), "MaybeCounts", false);
+    const record = object({}, [{ key: string(), value: number() }]);
+    const MaybeCounts = buildParserFromRuntype(union([record, nullType()]), "MaybeCounts", false);
     expect(MaybeCounts.parse({ constructor: 1, prototype: 2, a: 3 })).toEqual({
       constructor: 1,
       prototype: 2,

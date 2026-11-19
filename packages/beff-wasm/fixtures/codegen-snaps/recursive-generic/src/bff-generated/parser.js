@@ -3,42 +3,42 @@
 "use strict";
 
 import {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } from "@beff/client/codegen-v2";
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -71,18 +71,41 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const h0=ref(R,"UsesGenericWrapper");
-const h1=ref(R,"GenericWrapper_string");
-const h2=str();
-const h3=bool();
-const h4=union([h3,h2]);
-const h5=obj({other:h1,value:h2,value2:h4});
-const h6=ref(R,"GenericWrapper_number");
-const h7=num();
-const h8=union([h3,h7]);
-const h9=obj({other:h6,value:h7,value2:h8});
-const h10=obj({wrappedNumber:h6,wrappedString:h1});
-define(R,{GenericWrapper_string:h5,GenericWrapper_number:h9,UsesGenericWrapper:h10});
-const buildParsersInput={UsesGenericWrapper:h0};
+const direct_hoist_0 = reference(registry, "UsesGenericWrapper");
+const direct_hoist_1 = reference(registry, "GenericWrapper_string");
+const direct_hoist_2 = string();
+const direct_hoist_3 = boolean();
+const direct_hoist_4 = union([
+    direct_hoist_3,
+    direct_hoist_2
+]);
+const direct_hoist_5 = object({
+    other: direct_hoist_1,
+    value: direct_hoist_2,
+    value2: direct_hoist_4
+});
+const direct_hoist_6 = reference(registry, "GenericWrapper_number");
+const direct_hoist_7 = number();
+const direct_hoist_8 = union([
+    direct_hoist_3,
+    direct_hoist_7
+]);
+const direct_hoist_9 = object({
+    other: direct_hoist_6,
+    value: direct_hoist_7,
+    value2: direct_hoist_8
+});
+const direct_hoist_10 = object({
+    wrappedNumber: direct_hoist_6,
+    wrappedString: direct_hoist_1
+});
+define(registry, {
+    GenericWrapper_string: direct_hoist_5,
+    GenericWrapper_number: direct_hoist_9,
+    UsesGenericWrapper: direct_hoist_10
+});
+const buildParsersInput = {
+    UsesGenericWrapper: direct_hoist_0
+};
 
 export default { buildParsers };

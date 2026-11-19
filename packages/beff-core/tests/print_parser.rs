@@ -838,18 +838,37 @@ mod tests {
         parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();
       "#
         ), @r#"
-        const h0=ref(R,"DiscriminatedUnion4");
-        const h1=str();
-        const h2=lit("a1");
-        const h3=obj({a1:h1,subType:h2});
-        const h4=lit("a");
-        const h5=obj({a:h3,type:h4});
-        const h6=lit("a2");
-        const h7=obj({a2:h1,subType:h6});
-        const h8=obj({a:h7,type:h4});
-        const h9=union([h5,h8]);
-        define(R,{DiscriminatedUnion4:h9});
-        const buildParsersInput={DiscriminatedUnion4:h0};
+        const direct_hoist_0 = reference(registry, "DiscriminatedUnion4");
+        const direct_hoist_1 = string();
+        const direct_hoist_2 = literal("a1");
+        const direct_hoist_3 = object({
+            a1: direct_hoist_1,
+            subType: direct_hoist_2
+        });
+        const direct_hoist_4 = literal("a");
+        const direct_hoist_5 = object({
+            a: direct_hoist_3,
+            type: direct_hoist_4
+        });
+        const direct_hoist_6 = literal("a2");
+        const direct_hoist_7 = object({
+            a2: direct_hoist_1,
+            subType: direct_hoist_6
+        });
+        const direct_hoist_8 = object({
+            a: direct_hoist_7,
+            type: direct_hoist_4
+        });
+        const direct_hoist_9 = union([
+            direct_hoist_5,
+            direct_hoist_8
+        ]);
+        define(registry, {
+            DiscriminatedUnion4: direct_hoist_9
+        });
+        const buildParsersInput = {
+            DiscriminatedUnion4: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -882,28 +901,91 @@ mod tests {
         parse.buildParsers<{ WorkflowSource: WorkflowSource }>();
       "#
         ), @r#"
-        const h0=ref(R,"WorkflowSource");
-        const h1=str();
-        const h2=undef();
-        const h3=union([h2,h1]);
-        const h4=lit("CRON");
-        const h5=obj({cronExpression:h1,eventName:h3,type:h4});
-        const h6=ref(R,"WorkflowSourceBase");
-        const h7=allOf([h5,h6]);
-        const h8=lit("EVENT");
-        const h9=obj({cronExpression:h3,eventName:h1,type:h8});
-        const h10=allOf([h9,h6]);
-        const h11=any();
-        const h12=obj({},[{key:h1,value:h11}]);
-        const h13=obj({createdAt:h1,cronExpression:h1,eventName:h3,id:h1,metadata:h12,type:h4,updatedAt:h1,workflowID:h1});
-        const h14=obj({createdAt:h1,cronExpression:h3,eventName:h1,id:h1,metadata:h12,type:h8,updatedAt:h1,workflowID:h1});
-        const h15=ref(R,"EventWorkflowSource");
-        const h16=ref(R,"CronWorkflowSource");
-        const h17=disc("type",{CRON:h13,EVENT:h14},[h15,h16]);
-        const h18=lits(["CRON","EVENT"]);
-        const h19=obj({createdAt:h1,id:h1,metadata:h12,type:h18,updatedAt:h1,workflowID:h1});
-        define(R,{CronWorkflowSource:h7,EventWorkflowSource:h10,WorkflowSource:h17,WorkflowSourceBase:h19});
-        const buildParsersInput={WorkflowSource:h0};
+        const direct_hoist_0 = reference(registry, "WorkflowSource");
+        const direct_hoist_1 = string();
+        const direct_hoist_2 = undefinedType();
+        const direct_hoist_3 = union([
+            direct_hoist_2,
+            direct_hoist_1
+        ]);
+        const direct_hoist_4 = literal("CRON");
+        const direct_hoist_5 = object({
+            cronExpression: direct_hoist_1,
+            eventName: direct_hoist_3,
+            type: direct_hoist_4
+        });
+        const direct_hoist_6 = reference(registry, "WorkflowSourceBase");
+        const direct_hoist_7 = intersection([
+            direct_hoist_5,
+            direct_hoist_6
+        ]);
+        const direct_hoist_8 = literal("EVENT");
+        const direct_hoist_9 = object({
+            cronExpression: direct_hoist_3,
+            eventName: direct_hoist_1,
+            type: direct_hoist_8
+        });
+        const direct_hoist_10 = intersection([
+            direct_hoist_9,
+            direct_hoist_6
+        ]);
+        const direct_hoist_11 = any();
+        const direct_hoist_12 = object({}, [
+            {
+                key: direct_hoist_1,
+                value: direct_hoist_11
+            }
+        ]);
+        const direct_hoist_13 = object({
+            createdAt: direct_hoist_1,
+            cronExpression: direct_hoist_1,
+            eventName: direct_hoist_3,
+            id: direct_hoist_1,
+            metadata: direct_hoist_12,
+            type: direct_hoist_4,
+            updatedAt: direct_hoist_1,
+            workflowID: direct_hoist_1
+        });
+        const direct_hoist_14 = object({
+            createdAt: direct_hoist_1,
+            cronExpression: direct_hoist_3,
+            eventName: direct_hoist_1,
+            id: direct_hoist_1,
+            metadata: direct_hoist_12,
+            type: direct_hoist_8,
+            updatedAt: direct_hoist_1,
+            workflowID: direct_hoist_1
+        });
+        const direct_hoist_15 = reference(registry, "EventWorkflowSource");
+        const direct_hoist_16 = reference(registry, "CronWorkflowSource");
+        const direct_hoist_17 = discriminatedUnion("type", {
+            CRON: direct_hoist_13,
+            EVENT: direct_hoist_14
+        }, [
+            direct_hoist_15,
+            direct_hoist_16
+        ]);
+        const direct_hoist_18 = literals([
+            "CRON",
+            "EVENT"
+        ]);
+        const direct_hoist_19 = object({
+            createdAt: direct_hoist_1,
+            id: direct_hoist_1,
+            metadata: direct_hoist_12,
+            type: direct_hoist_18,
+            updatedAt: direct_hoist_1,
+            workflowID: direct_hoist_1
+        });
+        define(registry, {
+            CronWorkflowSource: direct_hoist_7,
+            EventWorkflowSource: direct_hoist_10,
+            WorkflowSource: direct_hoist_17,
+            WorkflowSourceBase: direct_hoist_19
+        });
+        const buildParsersInput = {
+            WorkflowSource: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1378,10 +1460,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=str();
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = string();
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
 
@@ -1393,11 +1479,15 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=str();
-        const h2=arr(h1);
-        define(R,{Alias:h2});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = string();
+        const direct_hoist_2 = array(direct_hoist_1);
+        define(registry, {
+            Alias: direct_hoist_2
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
 
@@ -1423,13 +1513,24 @@ mod tests {
                 "#
             )
         ]), @r#"
-        const h0=ref(R,"KnownConstants");
-        const h1=lits(["blue","red"]);
-        const h2=str();
-        const h3=arr(h2);
-        const h4=obj({BAR_OPTION:h1,BAZ_VALUES:h3,FOO_VALUE:h2});
-        define(R,{KnownConstants:h4});
-        const buildParsersInput={KnownConstants:h0};
+        const direct_hoist_0 = reference(registry, "KnownConstants");
+        const direct_hoist_1 = literals([
+            "blue",
+            "red"
+        ]);
+        const direct_hoist_2 = string();
+        const direct_hoist_3 = array(direct_hoist_2);
+        const direct_hoist_4 = object({
+            BAR_OPTION: direct_hoist_1,
+            BAZ_VALUES: direct_hoist_3,
+            FOO_VALUE: direct_hoist_2
+        });
+        define(registry, {
+            KnownConstants: direct_hoist_4
+        });
+        const buildParsersInput = {
+            KnownConstants: direct_hoist_0
+        };
         "#);
     }
 
@@ -1441,10 +1542,16 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=strFormat(["password"]);
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = stringWithFormat([
+            "password"
+        ]);
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
 
@@ -1457,12 +1564,24 @@ mod tests {
         parse.buildParsers<{ PassLenghts: PassLenghts }>();
       "#
         ), @r#"
-        const h0=ref(R,"PassLenghts");
-        const h1=num();
-        const h2=strFormat(["password"]);
-        const h3=obj({},[{key:h2,value:h1}]);
-        define(R,{PassLenghts:h3,Password:h2});
-        const buildParsersInput={PassLenghts:h0};
+        const direct_hoist_0 = reference(registry, "PassLenghts");
+        const direct_hoist_1 = number();
+        const direct_hoist_2 = stringWithFormat([
+            "password"
+        ]);
+        const direct_hoist_3 = object({}, [
+            {
+                key: direct_hoist_2,
+                value: direct_hoist_1
+            }
+        ]);
+        define(registry, {
+            PassLenghts: direct_hoist_3,
+            Password: direct_hoist_2
+        });
+        const buildParsersInput = {
+            PassLenghts: direct_hoist_0
+        };
         "#);
     }
 
@@ -1476,12 +1595,25 @@ mod tests {
         parse.buildParsers<{ PassLengthGet: PassLengthGet }>();
       "#
         ), @r#"
-        const h0=ref(R,"PassLengthGet");
-        const h1=num();
-        const h2=strFormat(["password"]);
-        const h3=obj({},[{key:h2,value:h1}]);
-        define(R,{PassLenghts:h3,PassLengthGet:h1,Password:h2});
-        const buildParsersInput={PassLengthGet:h0};
+        const direct_hoist_0 = reference(registry, "PassLengthGet");
+        const direct_hoist_1 = number();
+        const direct_hoist_2 = stringWithFormat([
+            "password"
+        ]);
+        const direct_hoist_3 = object({}, [
+            {
+                key: direct_hoist_2,
+                value: direct_hoist_1
+            }
+        ]);
+        define(registry, {
+            PassLenghts: direct_hoist_3,
+            PassLengthGet: direct_hoist_1,
+            Password: direct_hoist_2
+        });
+        const buildParsersInput = {
+            PassLengthGet: direct_hoist_0
+        };
         "#);
     }
 
@@ -1494,11 +1626,21 @@ mod tests {
         parse.buildParsers<{ NumberRecGet: NumberRecGet }>();
       "#
         ), @r#"
-        const h0=ref(R,"NumberRecGet");
-        const h1=str();
-        const h2=obj({},[{key:numKey(),value:h1}]);
-        define(R,{NumberRec:h2,NumberRecGet:h1});
-        const buildParsersInput={NumberRecGet:h0};
+        const direct_hoist_0 = reference(registry, "NumberRecGet");
+        const direct_hoist_1 = string();
+        const direct_hoist_2 = object({}, [
+            {
+                key: numberKey(),
+                value: direct_hoist_1
+            }
+        ]);
+        define(registry, {
+            NumberRec: direct_hoist_2,
+            NumberRecGet: direct_hoist_1
+        });
+        const buildParsersInput = {
+            NumberRecGet: direct_hoist_0
+        };
         "#);
     }
 
@@ -1512,14 +1654,31 @@ mod tests {
         parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();
       "#
         ), @r#"
-        const h0=ref(R,"User");
-        const h1=ref(R,"ReadAuthorizedUser");
-        const h2=ref(R,"WriteAuthorizedUser");
-        const h3=strFormat(["User","ReadAuthorizedUser"]);
-        const h4=strFormat(["User"]);
-        const h5=strFormat(["User","ReadAuthorizedUser","WriteAuthorizedUser"]);
-        define(R,{ReadAuthorizedUser:h3,User:h4,WriteAuthorizedUser:h5});
-        const buildParsersInput={User:h0,ReadAuthorizedUser:h1,WriteAuthorizedUser:h2};
+        const direct_hoist_0 = reference(registry, "User");
+        const direct_hoist_1 = reference(registry, "ReadAuthorizedUser");
+        const direct_hoist_2 = reference(registry, "WriteAuthorizedUser");
+        const direct_hoist_3 = stringWithFormat([
+            "User",
+            "ReadAuthorizedUser"
+        ]);
+        const direct_hoist_4 = stringWithFormat([
+            "User"
+        ]);
+        const direct_hoist_5 = stringWithFormat([
+            "User",
+            "ReadAuthorizedUser",
+            "WriteAuthorizedUser"
+        ]);
+        define(registry, {
+            ReadAuthorizedUser: direct_hoist_3,
+            User: direct_hoist_4,
+            WriteAuthorizedUser: direct_hoist_5
+        });
+        const buildParsersInput = {
+            User: direct_hoist_0,
+            ReadAuthorizedUser: direct_hoist_1,
+            WriteAuthorizedUser: direct_hoist_2
+        };
         "#);
     }
 
@@ -1533,14 +1692,31 @@ mod tests {
         parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();
       "#
         ), @r#"
-        const h0=ref(R,"NonInfiniteNumber");
-        const h1=ref(R,"NonNegativeNumber");
-        const h2=ref(R,"Rate");
-        const h3=numFormat(["NonInfiniteNumber"]);
-        const h4=numFormat(["NonInfiniteNumber","NonNegativeNumber"]);
-        const h5=numFormat(["NonInfiniteNumber","NonNegativeNumber","Rate"]);
-        define(R,{NonInfiniteNumber:h3,NonNegativeNumber:h4,Rate:h5});
-        const buildParsersInput={NonInfiniteNumber:h0,NonNegativeNumber:h1,Rate:h2};
+        const direct_hoist_0 = reference(registry, "NonInfiniteNumber");
+        const direct_hoist_1 = reference(registry, "NonNegativeNumber");
+        const direct_hoist_2 = reference(registry, "Rate");
+        const direct_hoist_3 = numberWithFormat([
+            "NonInfiniteNumber"
+        ]);
+        const direct_hoist_4 = numberWithFormat([
+            "NonInfiniteNumber",
+            "NonNegativeNumber"
+        ]);
+        const direct_hoist_5 = numberWithFormat([
+            "NonInfiniteNumber",
+            "NonNegativeNumber",
+            "Rate"
+        ]);
+        define(registry, {
+            NonInfiniteNumber: direct_hoist_3,
+            NonNegativeNumber: direct_hoist_4,
+            Rate: direct_hoist_5
+        });
+        const buildParsersInput = {
+            NonInfiniteNumber: direct_hoist_0,
+            NonNegativeNumber: direct_hoist_1,
+            Rate: direct_hoist_2
+        };
         "#);
     }
 
@@ -1577,10 +1753,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=lit("some_string_const");
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = literal("some_string_const");
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1591,10 +1771,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=date();
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = date();
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1605,10 +1789,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=regex(/^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(__)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/,"`${number}__${number}`");
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = regex(/^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(__)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}__${number}`");
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1619,11 +1807,18 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=num();
-        const h2=tuple([h1,h1]);
-        define(R,{Alias:h2});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = number();
+        const direct_hoist_2 = tuple([
+            direct_hoist_1,
+            direct_hoist_1
+        ]);
+        define(registry, {
+            Alias: direct_hoist_2
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1634,11 +1829,17 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=str();
-        const h2=obj({a:h1});
-        define(R,{Alias:h2});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = string();
+        const direct_hoist_2 = object({
+            a: direct_hoist_1
+        });
+        define(registry, {
+            Alias: direct_hoist_2
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1653,11 +1854,17 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=doc(str(),"Stable user id.");
-        const h2=doc(obj({id:h1}),"User payload.");
-        define(R,{Alias:h2});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = withDescription(string(), "Stable user id.");
+        const direct_hoist_2 = withDescription(object({
+            id: direct_hoist_1
+        }), "User payload.");
+        define(registry, {
+            Alias: direct_hoist_2
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1670,10 +1877,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=doc(str(),"New payload.");
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = withDescription(string(), "New payload.");
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1686,10 +1897,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=str();
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = string();
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1702,10 +1917,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=str();
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = string();
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1723,12 +1942,19 @@ mod tests {
         parse.buildParsers<{ Dec: Wrapper }>();
       "#
         ), @r#"
-        const h0=ref(R,"Wrapper");
-        const h1=doc(str(),"Declared alias.");
-        const h2=ref(R,"Alias");
-        const h3=doc(obj({value:h2}),"Declared interface.");
-        define(R,{Alias:h1,Wrapper:h3});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Wrapper");
+        const direct_hoist_1 = withDescription(string(), "Declared alias.");
+        const direct_hoist_2 = reference(registry, "Alias");
+        const direct_hoist_3 = withDescription(object({
+            value: direct_hoist_2
+        }), "Declared interface.");
+        define(registry, {
+            Alias: direct_hoist_1,
+            Wrapper: direct_hoist_3
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1742,11 +1968,17 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=doc(str(),"Quoted property.");
-        const h2=obj({"quoted-key":h1});
-        define(R,{Alias:h2});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = withDescription(string(), "Quoted property.");
+        const direct_hoist_2 = object({
+            "quoted-key": direct_hoist_1
+        });
+        define(registry, {
+            Alias: direct_hoist_2
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1757,12 +1989,19 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=str();
-        const h2=num();
-        const h3=union([h1,h2]);
-        define(R,{Alias:h3});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = string();
+        const direct_hoist_2 = number();
+        const direct_hoist_3 = union([
+            direct_hoist_1,
+            direct_hoist_2
+        ]);
+        define(registry, {
+            Alias: direct_hoist_3
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1773,12 +2012,19 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=str();
-        const h2=num();
-        const h3=obj({a:h1,b:h2});
-        define(R,{Alias:h3});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = string();
+        const direct_hoist_2 = number();
+        const direct_hoist_3 = object({
+            a: direct_hoist_1,
+            b: direct_hoist_2
+        });
+        define(registry, {
+            Alias: direct_hoist_3
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -1788,9 +2034,11 @@ mod tests {
         parse.buildParsers<{ Dec: string }>();
       "#
         ), @"
-        const h0=str();
-        define(R,{});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = string();
+        define(registry, {});
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         ");
     }
 
@@ -1802,10 +2050,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const h0=ref(R,"Alias");
-        const h1=str();
-        define(R,{Alias:h1});
-        const buildParsersInput={Dec:h0};
+        const direct_hoist_0 = reference(registry, "Alias");
+        const direct_hoist_1 = string();
+        define(registry, {
+            Alias: direct_hoist_1
+        });
+        const buildParsersInput = {
+            Dec: direct_hoist_0
+        };
         "#);
     }
 
@@ -2028,22 +2280,51 @@ mod tests {
             parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
       "#
         ), @r#"
-        const h0=ref(R,"UsesGenericWrapper");
-        const h1=nul();
-        const h2=ref(R,"GenericWrapper_string");
-        const h3=union([h1,h2]);
-        const h4=str();
-        const h5=bool();
-        const h6=union([h5,h4]);
-        const h7=obj({other:h3,value:h4,value2:h6});
-        const h8=ref(R,"GenericWrapper_number");
-        const h9=union([h1,h8]);
-        const h10=num();
-        const h11=union([h5,h10]);
-        const h12=obj({other:h9,value:h10,value2:h11});
-        const h13=obj({wrappedNumber:h8,wrappedString:h2});
-        define(R,{GenericWrapper_string:h7,GenericWrapper_number:h12,UsesGenericWrapper:h13});
-        const buildParsersInput={UsesGenericWrapper:h0};
+        const direct_hoist_0 = reference(registry, "UsesGenericWrapper");
+        const direct_hoist_1 = nullType();
+        const direct_hoist_2 = reference(registry, "GenericWrapper_string");
+        const direct_hoist_3 = union([
+            direct_hoist_1,
+            direct_hoist_2
+        ]);
+        const direct_hoist_4 = string();
+        const direct_hoist_5 = boolean();
+        const direct_hoist_6 = union([
+            direct_hoist_5,
+            direct_hoist_4
+        ]);
+        const direct_hoist_7 = object({
+            other: direct_hoist_3,
+            value: direct_hoist_4,
+            value2: direct_hoist_6
+        });
+        const direct_hoist_8 = reference(registry, "GenericWrapper_number");
+        const direct_hoist_9 = union([
+            direct_hoist_1,
+            direct_hoist_8
+        ]);
+        const direct_hoist_10 = number();
+        const direct_hoist_11 = union([
+            direct_hoist_5,
+            direct_hoist_10
+        ]);
+        const direct_hoist_12 = object({
+            other: direct_hoist_9,
+            value: direct_hoist_10,
+            value2: direct_hoist_11
+        });
+        const direct_hoist_13 = object({
+            wrappedNumber: direct_hoist_8,
+            wrappedString: direct_hoist_2
+        });
+        define(registry, {
+            GenericWrapper_string: direct_hoist_7,
+            GenericWrapper_number: direct_hoist_12,
+            UsesGenericWrapper: direct_hoist_13
+        });
+        const buildParsersInput = {
+            UsesGenericWrapper: direct_hoist_0
+        };
         "#);
     }
 
@@ -2066,19 +2347,42 @@ mod tests {
             parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
       "#
         ), @r#"
-        const h0=ref(R,"UsesGenericWrapper");
-        const h1=ref(R,"GenericWrapper_string");
-        const h2=str();
-        const h3=bool();
-        const h4=union([h3,h2]);
-        const h5=obj({other:h1,value:h2,value2:h4});
-        const h6=ref(R,"GenericWrapper_number");
-        const h7=num();
-        const h8=union([h3,h7]);
-        const h9=obj({other:h6,value:h7,value2:h8});
-        const h10=obj({wrappedNumber:h6,wrappedString:h1});
-        define(R,{GenericWrapper_string:h5,GenericWrapper_number:h9,UsesGenericWrapper:h10});
-        const buildParsersInput={UsesGenericWrapper:h0};
+        const direct_hoist_0 = reference(registry, "UsesGenericWrapper");
+        const direct_hoist_1 = reference(registry, "GenericWrapper_string");
+        const direct_hoist_2 = string();
+        const direct_hoist_3 = boolean();
+        const direct_hoist_4 = union([
+            direct_hoist_3,
+            direct_hoist_2
+        ]);
+        const direct_hoist_5 = object({
+            other: direct_hoist_1,
+            value: direct_hoist_2,
+            value2: direct_hoist_4
+        });
+        const direct_hoist_6 = reference(registry, "GenericWrapper_number");
+        const direct_hoist_7 = number();
+        const direct_hoist_8 = union([
+            direct_hoist_3,
+            direct_hoist_7
+        ]);
+        const direct_hoist_9 = object({
+            other: direct_hoist_6,
+            value: direct_hoist_7,
+            value2: direct_hoist_8
+        });
+        const direct_hoist_10 = object({
+            wrappedNumber: direct_hoist_6,
+            wrappedString: direct_hoist_1
+        });
+        define(registry, {
+            GenericWrapper_string: direct_hoist_5,
+            GenericWrapper_number: direct_hoist_9,
+            UsesGenericWrapper: direct_hoist_10
+        });
+        const buildParsersInput = {
+            UsesGenericWrapper: direct_hoist_0
+        };
         "#);
     }
 
@@ -2099,16 +2403,29 @@ mod tests {
             parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
       "#
         ), @r#"
-        const h0=ref(R,"UsesGenericWrapper");
-        const h1=str();
-        const h2=obj({value:h1});
-        const h3=num();
-        const h4=obj({value:h3});
-        const h5=ref(R,"GenericWrapper_number");
-        const h6=ref(R,"GenericWrapper_string");
-        const h7=obj({wrappedNumber:h5,wrappedString:h6});
-        define(R,{GenericWrapper_string:h2,GenericWrapper_number:h4,UsesGenericWrapper:h7});
-        const buildParsersInput={UsesGenericWrapper:h0};
+        const direct_hoist_0 = reference(registry, "UsesGenericWrapper");
+        const direct_hoist_1 = string();
+        const direct_hoist_2 = object({
+            value: direct_hoist_1
+        });
+        const direct_hoist_3 = number();
+        const direct_hoist_4 = object({
+            value: direct_hoist_3
+        });
+        const direct_hoist_5 = reference(registry, "GenericWrapper_number");
+        const direct_hoist_6 = reference(registry, "GenericWrapper_string");
+        const direct_hoist_7 = object({
+            wrappedNumber: direct_hoist_5,
+            wrappedString: direct_hoist_6
+        });
+        define(registry, {
+            GenericWrapper_string: direct_hoist_2,
+            GenericWrapper_number: direct_hoist_4,
+            UsesGenericWrapper: direct_hoist_7
+        });
+        const buildParsersInput = {
+            UsesGenericWrapper: direct_hoist_0
+        };
         "#);
     }
 
@@ -2139,25 +2456,60 @@ mod tests {
             parse.buildParsers<{ X: X, }>();
       "#
         ), @r#"
-        const h0=ref(R,"X");
-        const h1=ref(R,"EditableLogicalConditionsAstLogicalOp_string");
-        const h2=lit("none");
-        const h3=obj({_tag:h2});
-        const h4=disc("_tag",{logical:h1,none:h3},[h1,h3]);
-        const h5=lit("custom");
-        const h6=str();
-        const h7=obj({_tag:h5,data:h6});
-        const h8=lit("logical");
-        const h9=ref(R,"EditableLogicalConditionsAstNode_string");
-        const h10=arr(h9);
-        const h11=ref(R,"LogicalOp");
-        const h12=obj({_tag:h8,nodes:h10,op:h11});
-        const h13=ref(R,"EditableLogicalConditionsAstCustom_string");
-        const h14=disc("_tag",{custom:h13,logical:h1,none:h3},[h13,h1,h3]);
-        const h15=lits(["AND","OR"]);
-        const h16=ref(R,"EditableLogicalConditionsAst_string");
-        define(R,{EditableLogicalConditionsAst_string:h4,EditableLogicalConditionsAstCustom_string:h7,EditableLogicalConditionsAstLogicalOp_string:h12,EditableLogicalConditionsAstNode_string:h14,LogicalOp:h15,X:h16});
-        const buildParsersInput={X:h0};
+        const direct_hoist_0 = reference(registry, "X");
+        const direct_hoist_1 = reference(registry, "EditableLogicalConditionsAstLogicalOp_string");
+        const direct_hoist_2 = literal("none");
+        const direct_hoist_3 = object({
+            _tag: direct_hoist_2
+        });
+        const direct_hoist_4 = discriminatedUnion("_tag", {
+            logical: direct_hoist_1,
+            none: direct_hoist_3
+        }, [
+            direct_hoist_1,
+            direct_hoist_3
+        ]);
+        const direct_hoist_5 = literal("custom");
+        const direct_hoist_6 = string();
+        const direct_hoist_7 = object({
+            _tag: direct_hoist_5,
+            data: direct_hoist_6
+        });
+        const direct_hoist_8 = literal("logical");
+        const direct_hoist_9 = reference(registry, "EditableLogicalConditionsAstNode_string");
+        const direct_hoist_10 = array(direct_hoist_9);
+        const direct_hoist_11 = reference(registry, "LogicalOp");
+        const direct_hoist_12 = object({
+            _tag: direct_hoist_8,
+            nodes: direct_hoist_10,
+            op: direct_hoist_11
+        });
+        const direct_hoist_13 = reference(registry, "EditableLogicalConditionsAstCustom_string");
+        const direct_hoist_14 = discriminatedUnion("_tag", {
+            custom: direct_hoist_13,
+            logical: direct_hoist_1,
+            none: direct_hoist_3
+        }, [
+            direct_hoist_13,
+            direct_hoist_1,
+            direct_hoist_3
+        ]);
+        const direct_hoist_15 = literals([
+            "AND",
+            "OR"
+        ]);
+        const direct_hoist_16 = reference(registry, "EditableLogicalConditionsAst_string");
+        define(registry, {
+            EditableLogicalConditionsAst_string: direct_hoist_4,
+            EditableLogicalConditionsAstCustom_string: direct_hoist_7,
+            EditableLogicalConditionsAstLogicalOp_string: direct_hoist_12,
+            EditableLogicalConditionsAstNode_string: direct_hoist_14,
+            LogicalOp: direct_hoist_15,
+            X: direct_hoist_16
+        });
+        const buildParsersInput = {
+            X: direct_hoist_0
+        };
         "#);
     }
     #[test]
@@ -2216,21 +2568,46 @@ mod tests {
     parse.buildParsers<{ ProtoDiscriminated: ProtoDiscriminated, ProtoKeyObject: ProtoKeyObject, __proto__: __proto__ }>();
   "#;
         insta::assert_snapshot!(print_cgen(from), @r#"
-        const h0=ref(R,"ProtoDiscriminated");
-        const h1=ref(R,"ProtoKeyObject");
-        const h2=ref(R,"__proto__");
-        const h3=bool();
-        const h4=lit("__proto__");
-        const h5=obj({c:h3,kind:h4});
-        const h6=str();
-        const h7=lit("toString");
-        const h8=obj({a:h6,kind:h7});
-        const h9=disc("kind",{["__proto__"]:h5,toString:h8},[h8,h5]);
-        const h10=num();
-        const h11=obj({["__proto__"]:h6,toString:h10});
-        const h12=obj({a:h6});
-        define(R,{ProtoDiscriminated:h9,ProtoKeyObject:h11,["__proto__"]:h12});
-        const buildParsersInput={ProtoDiscriminated:h0,ProtoKeyObject:h1,["__proto__"]:h2};
+        const direct_hoist_0 = reference(registry, "ProtoDiscriminated");
+        const direct_hoist_1 = reference(registry, "ProtoKeyObject");
+        const direct_hoist_2 = reference(registry, "__proto__");
+        const direct_hoist_3 = boolean();
+        const direct_hoist_4 = literal("__proto__");
+        const direct_hoist_5 = object({
+            c: direct_hoist_3,
+            kind: direct_hoist_4
+        });
+        const direct_hoist_6 = string();
+        const direct_hoist_7 = literal("toString");
+        const direct_hoist_8 = object({
+            a: direct_hoist_6,
+            kind: direct_hoist_7
+        });
+        const direct_hoist_9 = discriminatedUnion("kind", {
+            ["__proto__"]: direct_hoist_5,
+            toString: direct_hoist_8
+        }, [
+            direct_hoist_8,
+            direct_hoist_5
+        ]);
+        const direct_hoist_10 = number();
+        const direct_hoist_11 = object({
+            ["__proto__"]: direct_hoist_6,
+            toString: direct_hoist_10
+        });
+        const direct_hoist_12 = object({
+            a: direct_hoist_6
+        });
+        define(registry, {
+            ProtoDiscriminated: direct_hoist_9,
+            ProtoKeyObject: direct_hoist_11,
+            ["__proto__"]: direct_hoist_12
+        });
+        const buildParsersInput = {
+            ProtoDiscriminated: direct_hoist_0,
+            ProtoKeyObject: direct_hoist_1,
+            ["__proto__"]: direct_hoist_2
+        };
         "#);
     }
 }

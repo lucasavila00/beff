@@ -3,42 +3,42 @@
 "use strict";
 
 import {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } from "@beff/client/codegen-v2";
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -71,11 +71,19 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const h0=ref(R,"T");
-const h1=ref(R,"A");
-const h2=str();
-const h3=obj({value:h2});
-define(R,{A:h2,T:h3});
-const buildParsersInput={T:h0,A:h1};
+const direct_hoist_0 = reference(registry, "T");
+const direct_hoist_1 = reference(registry, "A");
+const direct_hoist_2 = string();
+const direct_hoist_3 = object({
+    value: direct_hoist_2
+});
+define(registry, {
+    A: direct_hoist_2,
+    T: direct_hoist_3
+});
+const buildParsersInput = {
+    T: direct_hoist_0,
+    A: direct_hoist_1
+};
 
 export default { buildParsers };

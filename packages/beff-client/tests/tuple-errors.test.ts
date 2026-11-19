@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, num, str, tuple } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, number, string, tuple } from "../src/codegen-v2.js";
 
-const Pair = buildParserFromRuntype(tuple([str(), num()], null), "Pair", false);
+const Pair = buildParserFromRuntype(tuple([string(), number()], null), "Pair", false);
 
 describe("tuple errors", () => {
   it("reports an error when the tuple has too many items", () => {

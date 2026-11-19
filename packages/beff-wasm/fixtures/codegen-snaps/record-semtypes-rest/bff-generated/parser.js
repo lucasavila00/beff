@@ -3,42 +3,42 @@
 "use strict";
 
 import {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } from "@beff/client/codegen-v2";
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -71,13 +71,29 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const h0=ref(R,"User");
-const h1=num();
-const h2=str();
-const h3=obj({data1:h1,data2:h2});
-const h4=obj({},[{key:h2,value:h2}]);
-const h5=obj({a:h2});
-define(R,{User:h3,X:h4,Y:h5});
-const buildParsersInput={User:h0};
+const direct_hoist_0 = reference(registry, "User");
+const direct_hoist_1 = number();
+const direct_hoist_2 = string();
+const direct_hoist_3 = object({
+    data1: direct_hoist_1,
+    data2: direct_hoist_2
+});
+const direct_hoist_4 = object({}, [
+    {
+        key: direct_hoist_2,
+        value: direct_hoist_2
+    }
+]);
+const direct_hoist_5 = object({
+    a: direct_hoist_2
+});
+define(registry, {
+    User: direct_hoist_3,
+    X: direct_hoist_4,
+    Y: direct_hoist_5
+});
+const buildParsersInput = {
+    User: direct_hoist_0
+};
 
 export default { buildParsers };

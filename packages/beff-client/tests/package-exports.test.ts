@@ -55,7 +55,7 @@ describe("published package exports", () => {
     const output = runNode([
       "--input-type=module",
       "-e",
-      'const mod = await import("@beff/client/codegen-v2"); console.log(typeof mod.allOf);',
+      'const mod = await import("@beff/client/codegen-v2"); console.log(typeof mod.intersection);',
     ]);
 
     expect(output).toBe("function");
@@ -70,7 +70,7 @@ describe("published package exports", () => {
   it("continues to expose the codegen subpath under CommonJS require", () => {
     const output = runNode([
       "-e",
-      'const mod = require("@beff/client/codegen-v2"); console.log(typeof mod.allOf);',
+      'const mod = require("@beff/client/codegen-v2"); console.log(typeof mod.intersection);',
     ]);
 
     expect(output).toBe("function");

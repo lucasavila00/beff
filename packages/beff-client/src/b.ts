@@ -1,17 +1,17 @@
 import {
   any,
-  arr,
-  bool,
+  array,
+  boolean,
   buildParserFromRuntype,
   date,
-  lit,
-  nul,
-  num,
-  obj,
+  literal,
+  nullType,
+  number,
+  object,
   Runtype,
-  str,
+  string,
   typedArray,
-  undef,
+  undefinedType,
   union,
   voidType,
 } from "./codegen-v2.js";
@@ -26,24 +26,24 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
   for (const key of Object.keys(fields)) {
     props[key] = (fields[key] as any)._runtype;
   }
-  return buildParserFromRuntype(obj(props), "b.Object", true);
+  return buildParserFromRuntype(object(props), "b.Object", true);
 };
-const stringParser = buildParserFromRuntype(str(), "String", true);
+const stringParser = buildParserFromRuntype(string(), "String", true);
 const String_ = (): BeffParser<string> => stringParser;
 
-const numberParser = buildParserFromRuntype(num(), "Number", true);
+const numberParser = buildParserFromRuntype(number(), "Number", true);
 const Number_ = (): BeffParser<number> => numberParser;
 
-const booleanParser = buildParserFromRuntype(bool(), "Boolean", true);
+const booleanParser = buildParserFromRuntype(boolean(), "Boolean", true);
 const Boolean_ = (): BeffParser<boolean> => booleanParser;
 
-const undefinedParser = buildParserFromRuntype(undef(), "Undefined", true);
+const undefinedParser = buildParserFromRuntype(undefinedType(), "Undefined", true);
 const Undefined_ = (): BeffParser<undefined> => undefinedParser;
 
 const voidParser = buildParserFromRuntype(voidType(), "Void", true);
 const Void_ = (): BeffParser<void> => voidParser;
 
-const nullParser = buildParserFromRuntype(nul(), "Null", true);
+const nullParser = buildParserFromRuntype(nullType(), "Null", true);
 const Null_ = (): BeffParser<null> => nullParser;
 
 const anyParser = buildParserFromRuntype(any(), "Any", true);
@@ -72,13 +72,13 @@ const BigInt64Array_ = typedArrayParser<BigInt64Array>("BigInt64Array");
 const BigUint64Array_ = typedArrayParser<BigUint64Array>("BigUint64Array");
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
-  buildParserFromRuntype(arr((parser as any)._runtype), "b.Array", true);
+  buildParserFromRuntype(array((parser as any)._runtype), "b.Array", true);
 
 const ReadOnlyArray_ = <T>(parser: BeffParser<T>): BeffParser<readonly T[]> =>
   Array_(parser) as BeffParser<readonly T[]>;
 
 const Const_ = <const T extends string | number | boolean>(value: T): BeffParser<T> => {
-  return buildParserFromRuntype(lit(value), `b.Const`, true) as BeffParser<T>;
+  return buildParserFromRuntype(literal(value), `b.Const`, true) as BeffParser<T>;
 };
 export const b = {
   Object: Object_,

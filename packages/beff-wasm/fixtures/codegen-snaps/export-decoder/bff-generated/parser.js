@@ -3,42 +3,42 @@
 "use strict";
 
 import {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } from "@beff/client/codegen-v2";
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -71,26 +71,73 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const h0=ref(R,"User");
-const h1=arr(h0);
-const h2=ref(R,"NotPublic");
-const h3=ref(R,"StartsWithA");
-const h4=ref(R,"Password");
-const h5=lit(123.456);
-const h6=lit(123);
-const h7=ref(R,"UnionNested");
-const h8=lits([1,2]);
-const h9=lits([2,3]);
-const h10=lits([4,5]);
-const h11=lits([5,6]);
-const h12=str();
-const h13=obj({a:h12});
-const h14=strFormat(["password"]);
-const h15=strFormat(["StartsWithA"]);
-const h16=lits([1,2,3,4,5,6]);
-const h17=num();
-const h18=obj({age:h17,name:h12});
-define(R,{A:h8,B:h9,D:h10,E:h11,NotPublic:h13,Password:h14,StartsWithA:h15,UnionNested:h16,User:h18});
-const buildParsersInput={User:h0,Users:h1,NotPublicRenamed:h2,StartsWithA:h3,Password:h4,float:h5,int:h6,union:h7};
+const direct_hoist_0 = reference(registry, "User");
+const direct_hoist_1 = array(direct_hoist_0);
+const direct_hoist_2 = reference(registry, "NotPublic");
+const direct_hoist_3 = reference(registry, "StartsWithA");
+const direct_hoist_4 = reference(registry, "Password");
+const direct_hoist_5 = literal(123.456);
+const direct_hoist_6 = literal(123);
+const direct_hoist_7 = reference(registry, "UnionNested");
+const direct_hoist_8 = literals([
+    1,
+    2
+]);
+const direct_hoist_9 = literals([
+    2,
+    3
+]);
+const direct_hoist_10 = literals([
+    4,
+    5
+]);
+const direct_hoist_11 = literals([
+    5,
+    6
+]);
+const direct_hoist_12 = string();
+const direct_hoist_13 = object({
+    a: direct_hoist_12
+});
+const direct_hoist_14 = stringWithFormat([
+    "password"
+]);
+const direct_hoist_15 = stringWithFormat([
+    "StartsWithA"
+]);
+const direct_hoist_16 = literals([
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+]);
+const direct_hoist_17 = number();
+const direct_hoist_18 = object({
+    age: direct_hoist_17,
+    name: direct_hoist_12
+});
+define(registry, {
+    A: direct_hoist_8,
+    B: direct_hoist_9,
+    D: direct_hoist_10,
+    E: direct_hoist_11,
+    NotPublic: direct_hoist_13,
+    Password: direct_hoist_14,
+    StartsWithA: direct_hoist_15,
+    UnionNested: direct_hoist_16,
+    User: direct_hoist_18
+});
+const buildParsersInput = {
+    User: direct_hoist_0,
+    Users: direct_hoist_1,
+    NotPublicRenamed: direct_hoist_2,
+    StartsWithA: direct_hoist_3,
+    Password: direct_hoist_4,
+    float: direct_hoist_5,
+    int: direct_hoist_6,
+    union: direct_hoist_7
+};
 
 export default { buildParsers };

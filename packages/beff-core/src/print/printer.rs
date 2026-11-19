@@ -30,32 +30,30 @@ use crate::{
     parser_extractor::BuiltDecoder,
 };
 
-// Emits each statement without whitespace, on its own line.
 fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
+    let ast = Module {
+        span: DUMMY_SP,
+        body,
+        shebang: None,
+    };
     let cm = Lrc::new(SourceMap::new(FilePathMapping::empty()));
-    let mut code = String::new();
-    for item in body {
-        let ast = Module {
-            span: DUMMY_SP,
-            body: vec![item],
-            shebang: None,
-        };
+
+    let code = {
         let mut buf = vec![];
 
         {
             let mut emitter = Emitter {
-                cfg: Config::default().with_minify(true),
+                cfg: Config::default(),
                 cm: cm.clone(),
                 comments: None,
-                wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
+                wr: JsWriter::new(cm, "\n", &mut buf, None),
             };
 
             emitter.emit_module(&ast)?;
         }
 
-        code.push_str(&String::from_utf8_lossy(&buf));
-        code.push('\n');
-    }
+        String::from_utf8_lossy(&buf).to_string()
+    };
 
     Ok(code)
 }
@@ -306,11 +304,11 @@ fn call(function: &str, args: Vec<Expr>) -> Expr {
     })
 }
 
-// A call to a builder of the runtime. A type with a description is wrapped in `doc`.
+// A call to a builder of the runtime. A type with a description is wrapped in `withDescription`.
 fn builder(function: &str, args: Vec<Expr>, original_runtype: &Runtype) -> Expr {
     let node = call(function, args);
     match original_runtype.metadata.description.as_ref() {
-        Some(description) => call("doc", vec![node, string_lit(description)]),
+        Some(description) => call("withDescription", vec![node, string_lit(description)]),
         None => node,
     }
 }
@@ -386,14 +384,14 @@ fn array_lit(elems: Vec<Expr>) -> Expr {
     })
 }
 
-// `R` is the registry of the named types of the module. The bundled code declares it.
+// `registry` has the named types of the module. The bundled code declares it.
 fn registry() -> Expr {
-    Expr::Ident(identifier("R"))
+    Expr::Ident(identifier("registry"))
 }
 
 fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext, original_runtype: &Runtype) -> Expr {
     builder(
-        "ref",
+        "reference",
         vec![registry(), string_lit(&ctx.print_rt_name(to))],
         original_runtype,
     )
@@ -422,7 +420,7 @@ fn formats_runtype(
 // that accepts numeric strings.
 fn print_index_key(key: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
     match &key.kind {
-        RuntypeKind::Number => no_args_runtype("numKey", key),
+        RuntypeKind::Number => no_args_runtype("numberKey", key),
         RuntypeKind::AnyOf(vs) if vs.iter().any(|it| matches!(it.kind, RuntypeKind::Number)) => {
             let exprs = vs
                 .iter()
@@ -557,7 +555,7 @@ fn runtype_any_of_discriminated(
     let flat_values_schema_arr = array_lit(flat_values_schema);
 
     builder(
-        "disc",
+        "discriminatedUnion",
         vec![disc, mapping_obj, flat_values_schema_arr],
         original_runtype,
     )
@@ -757,20 +755,24 @@ fn maybe_runtype_any_of_consts(
             })
             .collect();
 
-        return Some(builder("lits", vec![array_lit(consts)], original_runtype));
+        return Some(builder(
+            "literals",
+            vec![array_lit(consts)],
+            original_runtype,
+        ));
     }
     None
 }
 
 fn hoist_name(name: usize) -> String {
-    format!("h{}", name)
+    format!("direct_hoist_{}", name)
 }
 fn hoist_identifier(name: usize) -> Expr {
     Expr::Ident(identifier(&hoist_name(name)))
 }
 
 fn optionality_wrapper(inner: Expr) -> Expr {
-    call("opt", vec![inner])
+    call("optional", vec![inner])
 }
 
 fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
@@ -780,19 +782,21 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
     }
 
     let out = match &schema.kind {
-        RuntypeKind::String => no_args_runtype("str", schema),
-        RuntypeKind::Boolean => no_args_runtype("bool", schema),
-        RuntypeKind::Number => no_args_runtype("num", schema),
-        RuntypeKind::Function => no_args_runtype("fn", schema),
+        RuntypeKind::String => no_args_runtype("string", schema),
+        RuntypeKind::Boolean => no_args_runtype("boolean", schema),
+        RuntypeKind::Number => no_args_runtype("number", schema),
+        RuntypeKind::Function => no_args_runtype("functionType", schema),
         RuntypeKind::Ref(to) => ref_runtype(to, ctx, schema),
         RuntypeKind::Any => no_args_runtype("any", schema),
         RuntypeKind::Never => no_args_runtype("never", schema),
-        RuntypeKind::Const(c) => builder("lit", vec![c.clone().into_json().into_expr()], schema),
+        RuntypeKind::Const(c) => {
+            builder("literal", vec![c.clone().into_json().into_expr()], schema)
+        }
         RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => {
-            formats_runtype("strFormat", first, rest, schema)
+            formats_runtype("stringWithFormat", first, rest, schema)
         }
         RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => {
-            formats_runtype("numFormat", first, rest, schema)
+            formats_runtype("numberWithFormat", first, rest, schema)
         }
         RuntypeKind::Date => no_args_runtype("date", schema),
         RuntypeKind::BigInt => no_args_runtype("bigint", schema),
@@ -803,7 +807,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         ),
         RuntypeKind::TplLitType(t) => match t.0.as_slice() {
             [TplLitTypeItem::StringConst(c)] => {
-                builder("lit", vec![Json::String(c.clone()).into_expr()], schema)
+                builder("literal", vec![Json::String(c.clone()).into_expr()], schema)
             }
             _ => builder(
                 "regex",
@@ -820,14 +824,14 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         },
         RuntypeKind::AnyArrayLike => {
             let item_validator = print_runtype(&Runtype::any(), named_schemas, ctx);
-            builder("arr", vec![item_validator], schema)
+            builder("array", vec![item_validator], schema)
         }
         RuntypeKind::StNot(_) => {
             unreachable!("should not create decoders for semantic types")
         }
         RuntypeKind::Array(json_schema) => {
             let item_validator = print_runtype(json_schema, named_schemas, ctx);
-            builder("arr", vec![item_validator], schema)
+            builder("array", vec![item_validator], schema)
         }
         RuntypeKind::Map(k, v) => {
             let key_validator = print_runtype(k, named_schemas, ctx);
@@ -839,7 +843,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
             builder("set", vec![item_validator], schema)
         }
         RuntypeKind::AllOf(vs) => {
-            runtype_union_or_intersection("allOf", vs, named_schemas, ctx, schema)
+            runtype_union_or_intersection("intersection", vs, named_schemas, ctx, schema)
         }
         RuntypeKind::AnyOf(vs) => {
             if vs.is_empty() {
@@ -918,10 +922,10 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                 args.push(array_lit(indexed_properties_props));
             }
 
-            builder("obj", args, schema)
+            builder("object", args, schema)
         }
-        RuntypeKind::Null => no_args_runtype("nul", schema),
-        RuntypeKind::Undefined => no_args_runtype("undef", schema),
+        RuntypeKind::Null => no_args_runtype("nullType", schema),
+        RuntypeKind::Undefined => no_args_runtype("undefinedType", schema),
         RuntypeKind::Void => no_args_runtype("voidType", schema),
     };
 

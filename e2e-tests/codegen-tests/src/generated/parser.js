@@ -3,42 +3,42 @@
 "use strict";
 
 import {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } from "@beff/client/codegen-v2";
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -71,83 +71,270 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const h0=str();
-const h1=ref(R,"AliasToString");
-const h2=ref(R,"AliasToNumber");
-const h3=ref(R,"AliasToBoolean");
-const h4=ref(R,"AliasToNull");
-const h5=ref(R,"AliasToAny");
-const h6=ref(R,"AliasToConst");
-const h7=ref(R,"TestHoist");
-const h8=ref(R,"NestedOrder");
-const h9=ref(R,"BeforeRequired");
-const h10=ref(R,"AfterRequired");
-const h11=ref(R,"R");
-const h12=ref(R,"R2");
-const h13=ref(R,"R3");
-const h14=ref(R,"R4");
-const h15=ref(R,"R5");
-const h16=ref(R,"Meta");
-const h17=ref(R,"Meta2");
-const h18=ref(R,"KnownConstants");
-const h19=ref(R,"NumberKeys");
-const h20=ref(R,"NumberIndex");
-const h21=ref(R,"NumberOrTemplateKeys");
-const h22=ref(R,"DefaultTypeParams");
-const h23=ref(R,"NumberLiteralKeys");
-const h24=ref(R,"PartialNumberLiteralKeys");
-const h25=ref(R,"MixedLiteralKeys");
-const h26=undef();
-const h27=union([h26,h0]);
-const h28=voidType();
-const h29=union([h28,h0]);
-const h30=nul();
-const h31=union([h30,h0]);
-const h32=obj({a:h0,b:h27,c:h29,d:h31,e:h0});
-const h33=any();
-const h34=bool();
-const h35=lit("constant value");
-const h36=num();
-const h37=obj({a:h0,b:h27,c:h29,d:h31,e:opt(h0)});
-const h38=obj({v:h0});
-const h39=obj({v:h36});
-const h40=obj({a:h36,b:h0});
-const h41=arr(h34);
-const h42=obj({a:h34,b:h41});
-const h43=arr(h36);
-const h44=obj({a:h36,b:h43});
-const h45=ref(R,"DefaultG");
-const h46=ref(R,"DefaultG_number");
-const h47=ref(R,"DefaultH_number");
-const h48=ref(R,"DefaultI_boolean");
-const h49=ref(R,"DefaultP_number");
-const h50=obj({g:h45,gn:h46,h:h47,i:h48,p:h49});
-const h51=lits(["blue","red"]);
-const h52=arr(h0);
-const h53=obj({BAR_OPTION:h51,BAZ_VALUES:h52,FOO_VALUE:h0});
-const h54=regex(/^(alpha_entity_)([\s\S]*)$/,"`alpha_entity_${string}`");
-const h55=regex(/^(beta-entity-)([\s\S]*)$/,"`beta-entity-${string}`");
-const h56=union([h54,h55]);
-const h57=obj({alpha:opt(h0),beta:opt(h0)},[{key:h56,value:opt(h0)}]);
-const h58=obj({alpha:h0,beta:h0},[{key:h56,value:h0}]);
-const h59=lit("alpha");
-const h60=lit("beta");
-const h61=union([h59,h54,h60,h55]);
-const h62=obj({"1":h0,a:h0});
-const h63=obj({a:h36,b:h36});
-const h64=obj({label:h0,outer:h63});
-const h65=obj({},[{key:numKey(),value:h34}]);
-const h66=obj({},[{key:numKey(),value:h0}]);
-const h67=obj({"1":h0,"2":h0});
-const h68=regex(/^(x_)([\s\S]*)$/,"`x_${string}`");
-const h69=obj({},[{key:union([numKey(),h68]),value:h0}]);
-const h70=obj({"1":opt(h0),"2":opt(h0)});
-const h71=obj({a:h36,b:h36},[{key:h68,value:h36}]);
-const h72=obj({a:opt(h36),b:opt(h36)});
-const h73=obj({},[{key:h68,value:h36}]);
-const h74=obj({},[{key:h68,value:opt(h36)}]);
-const h75=obj({a:h52,b:h52});
-define(R,{AfterRequired:h32,AliasToAny:h33,AliasToBoolean:h34,AliasToConst:h35,AliasToNull:h30,AliasToNumber:h36,AliasToString:h0,BeforeRequired:h37,DefaultG:h38,DefaultG_number:h39,DefaultH_number:h40,DefaultI_boolean:h42,DefaultP_number:h44,DefaultTypeParams:h50,KnownConstants:h53,Meta:h57,Meta2:h58,MetaKey:h61,MixedLiteralKeys:h62,NestedOrder:h64,NumberIndex:h65,NumberKeys:h66,NumberLiteralKeys:h67,NumberOrTemplateKeys:h69,PartialNumberLiteralKeys:h70,R:h71,R2:h63,R3:h72,R4:h73,R5:h74,TestHoist:h75});
-const buildParsersInput={Dec:h0,AliasToString:h1,AliasToNumber:h2,AliasToBoolean:h3,AliasToNull:h4,AliasToAny:h5,AliasToConst:h6,TestHoist:h7,NestedOrder:h8,BeforeRequired:h9,AfterRequired:h10,R:h11,R2:h12,R3:h13,R4:h14,R5:h15,Meta:h16,Meta2:h17,KnownConstants:h18,NumberKeys:h19,NumberIndex:h20,NumberOrTemplateKeys:h21,DefaultTypeParams:h22,NumberLiteralKeys:h23,PartialNumberLiteralKeys:h24,MixedLiteralKeys:h25};
+const direct_hoist_0 = string();
+const direct_hoist_1 = reference(registry, "AliasToString");
+const direct_hoist_2 = reference(registry, "AliasToNumber");
+const direct_hoist_3 = reference(registry, "AliasToBoolean");
+const direct_hoist_4 = reference(registry, "AliasToNull");
+const direct_hoist_5 = reference(registry, "AliasToAny");
+const direct_hoist_6 = reference(registry, "AliasToConst");
+const direct_hoist_7 = reference(registry, "TestHoist");
+const direct_hoist_8 = reference(registry, "NestedOrder");
+const direct_hoist_9 = reference(registry, "BeforeRequired");
+const direct_hoist_10 = reference(registry, "AfterRequired");
+const direct_hoist_11 = reference(registry, "R");
+const direct_hoist_12 = reference(registry, "R2");
+const direct_hoist_13 = reference(registry, "R3");
+const direct_hoist_14 = reference(registry, "R4");
+const direct_hoist_15 = reference(registry, "R5");
+const direct_hoist_16 = reference(registry, "Meta");
+const direct_hoist_17 = reference(registry, "Meta2");
+const direct_hoist_18 = reference(registry, "KnownConstants");
+const direct_hoist_19 = reference(registry, "NumberKeys");
+const direct_hoist_20 = reference(registry, "NumberIndex");
+const direct_hoist_21 = reference(registry, "NumberOrTemplateKeys");
+const direct_hoist_22 = reference(registry, "DefaultTypeParams");
+const direct_hoist_23 = reference(registry, "NumberLiteralKeys");
+const direct_hoist_24 = reference(registry, "PartialNumberLiteralKeys");
+const direct_hoist_25 = reference(registry, "MixedLiteralKeys");
+const direct_hoist_26 = undefinedType();
+const direct_hoist_27 = union([
+    direct_hoist_26,
+    direct_hoist_0
+]);
+const direct_hoist_28 = voidType();
+const direct_hoist_29 = union([
+    direct_hoist_28,
+    direct_hoist_0
+]);
+const direct_hoist_30 = nullType();
+const direct_hoist_31 = union([
+    direct_hoist_30,
+    direct_hoist_0
+]);
+const direct_hoist_32 = object({
+    a: direct_hoist_0,
+    b: direct_hoist_27,
+    c: direct_hoist_29,
+    d: direct_hoist_31,
+    e: direct_hoist_0
+});
+const direct_hoist_33 = any();
+const direct_hoist_34 = boolean();
+const direct_hoist_35 = literal("constant value");
+const direct_hoist_36 = number();
+const direct_hoist_37 = object({
+    a: direct_hoist_0,
+    b: direct_hoist_27,
+    c: direct_hoist_29,
+    d: direct_hoist_31,
+    e: optional(direct_hoist_0)
+});
+const direct_hoist_38 = object({
+    v: direct_hoist_0
+});
+const direct_hoist_39 = object({
+    v: direct_hoist_36
+});
+const direct_hoist_40 = object({
+    a: direct_hoist_36,
+    b: direct_hoist_0
+});
+const direct_hoist_41 = array(direct_hoist_34);
+const direct_hoist_42 = object({
+    a: direct_hoist_34,
+    b: direct_hoist_41
+});
+const direct_hoist_43 = array(direct_hoist_36);
+const direct_hoist_44 = object({
+    a: direct_hoist_36,
+    b: direct_hoist_43
+});
+const direct_hoist_45 = reference(registry, "DefaultG");
+const direct_hoist_46 = reference(registry, "DefaultG_number");
+const direct_hoist_47 = reference(registry, "DefaultH_number");
+const direct_hoist_48 = reference(registry, "DefaultI_boolean");
+const direct_hoist_49 = reference(registry, "DefaultP_number");
+const direct_hoist_50 = object({
+    g: direct_hoist_45,
+    gn: direct_hoist_46,
+    h: direct_hoist_47,
+    i: direct_hoist_48,
+    p: direct_hoist_49
+});
+const direct_hoist_51 = literals([
+    "blue",
+    "red"
+]);
+const direct_hoist_52 = array(direct_hoist_0);
+const direct_hoist_53 = object({
+    BAR_OPTION: direct_hoist_51,
+    BAZ_VALUES: direct_hoist_52,
+    FOO_VALUE: direct_hoist_0
+});
+const direct_hoist_54 = regex(/^(alpha_entity_)([\s\S]*)$/, "`alpha_entity_${string}`");
+const direct_hoist_55 = regex(/^(beta-entity-)([\s\S]*)$/, "`beta-entity-${string}`");
+const direct_hoist_56 = union([
+    direct_hoist_54,
+    direct_hoist_55
+]);
+const direct_hoist_57 = object({
+    alpha: optional(direct_hoist_0),
+    beta: optional(direct_hoist_0)
+}, [
+    {
+        key: direct_hoist_56,
+        value: optional(direct_hoist_0)
+    }
+]);
+const direct_hoist_58 = object({
+    alpha: direct_hoist_0,
+    beta: direct_hoist_0
+}, [
+    {
+        key: direct_hoist_56,
+        value: direct_hoist_0
+    }
+]);
+const direct_hoist_59 = literal("alpha");
+const direct_hoist_60 = literal("beta");
+const direct_hoist_61 = union([
+    direct_hoist_59,
+    direct_hoist_54,
+    direct_hoist_60,
+    direct_hoist_55
+]);
+const direct_hoist_62 = object({
+    "1": direct_hoist_0,
+    a: direct_hoist_0
+});
+const direct_hoist_63 = object({
+    a: direct_hoist_36,
+    b: direct_hoist_36
+});
+const direct_hoist_64 = object({
+    label: direct_hoist_0,
+    outer: direct_hoist_63
+});
+const direct_hoist_65 = object({}, [
+    {
+        key: numberKey(),
+        value: direct_hoist_34
+    }
+]);
+const direct_hoist_66 = object({}, [
+    {
+        key: numberKey(),
+        value: direct_hoist_0
+    }
+]);
+const direct_hoist_67 = object({
+    "1": direct_hoist_0,
+    "2": direct_hoist_0
+});
+const direct_hoist_68 = regex(/^(x_)([\s\S]*)$/, "`x_${string}`");
+const direct_hoist_69 = object({}, [
+    {
+        key: union([
+            numberKey(),
+            direct_hoist_68
+        ]),
+        value: direct_hoist_0
+    }
+]);
+const direct_hoist_70 = object({
+    "1": optional(direct_hoist_0),
+    "2": optional(direct_hoist_0)
+});
+const direct_hoist_71 = object({
+    a: direct_hoist_36,
+    b: direct_hoist_36
+}, [
+    {
+        key: direct_hoist_68,
+        value: direct_hoist_36
+    }
+]);
+const direct_hoist_72 = object({
+    a: optional(direct_hoist_36),
+    b: optional(direct_hoist_36)
+});
+const direct_hoist_73 = object({}, [
+    {
+        key: direct_hoist_68,
+        value: direct_hoist_36
+    }
+]);
+const direct_hoist_74 = object({}, [
+    {
+        key: direct_hoist_68,
+        value: optional(direct_hoist_36)
+    }
+]);
+const direct_hoist_75 = object({
+    a: direct_hoist_52,
+    b: direct_hoist_52
+});
+define(registry, {
+    AfterRequired: direct_hoist_32,
+    AliasToAny: direct_hoist_33,
+    AliasToBoolean: direct_hoist_34,
+    AliasToConst: direct_hoist_35,
+    AliasToNull: direct_hoist_30,
+    AliasToNumber: direct_hoist_36,
+    AliasToString: direct_hoist_0,
+    BeforeRequired: direct_hoist_37,
+    DefaultG: direct_hoist_38,
+    DefaultG_number: direct_hoist_39,
+    DefaultH_number: direct_hoist_40,
+    DefaultI_boolean: direct_hoist_42,
+    DefaultP_number: direct_hoist_44,
+    DefaultTypeParams: direct_hoist_50,
+    KnownConstants: direct_hoist_53,
+    Meta: direct_hoist_57,
+    Meta2: direct_hoist_58,
+    MetaKey: direct_hoist_61,
+    MixedLiteralKeys: direct_hoist_62,
+    NestedOrder: direct_hoist_64,
+    NumberIndex: direct_hoist_65,
+    NumberKeys: direct_hoist_66,
+    NumberLiteralKeys: direct_hoist_67,
+    NumberOrTemplateKeys: direct_hoist_69,
+    PartialNumberLiteralKeys: direct_hoist_70,
+    R: direct_hoist_71,
+    R2: direct_hoist_63,
+    R3: direct_hoist_72,
+    R4: direct_hoist_73,
+    R5: direct_hoist_74,
+    TestHoist: direct_hoist_75
+});
+const buildParsersInput = {
+    Dec: direct_hoist_0,
+    AliasToString: direct_hoist_1,
+    AliasToNumber: direct_hoist_2,
+    AliasToBoolean: direct_hoist_3,
+    AliasToNull: direct_hoist_4,
+    AliasToAny: direct_hoist_5,
+    AliasToConst: direct_hoist_6,
+    TestHoist: direct_hoist_7,
+    NestedOrder: direct_hoist_8,
+    BeforeRequired: direct_hoist_9,
+    AfterRequired: direct_hoist_10,
+    R: direct_hoist_11,
+    R2: direct_hoist_12,
+    R3: direct_hoist_13,
+    R4: direct_hoist_14,
+    R5: direct_hoist_15,
+    Meta: direct_hoist_16,
+    Meta2: direct_hoist_17,
+    KnownConstants: direct_hoist_18,
+    NumberKeys: direct_hoist_19,
+    NumberIndex: direct_hoist_20,
+    NumberOrTemplateKeys: direct_hoist_21,
+    DefaultTypeParams: direct_hoist_22,
+    NumberLiteralKeys: direct_hoist_23,
+    PartialNumberLiteralKeys: direct_hoist_24,
+    MixedLiteralKeys: direct_hoist_25
+};
 
 export default { buildParsers };

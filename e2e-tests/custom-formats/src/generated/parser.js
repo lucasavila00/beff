@@ -3,42 +3,42 @@
 "use strict";
 
 import {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } from "@beff/client/codegen-v2";
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -71,57 +71,173 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency","ShortCode","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId","StringParentNoMsg","StringChildNoMsg","StringParentMsgOnly","StringParentMsgOnlyChild","StringChildMsgParent","StringChildMsg","StringBothMsgParent","StringBothMsgChild"];
 const RequiredNumberFormats = ["NonInfiniteNumber","NegativeNumber","NonNegativeNumber","Rate","NumberParentNoMsg","NumberChildNoMsg","NumberParentMsgOnly","NumberParentMsgOnlyChild","NumberChildMsgParent","NumberChildMsg","NumberBothMsgParent","NumberBothMsgChild"];
-const h0=ref(R,"ValidCurrency");
-const h1=ref(R,"ShortCode");
-const h2=ref(R,"UserId");
-const h3=ref(R,"ReadAuthorizedUserId");
-const h4=ref(R,"WriteAuthorizedUserId");
-const h5=ref(R,"StringParentNoMsg");
-const h6=ref(R,"StringChildNoMsg");
-const h7=ref(R,"StringParentMsgOnly");
-const h8=ref(R,"StringParentMsgOnlyChild");
-const h9=ref(R,"StringChildMsgParent");
-const h10=ref(R,"StringChildMsg");
-const h11=ref(R,"StringBothMsgParent");
-const h12=ref(R,"StringBothMsgChild");
-const h13=ref(R,"NonInfiniteNumber");
-const h14=ref(R,"NegativeNumber");
-const h15=ref(R,"NonNegativeNumber");
-const h16=ref(R,"Rate");
-const h17=ref(R,"NumberParentNoMsg");
-const h18=ref(R,"NumberChildNoMsg");
-const h19=ref(R,"NumberParentMsgOnly");
-const h20=ref(R,"NumberParentMsgOnlyChild");
-const h21=ref(R,"NumberChildMsgParent");
-const h22=ref(R,"NumberChildMsg");
-const h23=ref(R,"NumberBothMsgParent");
-const h24=ref(R,"NumberBothMsgChild");
-const h25=numFormat(["NegativeNumber"]);
-const h26=numFormat(["NonInfiniteNumber"]);
-const h27=numFormat(["NonInfiniteNumber","NonNegativeNumber"]);
-const h28=numFormat(["NumberBothMsgParent","NumberBothMsgChild"]);
-const h29=numFormat(["NumberBothMsgParent"]);
-const h30=numFormat(["NumberChildMsgParent","NumberChildMsg"]);
-const h31=numFormat(["NumberChildMsgParent"]);
-const h32=numFormat(["NumberParentNoMsg","NumberChildNoMsg"]);
-const h33=numFormat(["NumberParentMsgOnly"]);
-const h34=numFormat(["NumberParentMsgOnly","NumberParentMsgOnlyChild"]);
-const h35=numFormat(["NumberParentNoMsg"]);
-const h36=numFormat(["NonInfiniteNumber","NonNegativeNumber","Rate"]);
-const h37=strFormat(["UserId","ReadAuthorizedUserId"]);
-const h38=strFormat(["ShortCode"]);
-const h39=strFormat(["StringBothMsgParent","StringBothMsgChild"]);
-const h40=strFormat(["StringBothMsgParent"]);
-const h41=strFormat(["StringChildMsgParent","StringChildMsg"]);
-const h42=strFormat(["StringChildMsgParent"]);
-const h43=strFormat(["StringParentNoMsg","StringChildNoMsg"]);
-const h44=strFormat(["StringParentMsgOnly"]);
-const h45=strFormat(["StringParentMsgOnly","StringParentMsgOnlyChild"]);
-const h46=strFormat(["StringParentNoMsg"]);
-const h47=strFormat(["UserId"]);
-const h48=strFormat(["ValidCurrency"]);
-const h49=strFormat(["UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"]);
-define(R,{NegativeNumber:h25,NonInfiniteNumber:h26,NonNegativeNumber:h27,NumberBothMsgChild:h28,NumberBothMsgParent:h29,NumberChildMsg:h30,NumberChildMsgParent:h31,NumberChildNoMsg:h32,NumberParentMsgOnly:h33,NumberParentMsgOnlyChild:h34,NumberParentNoMsg:h35,Rate:h36,ReadAuthorizedUserId:h37,ShortCode:h38,StringBothMsgChild:h39,StringBothMsgParent:h40,StringChildMsg:h41,StringChildMsgParent:h42,StringChildNoMsg:h43,StringParentMsgOnly:h44,StringParentMsgOnlyChild:h45,StringParentNoMsg:h46,UserId:h47,ValidCurrency:h48,WriteAuthorizedUserId:h49});
-const buildParsersInput={ValidCurrency:h0,ShortCode:h1,UserId:h2,ReadAuthorizedUserId:h3,WriteAuthorizedUserId:h4,StringParentNoMsg:h5,StringChildNoMsg:h6,StringParentMsgOnly:h7,StringParentMsgOnlyChild:h8,StringChildMsgParent:h9,StringChildMsg:h10,StringBothMsgParent:h11,StringBothMsgChild:h12,NonInfiniteNumber:h13,NegativeNumber:h14,NonNegativeNumber:h15,Rate:h16,NumberParentNoMsg:h17,NumberChildNoMsg:h18,NumberParentMsgOnly:h19,NumberParentMsgOnlyChild:h20,NumberChildMsgParent:h21,NumberChildMsg:h22,NumberBothMsgParent:h23,NumberBothMsgChild:h24};
+const direct_hoist_0 = reference(registry, "ValidCurrency");
+const direct_hoist_1 = reference(registry, "ShortCode");
+const direct_hoist_2 = reference(registry, "UserId");
+const direct_hoist_3 = reference(registry, "ReadAuthorizedUserId");
+const direct_hoist_4 = reference(registry, "WriteAuthorizedUserId");
+const direct_hoist_5 = reference(registry, "StringParentNoMsg");
+const direct_hoist_6 = reference(registry, "StringChildNoMsg");
+const direct_hoist_7 = reference(registry, "StringParentMsgOnly");
+const direct_hoist_8 = reference(registry, "StringParentMsgOnlyChild");
+const direct_hoist_9 = reference(registry, "StringChildMsgParent");
+const direct_hoist_10 = reference(registry, "StringChildMsg");
+const direct_hoist_11 = reference(registry, "StringBothMsgParent");
+const direct_hoist_12 = reference(registry, "StringBothMsgChild");
+const direct_hoist_13 = reference(registry, "NonInfiniteNumber");
+const direct_hoist_14 = reference(registry, "NegativeNumber");
+const direct_hoist_15 = reference(registry, "NonNegativeNumber");
+const direct_hoist_16 = reference(registry, "Rate");
+const direct_hoist_17 = reference(registry, "NumberParentNoMsg");
+const direct_hoist_18 = reference(registry, "NumberChildNoMsg");
+const direct_hoist_19 = reference(registry, "NumberParentMsgOnly");
+const direct_hoist_20 = reference(registry, "NumberParentMsgOnlyChild");
+const direct_hoist_21 = reference(registry, "NumberChildMsgParent");
+const direct_hoist_22 = reference(registry, "NumberChildMsg");
+const direct_hoist_23 = reference(registry, "NumberBothMsgParent");
+const direct_hoist_24 = reference(registry, "NumberBothMsgChild");
+const direct_hoist_25 = numberWithFormat([
+    "NegativeNumber"
+]);
+const direct_hoist_26 = numberWithFormat([
+    "NonInfiniteNumber"
+]);
+const direct_hoist_27 = numberWithFormat([
+    "NonInfiniteNumber",
+    "NonNegativeNumber"
+]);
+const direct_hoist_28 = numberWithFormat([
+    "NumberBothMsgParent",
+    "NumberBothMsgChild"
+]);
+const direct_hoist_29 = numberWithFormat([
+    "NumberBothMsgParent"
+]);
+const direct_hoist_30 = numberWithFormat([
+    "NumberChildMsgParent",
+    "NumberChildMsg"
+]);
+const direct_hoist_31 = numberWithFormat([
+    "NumberChildMsgParent"
+]);
+const direct_hoist_32 = numberWithFormat([
+    "NumberParentNoMsg",
+    "NumberChildNoMsg"
+]);
+const direct_hoist_33 = numberWithFormat([
+    "NumberParentMsgOnly"
+]);
+const direct_hoist_34 = numberWithFormat([
+    "NumberParentMsgOnly",
+    "NumberParentMsgOnlyChild"
+]);
+const direct_hoist_35 = numberWithFormat([
+    "NumberParentNoMsg"
+]);
+const direct_hoist_36 = numberWithFormat([
+    "NonInfiniteNumber",
+    "NonNegativeNumber",
+    "Rate"
+]);
+const direct_hoist_37 = stringWithFormat([
+    "UserId",
+    "ReadAuthorizedUserId"
+]);
+const direct_hoist_38 = stringWithFormat([
+    "ShortCode"
+]);
+const direct_hoist_39 = stringWithFormat([
+    "StringBothMsgParent",
+    "StringBothMsgChild"
+]);
+const direct_hoist_40 = stringWithFormat([
+    "StringBothMsgParent"
+]);
+const direct_hoist_41 = stringWithFormat([
+    "StringChildMsgParent",
+    "StringChildMsg"
+]);
+const direct_hoist_42 = stringWithFormat([
+    "StringChildMsgParent"
+]);
+const direct_hoist_43 = stringWithFormat([
+    "StringParentNoMsg",
+    "StringChildNoMsg"
+]);
+const direct_hoist_44 = stringWithFormat([
+    "StringParentMsgOnly"
+]);
+const direct_hoist_45 = stringWithFormat([
+    "StringParentMsgOnly",
+    "StringParentMsgOnlyChild"
+]);
+const direct_hoist_46 = stringWithFormat([
+    "StringParentNoMsg"
+]);
+const direct_hoist_47 = stringWithFormat([
+    "UserId"
+]);
+const direct_hoist_48 = stringWithFormat([
+    "ValidCurrency"
+]);
+const direct_hoist_49 = stringWithFormat([
+    "UserId",
+    "ReadAuthorizedUserId",
+    "WriteAuthorizedUserId"
+]);
+define(registry, {
+    NegativeNumber: direct_hoist_25,
+    NonInfiniteNumber: direct_hoist_26,
+    NonNegativeNumber: direct_hoist_27,
+    NumberBothMsgChild: direct_hoist_28,
+    NumberBothMsgParent: direct_hoist_29,
+    NumberChildMsg: direct_hoist_30,
+    NumberChildMsgParent: direct_hoist_31,
+    NumberChildNoMsg: direct_hoist_32,
+    NumberParentMsgOnly: direct_hoist_33,
+    NumberParentMsgOnlyChild: direct_hoist_34,
+    NumberParentNoMsg: direct_hoist_35,
+    Rate: direct_hoist_36,
+    ReadAuthorizedUserId: direct_hoist_37,
+    ShortCode: direct_hoist_38,
+    StringBothMsgChild: direct_hoist_39,
+    StringBothMsgParent: direct_hoist_40,
+    StringChildMsg: direct_hoist_41,
+    StringChildMsgParent: direct_hoist_42,
+    StringChildNoMsg: direct_hoist_43,
+    StringParentMsgOnly: direct_hoist_44,
+    StringParentMsgOnlyChild: direct_hoist_45,
+    StringParentNoMsg: direct_hoist_46,
+    UserId: direct_hoist_47,
+    ValidCurrency: direct_hoist_48,
+    WriteAuthorizedUserId: direct_hoist_49
+});
+const buildParsersInput = {
+    ValidCurrency: direct_hoist_0,
+    ShortCode: direct_hoist_1,
+    UserId: direct_hoist_2,
+    ReadAuthorizedUserId: direct_hoist_3,
+    WriteAuthorizedUserId: direct_hoist_4,
+    StringParentNoMsg: direct_hoist_5,
+    StringChildNoMsg: direct_hoist_6,
+    StringParentMsgOnly: direct_hoist_7,
+    StringParentMsgOnlyChild: direct_hoist_8,
+    StringChildMsgParent: direct_hoist_9,
+    StringChildMsg: direct_hoist_10,
+    StringBothMsgParent: direct_hoist_11,
+    StringBothMsgChild: direct_hoist_12,
+    NonInfiniteNumber: direct_hoist_13,
+    NegativeNumber: direct_hoist_14,
+    NonNegativeNumber: direct_hoist_15,
+    Rate: direct_hoist_16,
+    NumberParentNoMsg: direct_hoist_17,
+    NumberChildNoMsg: direct_hoist_18,
+    NumberParentMsgOnly: direct_hoist_19,
+    NumberParentMsgOnlyChild: direct_hoist_20,
+    NumberChildMsgParent: direct_hoist_21,
+    NumberChildMsg: direct_hoist_22,
+    NumberBothMsgParent: direct_hoist_23,
+    NumberBothMsgChild: direct_hoist_24
+};
 
 export default { buildParsers };

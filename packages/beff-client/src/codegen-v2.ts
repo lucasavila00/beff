@@ -288,13 +288,13 @@ function reportAtPath(
   ctx: Ctx,
   acc: DecodeError[],
   key: string,
-  v: Validate,
-  r: Report,
+  validate: Validate,
+  reportErrors: Report,
   input: unknown,
 ): void {
-  if (!v(ctx, input)) {
+  if (!validate(ctx, input)) {
     pushPath(ctx, key);
-    acc.push(...r(ctx, input));
+    acc.push(...reportErrors(ctx, input));
     popPath(ctx);
   }
 }
@@ -548,63 +548,63 @@ type Validate = (c: Ctx, i: any) => boolean;
 type Parse = (c: Ctx, i: any) => any;
 type Report = (c: Ctx, i: any) => DecodeError[];
 
-// What `t` says about a node, where other nodes need to know it.
-const T_OPT = 1;
-const T_NEVER = 2;
-const T_ANY = 3;
-const T_REF = 4;
+// What `tag` says about a node, where other nodes need to know it.
+const TAG_OPTIONAL = 1;
+const TAG_NEVER = 2;
+const TAG_ANY = 3;
+const TAG_REFERENCE = 4;
 
 // A node of a parser. Every builder below returns one, and all nodes have the same fields.
 export type Runtype = {
-  t: number;
+  tag: number;
   // Is the input valid?
-  v: Validate;
-  // Parse an input that `v` accepted.
-  p: Parse;
-  // The errors of an input that `v` rejected.
-  r: Report;
+  validate: Validate;
+  // Parse an input that `validate` accepted.
+  parse: Parse;
+  // The errors of an input that `validate` rejected.
+  reportErrors: Report;
   describe: (ctx: DescribeContext) => TypeDescription;
   schema: (ctx: SchemaContext) => JSONSchema7;
   hash: (ctx: HashContext) => number;
   hash256: (ctx: Hash256Context) => void;
-  // The name of the type a ref points to.
+  // The name of the type a reference points to.
   name: string | undefined;
-  // The child nodes. A ref has one child, the type it points to now.
-  kids: () => Runtype[];
+  // The child nodes. A reference has one child, the type it points to now.
+  children: () => Runtype[];
 };
 
-const noKids = (): Runtype[] => [];
+const noChildren = (): Runtype[] => [];
 const same: Parse = (_c, i) => i;
 
 function node(
-  t: number,
-  v: Validate,
-  p: Parse,
-  r: Report,
+  tag: number,
+  validate: Validate,
+  parse: Parse,
+  reportErrors: Report,
   describe: Runtype["describe"],
   schema: Runtype["schema"],
   hash: Runtype["hash"],
   hash256: Runtype["hash256"],
-  kids: () => Runtype[],
+  children: () => Runtype[],
 ): Runtype {
   return {
-    t,
-    v,
-    p,
-    r,
+    tag,
+    validate,
+    parse,
+    reportErrors,
     describe,
     schema,
     hash,
     hash256,
     name: undefined,
-    kids,
+    children,
   };
 }
 
 // A node without children. Parsing returns the input.
 function leaf(
-  t: number,
-  v: Validate,
+  tag: number,
+  validate: Validate,
   message: string,
   typeExpr: string,
   schema: Runtype["schema"],
@@ -612,24 +612,24 @@ function leaf(
   hash256: Runtype["hash256"],
 ): Runtype {
   return node(
-    t,
-    v,
+    tag,
+    validate,
     same,
     (c, i) => buildError(c, message, i),
     () => ({ typeExpr }),
     schema,
     hash,
     hash256,
-    noKids,
+    noChildren,
   );
 }
 
 // Adds a description to a node. It replaces the node's own doc text, and it is added to its schema.
-export function doc(n: Runtype, description: string): Runtype {
-  const { describe, schema } = n;
-  n.describe = (ctx) => ({ typeExpr: describe(ctx).typeExpr, docText: description });
-  n.schema = (ctx) => ({ ...schema(ctx), description });
-  return n;
+export function withDescription(runtype: Runtype, description: string): Runtype {
+  const { describe, schema } = runtype;
+  runtype.describe = (ctx) => ({ typeExpr: describe(ctx).typeExpr, docText: description });
+  runtype.schema = (ctx) => ({ ...schema(ctx), description });
+  return runtype;
 }
 
 function jsdocDescription(description: string): string {
@@ -671,7 +671,7 @@ function describeObjectMember(
   key: string,
   value: Runtype,
 ): { docText?: string; member: string } {
-  const optionalMark = value.t === T_OPT ? "?" : "";
+  const optionalMark = value.tag === TAG_OPTIONAL ? "?" : "";
   const description = value.describe(ctx);
 
   return {
@@ -694,7 +694,7 @@ function renderObjectMember(member: { docText?: string; member: string }): strin
 }
 
 function collectDescribeRefs(runtype: Runtype, ctx: DescribeContext): void {
-  if (runtype.t === T_REF) {
+  if (runtype.tag === TAG_REFERENCE) {
     const name = runtype.name!;
     ctx.refCounts[name] = (ctx.refCounts[name] || 0) + 1;
     if (ctx.activeRefs.has(name)) {
@@ -706,12 +706,12 @@ function collectDescribeRefs(runtype: Runtype, ctx: DescribeContext): void {
 
     ctx.visitedRefs.add(name);
     ctx.activeRefs.add(name);
-    collectDescribeRefs(runtype.kids()[0], ctx);
+    collectDescribeRefs(runtype.children()[0], ctx);
     ctx.activeRefs.delete(name);
     return;
   }
 
-  for (const child of runtype.kids()) {
+  for (const child of runtype.children()) {
     collectDescribeRefs(child, ctx);
   }
 }
@@ -721,10 +721,10 @@ const hash256Tag =
   (ctx) =>
     ctx.writer.updateTag(tag);
 
-function typeOf(typeName: string, v: Validate, hash: number): Runtype {
+function typeOf(typeName: string, validate: Validate, hash: number): Runtype {
   return leaf(
     0,
-    v,
+    validate,
     "expected " + typeName,
     typeName,
     () => ({ type: typeName as JSONSchema7TypeName }),
@@ -735,17 +735,18 @@ function typeOf(typeName: string, v: Validate, hash: number): Runtype {
     },
   );
 }
-export const str = (): Runtype => typeOf("string", (_c, i) => typeof i === "string", stringHash);
-export const num = (): Runtype => typeOf("number", (_c, i) => typeof i === "number", numberHash);
-export const bool = (): Runtype => typeOf("boolean", (_c, i) => typeof i === "boolean", booleanHash);
+export const string = (): Runtype => typeOf("string", (_c, i) => typeof i === "string", stringHash);
+export const number = (): Runtype => typeOf("number", (_c, i) => typeof i === "number", numberHash);
+export const boolean = (): Runtype => typeOf("boolean", (_c, i) => typeof i === "boolean", booleanHash);
 // A function type has never had a hash of its own.
-export const fn = (): Runtype => typeOf("function", (_c, i) => typeof i === "function", undefined as any);
+export const functionType = (): Runtype =>
+  typeOf("function", (_c, i) => typeof i === "function", undefined as any);
 
 // The key of a number index signature, such as Record<number, T>.
 // Object keys are always strings, so the key must be a numeric string.
 const NUMBER_KEY_PATTERN = "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$";
 const NUMBER_KEY_REGEX = new RegExp(NUMBER_KEY_PATTERN);
-export const numKey = (): Runtype =>
+export const numberKey = (): Runtype =>
   leaf(
     0,
     (_c, i) => typeof i === "string" && NUMBER_KEY_REGEX.test(i),
@@ -762,7 +763,7 @@ export const numKey = (): Runtype =>
 
 export const any = (): Runtype =>
   leaf(
-    T_ANY,
+    TAG_ANY,
     () => true,
     "expected any",
     "any",
@@ -781,13 +782,13 @@ const nullish = (description: "undefined" | "null" | "void"): Runtype =>
     () => nullishHash,
     hash256Tag("nullish"),
   );
-export const nul = (): Runtype => nullish("null");
-export const undef = (): Runtype => nullish("undefined");
+export const nullType = (): Runtype => nullish("null");
+export const undefinedType = (): Runtype => nullish("undefined");
 export const voidType = (): Runtype => nullish("void");
 
 export const never = (): Runtype =>
   node(
-    T_NEVER,
+    TAG_NEVER,
     () => false,
     () => {
       throw new Error("unreachable");
@@ -797,7 +798,7 @@ export const never = (): Runtype =>
     () => ({ anyOf: [] }),
     () => undefinedHash,
     hash256Tag("never"),
-    noKids,
+    noChildren,
   );
 
 type Const = string | number | boolean | null;
@@ -846,7 +847,7 @@ function hash256Const(ctx: Hash256Context, value: Const): void {
   }
 }
 
-export function lit(constValue: Const): Runtype {
+export function literal(constValue: Const): Runtype {
   const value = constValue ?? null;
   return leaf(
     0,
@@ -979,13 +980,15 @@ function withFormat(
     }),
     () => hashFormats(typeName === "string" ? stringWithFormatHash : numberWithFormatHash, formats),
     (ctx) => hash256Formats(ctx, `${typeName}WithFormat`, formats),
-    noKids,
+    noChildren,
   );
 }
-export const strFormat = (formats: string[]): Runtype => withFormat("string", stringFormatters, formats);
-export const numFormat = (formats: string[]): Runtype => withFormat("number", numberFormatters, formats);
+export const stringWithFormat = (formats: string[]): Runtype =>
+  withFormat("string", stringFormatters, formats);
+export const numberWithFormat = (formats: string[]): Runtype =>
+  withFormat("number", numberFormatters, formats);
 
-export function lits(values: Const[]): Runtype {
+export function literals(values: Const[]): Runtype {
   const known = new Set<unknown>(values);
   const hasNull = known.has(null);
   return leaf(
@@ -1023,12 +1026,12 @@ export function lits(values: Const[]): Runtype {
 
 export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
   const count = prefix.length;
-  const vs = prefix.map((it) => it.v);
-  const ps = prefix.map((it) => it.p);
-  const rs = prefix.map((it) => it.r);
-  const restV = rest?.v;
-  const restP = rest?.p;
-  const restR = rest?.r;
+  const validators = prefix.map((it) => it.validate);
+  const parsers = prefix.map((it) => it.parse);
+  const reporters = prefix.map((it) => it.reportErrors);
+  const validateRest = rest?.validate;
+  const parseRest = rest?.parse;
+  const reportRest = rest?.reportErrors;
   return node(
     0,
     (c, i) => {
@@ -1036,15 +1039,15 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
         return false;
       }
       for (let k = 0; k < count; k++) {
-        if (!vs[k](c, i[k])) {
+        if (!validators[k](c, i[k])) {
           return false;
         }
       }
-      if (restV === undefined) {
+      if (validateRest === undefined) {
         return i.length <= count;
       }
       for (let k = count; k < i.length; k++) {
-        if (!restV(c, i[k])) {
+        if (!validateRest(c, i[k])) {
           return false;
         }
       }
@@ -1053,11 +1056,11 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
     (c, i) => {
       const acc = [];
       for (let k = 0; k < count; k++) {
-        acc.push(ps[k](c, i[k]));
+        acc.push(parsers[k](c, i[k]));
       }
-      if (restP !== undefined) {
+      if (parseRest !== undefined) {
         for (let k = count; k < i.length; k++) {
-          acc.push(restP(c, i[k]));
+          acc.push(parseRest(c, i[k]));
         }
       }
       return acc;
@@ -1069,11 +1072,11 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
 
       const acc: DecodeError[] = [];
       for (let k = 0; k < count; k++) {
-        reportAtPath(c, acc, `[${k}]`, vs[k], rs[k], i[k]);
+        reportAtPath(c, acc, `[${k}]`, validators[k], reporters[k], i[k]);
       }
-      if (restV !== undefined) {
+      if (validateRest !== undefined) {
         for (let k = count; k < i.length; k++) {
-          reportAtPath(c, acc, `[${k}]`, restV, restR!, i[k]);
+          reportAtPath(c, acc, `[${k}]`, validateRest, reportRest!, i[k]);
         }
       } else if (i.length > count) {
         acc.push(...buildError(c, `expected tuple with ${count} items, got ${i.length}`, i));
@@ -1128,15 +1131,15 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
   );
 }
 
-export function allOf(members: Runtype[]): Runtype {
+export function intersection(members: Runtype[]): Runtype {
   const count = members.length;
-  const vs = members.map((it) => it.v);
-  const ps = members.map((it) => it.p);
-  const rs = members.map((it) => it.r);
+  const validators = members.map((it) => it.validate);
+  const parsers = members.map((it) => it.parse);
+  const reporters = members.map((it) => it.reportErrors);
   const parseMembers = (c: Ctx, i: any): object => {
     let acc = {};
     for (let k = 0; k < count; k++) {
-      const parsed = ps[k](c, i);
+      const parsed = parsers[k](c, i);
       if (typeof parsed !== "object") {
         throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
       }
@@ -1161,7 +1164,7 @@ export function allOf(members: Runtype[]): Runtype {
       c.intersectionInput = i;
       let ok = true;
       for (let k = 0; k < count; k++) {
-        if (typeof i !== "object" || !vs[k](c, i)) {
+        if (typeof i !== "object" || !validators[k](c, i)) {
           ok = false;
           break;
         }
@@ -1182,7 +1185,7 @@ export function allOf(members: Runtype[]): Runtype {
       c.intersectionInput = i;
       const errors: DecodeError[] = [];
       for (let k = 0; k < count; k++) {
-        errors.push(...rs[k](c, i));
+        errors.push(...reporters[k](c, i));
       }
       c.intersectionInput = old;
       if (errors.length > 0 || !checksExtraProperties) {
@@ -1293,14 +1296,14 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
 }
 
 export function union(members: Runtype[]): Runtype {
-  const vs = members.map((it) => it.v);
-  const ps = members.map((it) => it.p);
-  const rs = members.map((it) => it.r);
+  const validators = members.map((it) => it.validate);
+  const parsers = members.map((it) => it.parse);
+  const reporters = members.map((it) => it.reportErrors);
   return node(
     0,
     (c, i) => {
-      for (let k = 0; k < vs.length; k++) {
-        if (vs[k](c, i)) {
+      for (let k = 0; k < validators.length; k++) {
+        if (validators[k](c, i)) {
           return true;
         }
       }
@@ -1308,9 +1311,9 @@ export function union(members: Runtype[]): Runtype {
     },
     (c, i) => {
       const items = [];
-      for (let k = 0; k < vs.length; k++) {
-        if (vs[k](c, i)) {
-          items.push(ps[k](c, i));
+      for (let k = 0; k < validators.length; k++) {
+        if (validators[k](c, i)) {
+          items.push(parsers[k](c, i));
         }
       }
       if (items.length === 1) {
@@ -1322,8 +1325,8 @@ export function union(members: Runtype[]): Runtype {
       const branchErrors: DecodeError[][] = [];
       const oldPaths = c.path;
       c.path = [];
-      for (let k = 0; k < vs.length; k++) {
-        branchErrors.push(rs[k](c, i));
+      for (let k = 0; k < validators.length; k++) {
+        branchErrors.push(reporters[k](c, i));
       }
       c.path = oldPaths;
 
@@ -1351,10 +1354,10 @@ export function union(members: Runtype[]): Runtype {
   );
 }
 
-export function arr(item: Runtype): Runtype {
-  const itemV = item.v;
-  const itemP = item.p;
-  const itemR = item.r;
+export function array(item: Runtype): Runtype {
+  const validateItem = item.validate;
+  const parseItem = item.parse;
+  const reportItem = item.reportErrors;
   return node(
     0,
     (c, i) => {
@@ -1362,7 +1365,7 @@ export function arr(item: Runtype): Runtype {
         return false;
       }
       for (let k = 0; k < i.length; k++) {
-        if (!itemV(c, i[k])) {
+        if (!validateItem(c, i[k])) {
           return false;
         }
       }
@@ -1373,7 +1376,7 @@ export function arr(item: Runtype): Runtype {
       const acc = new Array(i.length);
       for (let k = 0; k < i.length; k++) {
         if (k in i) {
-          acc[k] = itemP(c, i[k]);
+          acc[k] = parseItem(c, i[k]);
         }
       }
       return acc;
@@ -1385,7 +1388,7 @@ export function arr(item: Runtype): Runtype {
 
       const acc: DecodeError[] = [];
       for (let k = 0; k < i.length; k++) {
-        reportAtPath(c, acc, `[${k}]`, itemV, itemR, i[k]);
+        reportAtPath(c, acc, `[${k}]`, validateItem, reportItem, i[k]);
       }
 
       return acc;
@@ -1410,12 +1413,12 @@ export function arr(item: Runtype): Runtype {
 }
 
 export function map(key: Runtype, value: Runtype): Runtype {
-  const keyV = key.v;
-  const keyP = key.p;
-  const keyR = key.r;
-  const valueV = value.v;
-  const valueP = value.p;
-  const valueR = value.r;
+  const validateKey = key.validate;
+  const parseKey = key.parse;
+  const reportKey = key.reportErrors;
+  const validateValue = value.validate;
+  const parseValue = value.parse;
+  const reportValue = value.reportErrors;
   return node(
     0,
     (c, i) => {
@@ -1423,7 +1426,7 @@ export function map(key: Runtype, value: Runtype): Runtype {
         return false;
       }
       for (const [k, v] of i) {
-        if (!keyV(c, k) || !valueV(c, v)) {
+        if (!validateKey(c, k) || !validateValue(c, v)) {
           return false;
         }
       }
@@ -1432,7 +1435,7 @@ export function map(key: Runtype, value: Runtype): Runtype {
     (c, i) => {
       const res = new Map();
       for (const [k, v] of i as Map<any, any>) {
-        res.set(keyP(c, k), valueP(c, v));
+        res.set(parseKey(c, k), parseValue(c, v));
       }
       return res;
     },
@@ -1442,8 +1445,8 @@ export function map(key: Runtype, value: Runtype): Runtype {
       }
       const acc: DecodeError[] = [];
       for (const [k, v] of i) {
-        reportAtPath(c, acc, `key(${stringifyWithBigInt(k)})`, keyV, keyR, k);
-        reportAtPath(c, acc, `value(${stringifyWithBigInt(k)})`, valueV, valueR, v);
+        reportAtPath(c, acc, `key(${stringifyWithBigInt(k)})`, validateKey, reportKey, k);
+        reportAtPath(c, acc, `value(${stringifyWithBigInt(k)})`, validateValue, reportValue, v);
       }
       return acc;
     },
@@ -1460,9 +1463,9 @@ export function map(key: Runtype, value: Runtype): Runtype {
 }
 
 export function set(item: Runtype): Runtype {
-  const itemV = item.v;
-  const itemP = item.p;
-  const itemR = item.r;
+  const validateItem = item.validate;
+  const parseItem = item.parse;
+  const reportItem = item.reportErrors;
   return node(
     0,
     (c, i) => {
@@ -1470,7 +1473,7 @@ export function set(item: Runtype): Runtype {
         return false;
       }
       for (const v of i) {
-        if (!itemV(c, v)) {
+        if (!validateItem(c, v)) {
           return false;
         }
       }
@@ -1479,7 +1482,7 @@ export function set(item: Runtype): Runtype {
     (c, i) => {
       const res = new Set();
       for (const v of i as Set<any>) {
-        res.add(itemP(c, v));
+        res.add(parseItem(c, v));
       }
       return res;
     },
@@ -1489,7 +1492,7 @@ export function set(item: Runtype): Runtype {
       }
       const acc: DecodeError[] = [];
       for (const v of i) {
-        reportAtPath(c, acc, `item(${stringifyWithBigInt(v)})`, itemV, itemR, v);
+        reportAtPath(c, acc, `item(${stringifyWithBigInt(v)})`, validateItem, reportItem, v);
       }
       return acc;
     },
@@ -1531,7 +1534,11 @@ function ensureContextualDefinition(
 
 // A union of object types. `mapping` has the type of each value of the `discriminator` property, and
 // `members` has the types of the union as they are described.
-export function disc(discriminator: string, mapping: Record<string, Runtype>, members: Runtype[]): Runtype {
+export function discriminatedUnion(
+  discriminator: string,
+  mapping: Record<string, Runtype>,
+  members: Runtype[],
+): Runtype {
   const variants = new Map(Object.entries(mapping));
   const hash: Runtype["hash"] = (ctx) =>
     generateHashFromNumbers([anyOfHash, ...members.map((it) => it.hash(ctx))]);
@@ -1546,7 +1553,7 @@ export function disc(discriminator: string, mapping: Record<string, Runtype>, me
         return false;
       }
       const variant = variants.get(String(d));
-      return variant !== undefined && variant.v(c, i);
+      return variant !== undefined && variant.validate(c, i);
     },
     (c, i) => {
       const variant = variants.get(String(i[discriminator]));
@@ -1556,7 +1563,7 @@ export function disc(discriminator: string, mapping: Record<string, Runtype>, me
         );
       }
       return {
-        ...(variant.p(c, i) as object),
+        ...(variant.parse(c, i) as object),
         [discriminator]: i[discriminator],
       };
     },
@@ -1583,7 +1590,7 @@ export function disc(discriminator: string, mapping: Record<string, Runtype>, me
         popPath(c);
         return errs;
       }
-      return variant.r(c, i);
+      return variant.reportErrors(c, i);
     },
     (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
     (ctx) => {
@@ -1593,10 +1600,10 @@ export function disc(discriminator: string, mapping: Record<string, Runtype>, me
         const variantRefs = Object.entries(mapping).map(([key, variant]) => {
           // A variant that is a named type keeps its name. Other variants get a name made from the union.
           const name =
-            variant.t === T_REF
+            variant.tag === TAG_REFERENCE
               ? variant.name!
               : `Discriminated${sanitizeComponentNamePart(discriminator)}${sanitizeComponentNamePart(key)}${Math.abs(unionHash)}`;
-          const target = variant.t === T_REF ? variant.kids()[0] : variant;
+          const target = variant.tag === TAG_REFERENCE ? variant.children()[0] : variant;
           ensureContextualDefinition(printingContext, name, target, ctx);
           return { key, ref: printingContext.getRef(name) };
         });
@@ -1639,16 +1646,16 @@ export function disc(discriminator: string, mapping: Record<string, Runtype>, me
 }
 
 // An optional property of an object.
-export function opt(inner: Runtype): Runtype {
-  const innerV = inner.v;
-  const innerP = inner.p;
+export function optional(inner: Runtype): Runtype {
+  const validateInner = inner.validate;
+  const parseInner = inner.parse;
   return node(
-    T_OPT,
-    (c, i) => i == null || innerV(c, i),
-    (c, i) => (i == null ? i : innerP(c, i)),
-    // `v` accepts null and undefined, so the input here is neither of them. Only the errors of the inner
+    TAG_OPTIONAL,
+    (c, i) => i == null || validateInner(c, i),
+    (c, i) => (i == null ? i : parseInner(c, i)),
+    // `validate` accepts null and undefined, so the input here is neither of them. Only the errors of the inner
     // type are relevant.
-    inner.r,
+    inner.reportErrors,
     (ctx) => inner.describe(ctx),
     (ctx) => ({
       anyOf: [inner.schema(ctx), { type: "null" }],
@@ -1677,14 +1684,14 @@ type Indexed = Array<{ key: Runtype; value: Runtype }>;
 
 // In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
 function leavesKeyToIntersection(indexed: Indexed, c: Ctx, i: object, k: string): boolean {
-  return c.intersectionInput === i && !indexed.some((p) => p.key.v(c, k));
+  return c.intersectionInput === i && !indexed.some((p) => p.key.validate(c, k));
 }
 
 function parseIndexed(indexed: Indexed, c: Ctx, acc: Record<string, unknown>, k: string, v: unknown): void {
   for (const p of indexed) {
-    if (p.key.v(c, k) && p.value.v(c, v)) {
-      const itemParsed = p.value.p(c, v);
-      setOwnProperty(acc, p.key.p(c, k), itemParsed);
+    if (p.key.validate(c, k) && p.value.validate(c, v)) {
+      const itemParsed = p.value.parse(c, v);
+      setOwnProperty(acc, p.key.parse(c, k), itemParsed);
     }
   }
 }
@@ -1726,7 +1733,7 @@ function hasExtraKeys(index: Record<string, number | undefined>, i: object): boo
   return false;
 }
 
-export function obj(properties: Record<string, Runtype>, indexed: Indexed = []): Runtype {
+export function object(properties: Record<string, Runtype>, indexed: Indexed = []): Runtype {
   const keys = Object.keys(properties);
   // Four items for each property: the key, whether it is optional, and the validate and parse functions.
   // An optional property has the functions of its inner type. The hot functions read only this array,
@@ -1735,10 +1742,10 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
   // The position of each property in `fields`. It has no prototype, so only the keys of `properties` are in it.
   const index: Record<string, number | undefined> = Object.create(null);
   for (const k of keys) {
-    const optional = properties[k].t === T_OPT;
-    const inner = optional ? properties[k].kids()[0] : properties[k];
+    const optional = properties[k].tag === TAG_OPTIONAL;
+    const inner = optional ? properties[k].children()[0] : properties[k];
     index[k] = fields.length;
-    fields.push(k, optional, inner.v, inner.p);
+    fields.push(k, optional, inner.validate, inner.parse);
   }
   const hasIndexed = indexed.length > 0;
   // There is one validate function for objects with an index signature and one for objects without.
@@ -1759,7 +1766,7 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
           }
           let isValid = false;
           for (const p of indexed) {
-            if (p.key.v(c, k) && p.value.v(c, i[k])) {
+            if (p.key.validate(c, k) && p.value.validate(c, i[k])) {
               isValid = true;
               break;
             }
@@ -1813,7 +1820,7 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
       for (let j = 0; j < fields.length; j += 4) {
         const x = i[fields[j]];
         if (!(x == null && fields[j + 1])) {
-          reportAtPath(c, acc, fields[j], fields[j + 2], properties[fields[j]].r, x);
+          reportAtPath(c, acc, fields[j], fields[j + 2], properties[fields[j]].reportErrors, x);
         }
       }
 
@@ -1823,15 +1830,15 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
             continue;
           }
           for (const p of indexed) {
-            const keyOk = p.key.v(c, k);
-            const valueOk = p.value.v(c, i[k]);
+            const keyOk = p.key.validate(c, k);
+            const valueOk = p.value.validate(c, i[k]);
             if (!keyOk || !valueOk) {
               pushPath(c, k);
               if (!keyOk) {
-                acc.push(...p.key.r(c, k));
+                acc.push(...p.key.reportErrors(c, k));
               }
               if (!valueOk) {
-                acc.push(...p.value.r(c, i[k]));
+                acc.push(...p.value.reportErrors(c, i[k]));
               }
               popPath(c);
             }
@@ -1918,12 +1925,12 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
         const valueRuntype = indexed[0].value;
 
         // Record<string, never> -> empty closed object (keys don't matter)
-        if (valueRuntype.t === T_NEVER) {
+        if (valueRuntype.tag === TAG_NEVER) {
           return { type: "object", additionalProperties: false };
         }
 
         // Record<string, unknown> -> simplify additionalProperties to true
-        if (valueRuntype.t === T_ANY) {
+        if (valueRuntype.tag === TAG_ANY) {
           return { ...indexSchemas[0], additionalProperties: true };
         }
 
@@ -1952,7 +1959,7 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
       for (const key of [...keys].sort()) {
         const parser = properties[key];
         ctx.writer.updateString(key);
-        ctx.writer.updateBoolean(parser.t === T_OPT);
+        ctx.writer.updateBoolean(parser.tag === TAG_OPTIONAL);
         parser.hash256(ctx);
       }
       ctx.writer.updateNumber(indexed.length);
@@ -1965,28 +1972,28 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
   );
 }
 
-// The named types of one module. A ref reads the cell of its name on every call, so it always uses the
+// The named types of one module. A reference reads the cell of its name on every call, so it always uses the
 // type that the cell has now.
-export type Registry = Map<string, { n: Runtype | undefined }>;
+export type Registry = Map<string, { runtype: Runtype | undefined }>;
 
-function cellOf(registry: Registry, name: string): { n: Runtype | undefined } {
+function cellOf(registry: Registry, name: string): { runtype: Runtype | undefined } {
   let cell = registry.get(name);
   if (cell === undefined) {
-    cell = { n: undefined };
+    cell = { runtype: undefined };
     registry.set(name, cell);
   }
   return cell;
 }
 
-export function ref(registry: Registry, name: string): Runtype {
+export function reference(registry: Registry, name: string): Runtype {
   const cell = cellOf(registry, name);
-  const n = node(
-    T_REF,
-    (c, i) => cell.n!.v(c, i),
-    (c, i) => cell.n!.p(c, i),
-    (c, i) => cell.n!.r(c, i),
+  const referenceNode = node(
+    TAG_REFERENCE,
+    (c, i) => cell.runtype!.validate(c, i),
+    (c, i) => cell.runtype!.parse(c, i),
+    (c, i) => cell.runtype!.reportErrors(c, i),
     (ctx) => {
-      const to = cell.n!;
+      const to = cell.runtype!;
       if (ctx.refCounts[name] > 1) {
         if (!ctx.activeRefs.has(name) && ctx.definitions[name] == null) {
           ctx.activeRefs.add(name);
@@ -1998,7 +2005,7 @@ export function ref(registry: Registry, name: string): Runtype {
       return to.describe(ctx);
     },
     (ctx) => {
-      const to = cell.n!;
+      const to = cell.runtype!;
       if (ctx.mode === "contextual") {
         const printingContext = ctx.printingContext;
         if (printingContext == null) {
@@ -2025,12 +2032,12 @@ export function ref(registry: Registry, name: string): Runtype {
         return generateHashFromString(name);
       }
       ctx.seen[name] = true;
-      var tmp = cell.n!.hash(ctx);
+      var tmp = cell.runtype!.hash(ctx);
       delete ctx.seen[name];
       return tmp;
     },
     (ctx) => {
-      const to = cell.n!;
+      const to = cell.runtype!;
       const activeId = ctx.active.get(to);
       if (activeId != null) {
         ctx.writer.updateTag("cycleRef");
@@ -2044,16 +2051,16 @@ export function ref(registry: Registry, name: string): Runtype {
       to.hash256(ctx);
       ctx.active.delete(to);
     },
-    () => [cell.n!],
+    () => [cell.runtype!],
   );
-  n.name = name;
-  return n;
+  referenceNode.name = name;
+  return referenceNode;
 }
 
 // Sets the named types of a module.
 export function define(registry: Registry, types: Record<string, Runtype>): void {
   for (const name of Object.keys(types)) {
-    cellOf(registry, name).n = types[name];
+    cellOf(registry, name).runtype = types[name];
   }
 }
 
@@ -2061,18 +2068,18 @@ const namedRuntypes: Registry = new Map();
 
 export const createNamedType = <T>(name: string, p: BeffParser<T>): BeffParser<T> => {
   const cell = cellOf(namedRuntypes, name);
-  if (cell.n !== undefined) {
+  if (cell.runtype !== undefined) {
     throw new Error(`Named type ${name} already exists`);
   }
-  cell.n = (p as ParserFromRuntype)._runtype;
-  return buildParserFromRuntype(ref(namedRuntypes, name), name, false);
+  cell.runtype = (p as ParserFromRuntype)._runtype;
+  return buildParserFromRuntype(reference(namedRuntypes, name), name, false);
 };
 export const overrideNamedType = (name: string, runtype: BeffParser<any>): void => {
   const cell = namedRuntypes.get(name);
   if (cell === undefined) {
     throw new Error(`Named type ${name} does not exist`);
   }
-  cell.n = (runtype as ParserFromRuntype)._runtype;
+  cell.runtype = (runtype as ParserFromRuntype)._runtype;
 };
 
 class ParserFromRuntype implements BeffParser<any> {
@@ -2097,12 +2104,12 @@ class ParserFromRuntype implements BeffParser<any> {
     options?: ParseOptions,
   ): { success: false; errors: DecodeError[] } | { success: true; data: any } {
     const ctx = newCtx(options);
-    if (this._runtype.v(ctx, input)) {
-      return { success: true, data: this._runtype.p(ctx, input) };
+    if (this._runtype.validate(ctx, input)) {
+      return { success: true, data: this._runtype.parse(ctx, input) };
     }
     return {
       success: false,
-      errors: this._runtype.r(ctx, input).slice(0, 10),
+      errors: this._runtype.reportErrors(ctx, input).slice(0, 10),
     };
   }
   zod(): z.ZodType<any, z.ZodTypeDef, any> {
@@ -2111,13 +2118,13 @@ class ParserFromRuntype implements BeffParser<any> {
       (data: any) => this.validate(data),
       //@ts-ignore
       (val: any) => {
-        const errors = this._runtype.r(newCtx(undefined), val);
+        const errors = this._runtype.reportErrors(newCtx(undefined), val);
         return printErrors(errors, []);
       },
     );
   }
   validate(input: any, options?: ParseOptions): input is any {
-    return this._runtype.v(newCtx(options), input);
+    return this._runtype.validate(newCtx(options), input);
   }
   schema(): JSONSchema7 {
     const ctx = {

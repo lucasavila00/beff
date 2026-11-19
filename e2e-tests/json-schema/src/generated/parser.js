@@ -7,42 +7,42 @@ Object.defineProperty(exports, "__esModule", {
 "use strict";
 
 const {
-  str,
-  num,
-  bool,
-  fn,
-  numKey,
+  string,
+  number,
+  boolean,
+  functionType,
+  numberKey,
   any,
-  nul,
-  undef,
+  nullType,
+  undefinedType,
   voidType,
   never,
-  lit,
-  lits,
+  literal,
+  literals,
   regex,
   date,
   bigint,
   typedArray,
-  strFormat,
-  numFormat,
+  stringWithFormat,
+  numberWithFormat,
   tuple,
-  allOf,
+  intersection,
   union,
-  arr,
+  array,
   map,
   set,
-  disc,
-  opt,
-  obj,
-  ref,
-  doc,
+  discriminatedUnion,
+  optional,
+  object,
+  reference,
+  withDescription,
   define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
 } = require("@beff/client/codegen-v2");
 
-const R = new Map();
+const registry = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -75,65 +75,185 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const h0=str();
-const h1=num();
-const h2=bool();
-const h3=nul();
-const h4=undef();
-const h5=any();
-const h6=obj({},[{key:union([h0,numKey()]),value:h5}]);
-const h7=arr(h5);
-const h8=ref(R,"T1");
-const h9=ref(R,"DocumentedPayload");
-const h10=ref(R,"T2");
-const h11=ref(R,"T3");
-const h12=ref(R,"InvalidSchemaWithDate");
-const h13=ref(R,"InvalidSchemaWithBigInt");
-const h14=ref(R,"DiscriminatedUnion");
-const h15=ref(R,"RecursiveTree");
-const h16=ref(R,"SemVer");
-const h17=ref(R,"NonEmptyString");
-const h18=ref(R,"ValidCurrency");
-const h19=ref(R,"EmptyClosedRecord");
-const h20=ref(R,"OptionalNullishInput");
-const h21=ref(R,"ToolInput");
-const h22=lit("a1");
-const h23=lit("a");
-const h24=obj({a1:h0,a11:opt(h0),subType:h22,type:h23});
-const h25=lit("a2");
-const h26=obj({a2:h0,subType:h25,type:h23});
-const h27=disc("subType",{a1:h24,a2:h26},[h24,h26]);
-const h28=lit("b");
-const h29=obj({type:h28,value:h1});
-const h30=disc("type",{a:h27,b:h29},[h24,h26,h29]);
-const h31=doc(str(),"Stable payload id.");
-const h32=doc(num(),"Optional retry count.");
-const h33=doc(obj({id:h31,retries:opt(h32)}),"Documented payload for flat JSON Schema.");
-const h34=never();
-const h35=obj({},[{key:h0,value:h34}]);
-const h36=bigint();
-const h37=obj({x:h36});
-const h38=date();
-const h39=obj({x:h38});
-const h40=tuple([h0],h0);
-const h41=union([h3,h4,h1]);
-const h42=union([h3,h4,h0]);
-const h43=obj({limit:opt(h41),value:opt(h42)});
-const h44=arr(h15);
-const h45=obj({children:h44,value:h1});
-const h46=regex(/^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/,"`${number}.${number}.${number}`");
-const h47=obj({a:h0,b:h1});
-const h48=obj({t1:h8});
-const h49=arr(h10);
-const h50=obj({t2Array:h49});
-const h51=lit("stock_picker");
-const h52=obj({key:h51});
-const h53=ref(R,"ToolEnvelope");
-const h54=ref(R,"WorkflowInput");
-const h55=allOf([h53,h54]);
-const h56=strFormat(["ValidCurrency"]);
-const h57=obj({evaluationEndDate:h0,evaluationStartDate:h0,optionalNote:opt(h0),trainingEndDate:h0});
-define(R,{DiscriminatedUnion:h30,DocumentedPayload:h33,EmptyClosedRecord:h35,InvalidSchemaWithBigInt:h37,InvalidSchemaWithDate:h39,NonEmptyString:h40,OptionalNullishInput:h43,RecursiveTree:h45,SemVer:h46,T1:h47,T2:h48,T3:h50,ToolEnvelope:h52,ToolInput:h55,ValidCurrency:h56,WorkflowInput:h57});
-const buildParsersInput={string:h0,number:h1,boolean:h2,null:h3,undefined:h4,object:h6,anyArray:h7,any:h5,T1:h8,DocumentedPayload:h9,T2:h10,T3:h11,InvalidSchemaWithDate:h12,InvalidSchemaWithBigInt:h13,DiscriminatedUnion:h14,RecursiveTree:h15,SemVer:h16,NonEmptyString:h17,ValidCurrency:h18,EmptyClosedRecord:h19,OptionalNullishInput:h20,ToolInput:h21};
+const direct_hoist_0 = string();
+const direct_hoist_1 = number();
+const direct_hoist_2 = boolean();
+const direct_hoist_3 = nullType();
+const direct_hoist_4 = undefinedType();
+const direct_hoist_5 = any();
+const direct_hoist_6 = object({}, [
+    {
+        key: union([
+            direct_hoist_0,
+            numberKey()
+        ]),
+        value: direct_hoist_5
+    }
+]);
+const direct_hoist_7 = array(direct_hoist_5);
+const direct_hoist_8 = reference(registry, "T1");
+const direct_hoist_9 = reference(registry, "DocumentedPayload");
+const direct_hoist_10 = reference(registry, "T2");
+const direct_hoist_11 = reference(registry, "T3");
+const direct_hoist_12 = reference(registry, "InvalidSchemaWithDate");
+const direct_hoist_13 = reference(registry, "InvalidSchemaWithBigInt");
+const direct_hoist_14 = reference(registry, "DiscriminatedUnion");
+const direct_hoist_15 = reference(registry, "RecursiveTree");
+const direct_hoist_16 = reference(registry, "SemVer");
+const direct_hoist_17 = reference(registry, "NonEmptyString");
+const direct_hoist_18 = reference(registry, "ValidCurrency");
+const direct_hoist_19 = reference(registry, "EmptyClosedRecord");
+const direct_hoist_20 = reference(registry, "OptionalNullishInput");
+const direct_hoist_21 = reference(registry, "ToolInput");
+const direct_hoist_22 = literal("a1");
+const direct_hoist_23 = literal("a");
+const direct_hoist_24 = object({
+    a1: direct_hoist_0,
+    a11: optional(direct_hoist_0),
+    subType: direct_hoist_22,
+    type: direct_hoist_23
+});
+const direct_hoist_25 = literal("a2");
+const direct_hoist_26 = object({
+    a2: direct_hoist_0,
+    subType: direct_hoist_25,
+    type: direct_hoist_23
+});
+const direct_hoist_27 = discriminatedUnion("subType", {
+    a1: direct_hoist_24,
+    a2: direct_hoist_26
+}, [
+    direct_hoist_24,
+    direct_hoist_26
+]);
+const direct_hoist_28 = literal("b");
+const direct_hoist_29 = object({
+    type: direct_hoist_28,
+    value: direct_hoist_1
+});
+const direct_hoist_30 = discriminatedUnion("type", {
+    a: direct_hoist_27,
+    b: direct_hoist_29
+}, [
+    direct_hoist_24,
+    direct_hoist_26,
+    direct_hoist_29
+]);
+const direct_hoist_31 = withDescription(string(), "Stable payload id.");
+const direct_hoist_32 = withDescription(number(), "Optional retry count.");
+const direct_hoist_33 = withDescription(object({
+    id: direct_hoist_31,
+    retries: optional(direct_hoist_32)
+}), "Documented payload for flat JSON Schema.");
+const direct_hoist_34 = never();
+const direct_hoist_35 = object({}, [
+    {
+        key: direct_hoist_0,
+        value: direct_hoist_34
+    }
+]);
+const direct_hoist_36 = bigint();
+const direct_hoist_37 = object({
+    x: direct_hoist_36
+});
+const direct_hoist_38 = date();
+const direct_hoist_39 = object({
+    x: direct_hoist_38
+});
+const direct_hoist_40 = tuple([
+    direct_hoist_0
+], direct_hoist_0);
+const direct_hoist_41 = union([
+    direct_hoist_3,
+    direct_hoist_4,
+    direct_hoist_1
+]);
+const direct_hoist_42 = union([
+    direct_hoist_3,
+    direct_hoist_4,
+    direct_hoist_0
+]);
+const direct_hoist_43 = object({
+    limit: optional(direct_hoist_41),
+    value: optional(direct_hoist_42)
+});
+const direct_hoist_44 = array(direct_hoist_15);
+const direct_hoist_45 = object({
+    children: direct_hoist_44,
+    value: direct_hoist_1
+});
+const direct_hoist_46 = regex(/^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}.${number}.${number}`");
+const direct_hoist_47 = object({
+    a: direct_hoist_0,
+    b: direct_hoist_1
+});
+const direct_hoist_48 = object({
+    t1: direct_hoist_8
+});
+const direct_hoist_49 = array(direct_hoist_10);
+const direct_hoist_50 = object({
+    t2Array: direct_hoist_49
+});
+const direct_hoist_51 = literal("stock_picker");
+const direct_hoist_52 = object({
+    key: direct_hoist_51
+});
+const direct_hoist_53 = reference(registry, "ToolEnvelope");
+const direct_hoist_54 = reference(registry, "WorkflowInput");
+const direct_hoist_55 = intersection([
+    direct_hoist_53,
+    direct_hoist_54
+]);
+const direct_hoist_56 = stringWithFormat([
+    "ValidCurrency"
+]);
+const direct_hoist_57 = object({
+    evaluationEndDate: direct_hoist_0,
+    evaluationStartDate: direct_hoist_0,
+    optionalNote: optional(direct_hoist_0),
+    trainingEndDate: direct_hoist_0
+});
+define(registry, {
+    DiscriminatedUnion: direct_hoist_30,
+    DocumentedPayload: direct_hoist_33,
+    EmptyClosedRecord: direct_hoist_35,
+    InvalidSchemaWithBigInt: direct_hoist_37,
+    InvalidSchemaWithDate: direct_hoist_39,
+    NonEmptyString: direct_hoist_40,
+    OptionalNullishInput: direct_hoist_43,
+    RecursiveTree: direct_hoist_45,
+    SemVer: direct_hoist_46,
+    T1: direct_hoist_47,
+    T2: direct_hoist_48,
+    T3: direct_hoist_50,
+    ToolEnvelope: direct_hoist_52,
+    ToolInput: direct_hoist_55,
+    ValidCurrency: direct_hoist_56,
+    WorkflowInput: direct_hoist_57
+});
+const buildParsersInput = {
+    string: direct_hoist_0,
+    number: direct_hoist_1,
+    boolean: direct_hoist_2,
+    null: direct_hoist_3,
+    undefined: direct_hoist_4,
+    object: direct_hoist_6,
+    anyArray: direct_hoist_7,
+    any: direct_hoist_5,
+    T1: direct_hoist_8,
+    DocumentedPayload: direct_hoist_9,
+    T2: direct_hoist_10,
+    T3: direct_hoist_11,
+    InvalidSchemaWithDate: direct_hoist_12,
+    InvalidSchemaWithBigInt: direct_hoist_13,
+    DiscriminatedUnion: direct_hoist_14,
+    RecursiveTree: direct_hoist_15,
+    SemVer: direct_hoist_16,
+    NonEmptyString: direct_hoist_17,
+    ValidCurrency: direct_hoist_18,
+    EmptyClosedRecord: direct_hoist_19,
+    OptionalNullishInput: direct_hoist_20,
+    ToolInput: direct_hoist_21
+};
 
 exports.default = { buildParsers };
