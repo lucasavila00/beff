@@ -1,0 +1,7 @@
+{
+  "parser": "./src/parser.ts",
+  "outputDir": "./src/all-functions-generated",
+  "stringFormats": [{ "name": "UserId" }, { "name": "AdminId" }],
+  "numberFormats": [{ "name": "NonNegative" }, { "name": "Rate" }],
+  "codegen": { "maxValidateFunctionSize": 1000000000 }
+}

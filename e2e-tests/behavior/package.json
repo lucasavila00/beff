@@ -4,8 +4,8 @@
   "private": true,
   "description": "",
   "scripts": {
-    "beff": "beff -p beff.json",
-    "test": "vitest --run"
+    "beff": "beff -p beff.json && beff -p beff.no-functions.json && beff -p beff.all-functions.json",
+    "test": "BEFF_CHECK_GENERATED_VALIDATE=1 vitest --run"
   },
   "keywords": [],
   "author": "",
