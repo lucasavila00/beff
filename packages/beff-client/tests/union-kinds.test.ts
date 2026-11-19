@@ -30,7 +30,7 @@ const counted = (inner: Runtype): { runtype: Runtype; calls: () => number } => {
 };
 
 // Builds a linked list type: `type Node = { value: number; next: Node | other }`.
-// `otherKind` is the kind of value that `other` accepts (see `VALUE_KINDS` in codegen-v2.ts).
+// `otherKind` is the kind of value that `other` accepts (see `ValueKind` in codegen-v2.ts).
 // `nodeFirst` sets the order of the two members of the union.
 // `withKinds: true` gives the union a kind table, as the compiler does. `false` gives no table.
 // Returns the parser of Node and the number of validate() calls on Node.

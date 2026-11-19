@@ -377,7 +377,7 @@ impl ToSemType for Runtype {
 }
 
 /// A kind of JavaScript value. Each value has one kind, or no kind (a symbol).
-/// The generated code finds the kind of an input with `valueKindIndexOf`, in
+/// The generated code finds the kind of an input with `valueKindOf`, in
 /// `packages/beff-client/src/codegen-v2.ts`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum JsValueKind {
@@ -405,8 +405,8 @@ impl JsValueKind {
         JsValueKind::Function,
     ];
 
-    /// The name of the kind in the generated code. The runtime has the same names in
-    /// `VALUE_KINDS` (codegen-v2.ts).
+    /// The name of the kind in the generated code. The runtime has the same names in the type
+    /// `ValueKind` (codegen-v2.ts).
     pub(crate) fn name(&self) -> &'static str {
         match self {
             JsValueKind::Nullish => "nullish",
