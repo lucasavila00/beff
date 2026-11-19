@@ -35,12 +35,6 @@ const ratio = (x) => `${x.toFixed(2)}x`;
 
 // "0.62x (0.60x to 0.65x)": the median ratio of the rounds, then the lowest and the highest.
 function ratioCell(baselineRounds, candidateRounds) {
-  if (
-    baselineRounds.some((it) => typeof it !== "number") ||
-    candidateRounds.some((it) => typeof it !== "number")
-  ) {
-    return `${baselineRounds[0]} → ${candidateRounds[0]}`;
-  }
   const ratios = baselineRounds.map((baseline, round) => candidateRounds[round] / baseline);
   return `${ratio(median(ratios))} (${ratio(Math.min(...ratios))} to ${ratio(Math.max(...ratios))})`;
 }
@@ -142,7 +136,6 @@ if (process.argv[2] === "--child") {
     console.log(`| ${shape} | ${inputSize(shape)} | ${cells.join(" | ")} |`);
     const timeCells = operationNames.map((name) => {
       const [baseline, candidate] = [roundsOf("baseline", name), roundsOf("candidate", name)];
-      if (typeof baseline[0] !== "number" || typeof candidate[0] !== "number") return "";
       return `${time(median(baseline))} → ${time(median(candidate))}`;
     });
     timeRows.push(`| ${shape} | ${inputSize(shape)} | ${timeCells.join(" | ")} |`);
@@ -153,7 +146,7 @@ if (process.argv[2] === "--child") {
   console.log(`|${" --- |".repeat(operationNames.length + 2)}`);
   for (const row of timeRows) console.log(row);
 
-  console.log(`\n### @beff/client/codegen-v2 (bundled, without zod), baseline → candidate\n`);
+  console.log(`\n### @beff/client/codegen-v2 (bundled), baseline → candidate\n`);
   console.log("| minified | minified + gzip |");
   console.log("| --- | --- |");
   const clientSizes = versions.map((version) => {
@@ -162,7 +155,6 @@ if (process.argv[2] === "--child") {
       entryPoints: [client],
       bundle: true,
       format: "esm",
-      external: ["zod"],
       write: false,
     });
     return minifiedSizes(bundle.outputFiles[0].text);

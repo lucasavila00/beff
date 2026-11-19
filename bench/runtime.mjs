@@ -21,7 +21,6 @@ const from = Number(values.from ?? 1000);
 const rows = Number(values.rows ?? 6);
 
 const fmt = (ms, prev) => {
-  if (typeof ms === "string") return ms;
   const t = ms >= 1 ? `${ms.toFixed(1)} ms` : `${(ms * 1000).toFixed(0)} µs`;
   return typeof prev === "number" ? `${t} (${(ms / prev).toFixed(1)}x)` : t;
 };
