@@ -153,16 +153,15 @@ if (process.argv[2] === "--child") {
   console.log(`|${" --- |".repeat(operationNames.length + 2)}`);
   for (const row of timeRows) console.log(row);
 
-  console.log(`\n### @beff/client/codegen-v2 (bundled, without zod), baseline → candidate\n`);
+  console.log(`\n### @beff/client/runtime (bundled), baseline → candidate\n`);
   console.log("| minified | minified + gzip |");
   console.log("| --- | --- |");
   const clientSizes = versions.map((version) => {
-    const client = createRequire(path.join(version.outDir, "index.js")).resolve("@beff/client/codegen-v2");
+    const client = createRequire(path.join(version.outDir, "index.js")).resolve("@beff/client/runtime");
     const bundle = buildSync({
       entryPoints: [client],
       bundle: true,
       format: "esm",
-      external: ["zod"],
       write: false,
     });
     return minifiedSizes(bundle.outputFiles[0].text);
