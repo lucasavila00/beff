@@ -34,10 +34,10 @@ struct ToSemTypeConverter<'a> {
     validators: &'a [&'a NamedSchema],
     seen_refs: BTreeSet<RuntypeUUID>,
     // When true, the converter does not look inside objects, arrays, maps and sets.
-    // It converts each of them to the full basic type: "any object", "any array", "any map" or
-    // "any set". `Runtype::js_value_kinds` uses this mode, because it needs only the basic types
-    // of a runtype. In this mode the converter does not follow the references inside an object or
-    // an array, so a long chain of types does not make it slow.
+    // It converts each of them to "any object", "any array", "any map" or "any set".
+    // `Runtype::js_value_kinds` uses this mode. It must know only if a runtype accepts some
+    // object or some array, not which ones. In this mode the converter does not follow the
+    // references inside an object or an array, so a long chain of types does not make it slow.
     shallow: bool,
 }
 
@@ -76,9 +76,14 @@ impl<'a> ToSemTypeConverter<'a> {
                 }
                 RuntypeKind::Map(..) => Some(SubTypeTag::Map),
                 RuntypeKind::Set(_) => Some(SubTypeTag::Set),
-                // A shallow type is larger than the real type, so its negation would be too
-                // small and could miss a kind. Fail here. `js_value_kinds` then returns all kinds.
-                RuntypeKind::StNot(_) => bail!("shallow semtype of a negation"),
+                // In this mode a type is converted to a larger type ("any object"). The negation
+                // of a larger type is too small, so it could miss a kind. Fail here.
+                // `js_value_kinds` then returns all kinds.
+                RuntypeKind::StNot(_) => bail!("cannot find the kinds of a negation"),
+                // `js_value_kinds` handles an intersection before it calls the converter.
+                // Fail for an intersection in a different position. `js_value_kinds` then
+                // returns all kinds.
+                RuntypeKind::AllOf(_) => bail!("cannot find the kinds of a nested intersection"),
                 _ => None,
             };
             if let Some(tag) = tag {
@@ -248,13 +253,7 @@ impl<'a> ToSemTypeConverter<'a> {
             RuntypeKind::AllOf(vs) => {
                 let mut acc = Rc::new(SemTypeContext::unknown());
                 for v in vs {
-                    let mut ty = self.convert_to_sem_type(v, builder)?;
-                    if self.shallow {
-                        // Replace each member with its full basic types before the intersection.
-                        // An exact intersection can remove a kind that the runtime checks of all
-                        // members accept. `js_value_kinds` must not miss such a kind.
-                        ty = SemType::new_basic(ty.basic_types()).into();
-                    }
+                    let ty = self.convert_to_sem_type(v, builder)?;
                     acc = acc.intersect(&ty)?;
                 }
                 Ok(acc)
@@ -454,24 +453,21 @@ impl SubTypeTag {
 }
 
 impl SemType {
-    /// Returns, as a bit set of `SubTypeTag` codes, each basic type that has one or more values
-    /// in this type.
-    fn basic_types(&self) -> u32 {
-        self.all
-            | self
-                .subtype_data
-                .iter()
-                .fold(0, |acc, it| acc | it.to_code())
-    }
-
+    /// Returns the kinds of value that this type can accept.
+    /// A `SemType` sorts its values by `SubTypeTag` (string, number, list, ...). `all` has the
+    /// tags of which the type accepts all values. `subtype_data` has the tags of which the type
+    /// accepts some values. The result has the kinds of the tags in the two groups.
     fn js_value_kinds(&self) -> BTreeSet<JsValueKind> {
         if self.is_any() {
             return JsValueKind::ALL.into_iter().collect();
         }
-        let basic_types = self.basic_types();
+        let tag_codes = self
+            .subtype_data
+            .iter()
+            .fold(self.all, |acc, it| acc | it.to_code());
         SubTypeTag::all()
             .into_iter()
-            .filter(|tag| basic_types & tag.code() != 0)
+            .filter(|tag| tag_codes & tag.code() != 0)
             .flat_map(|tag| tag.js_value_kinds().iter().copied())
             .collect()
     }
@@ -479,18 +475,65 @@ impl SemType {
 
 impl Runtype {
     /// Returns the kinds of JavaScript value that this runtype can accept.
-    /// The set comes from the basic types of the shallow semantic type of the runtype.
     /// The set can include a kind that the runtype never accepts. It never misses a kind that the
     /// runtype accepts. Thus, when a kind is not in the set, the runtype rejects all values of
     /// that kind.
     pub(crate) fn js_value_kinds(&self, validators: &[&NamedSchema]) -> BTreeSet<JsValueKind> {
-        let mut converter = ToSemTypeConverter::new(validators);
-        converter.shallow = true;
-        match converter.convert_to_sem_type(self, &mut SemTypeContext::new()) {
-            Ok(ty) => ty.js_value_kinds(),
-            // The conversion fails for a type that has no semantic type (a function), for a
-            // negation, and for an alias that refers only to itself. The safe result is all kinds.
-            Err(_) => JsValueKind::ALL.into_iter().collect(),
+        self.js_value_kinds_with_refs(validators, &mut BTreeSet::new())
+    }
+
+    /// `refs_on_path` has the named types that the function is in at this time. It stops a loop
+    /// on a type that refers to itself.
+    fn js_value_kinds_with_refs<'a>(
+        &'a self,
+        validators: &[&'a NamedSchema],
+        refs_on_path: &mut BTreeSet<&'a RuntypeUUID>,
+    ) -> BTreeSet<JsValueKind> {
+        let all_kinds = || JsValueKind::ALL.into_iter().collect::<BTreeSet<_>>();
+        match &self.kind {
+            RuntypeKind::Ref(name) => {
+                let target = validators.iter().find(|it| &it.name == name);
+                match target {
+                    Some(target) if refs_on_path.insert(name) => {
+                        let kinds = target
+                            .schema
+                            .js_value_kinds_with_refs(validators, refs_on_path);
+                        refs_on_path.remove(name);
+                        kinds
+                    }
+                    // The name is not known, or the type refers to itself without an object or
+                    // an array between. The safe result is all kinds.
+                    _ => all_kinds(),
+                }
+            }
+            // A union accepts a kind if one member accepts it.
+            RuntypeKind::AnyOf(members) => members
+                .iter()
+                .flat_map(|it| it.js_value_kinds_with_refs(validators, refs_on_path))
+                .collect(),
+            // An intersection accepts a value only if all members accept it. Thus it can accept
+            // a kind only if all members can accept that kind.
+            // Example: `Date & { foo: string }`. The runtime check of `Date` accepts the kinds
+            // array, object and function. The check of `{ foo: string }` accepts the kind object.
+            // The intersection accepts the kind object.
+            RuntypeKind::AllOf(members) => members
+                .iter()
+                .map(|it| it.js_value_kinds_with_refs(validators, refs_on_path))
+                .fold(all_kinds(), |acc, kinds| {
+                    acc.intersection(&kinds).copied().collect()
+                }),
+            // All other runtypes: convert the runtype to a `SemType`, the form of a type that the
+            // subtype checker uses, and read the kinds from it.
+            _ => {
+                let mut converter = ToSemTypeConverter::new(validators);
+                converter.shallow = true;
+                match converter.convert_to_sem_type(self, &mut SemTypeContext::new()) {
+                    Ok(ty) => ty.js_value_kinds(),
+                    // The conversion fails for a type that the subtype checker cannot show (a
+                    // function, a negation). The safe result is all kinds.
+                    Err(_) => all_kinds(),
+                }
+            }
         }
     }
 }

@@ -47,10 +47,11 @@ node compile.mjs [--shape union] [--from 25] [--rows 6]
 
 # Time per validate / safeParse / parse call on valid and invalid inputs that double in size.
 # --scale is the type size, the input size starts at --from and doubles each row.
-# --ab runs each shape two times in the same job, so the two results come from the same machine.
-# The first run removes the kind tables from the generated code. The second run keeps them.
-# A kind table tells a union which member checks each kind of value (null, string, object, ...).
-node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6] [--ab]
+# A kind table tells a generated union which member checks each kind of value (null, string, object, ...).
+# --tables off removes the kind tables from the generated code. The union then tries each member.
+# --ab runs each shape two times in the same job: first with --tables off, then with the tables.
+# The two results then come from the same machine.
+node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6] [--tables off] [--ab]
 
 # Random inputs: validate, safeParse and parse must agree and must not throw.
 # Also prints the deepest recursive input that does not overflow the stack.

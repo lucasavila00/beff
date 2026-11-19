@@ -967,6 +967,9 @@ mod tests {
         ], "type", {
             "CRON": direct_hoist_13,
             "EVENT": direct_hoist_14
+        }, {
+            "CRON": direct_hoist_13,
+            "EVENT": direct_hoist_14
         });
         const direct_hoist_18 = new AnyOfConstsRuntype(undefined, [
             "CRON",
@@ -2504,6 +2507,9 @@ mod tests {
         ], "_tag", {
             "logical": direct_hoist_1,
             "none": direct_hoist_3
+        }, {
+            "logical": direct_hoist_1,
+            "none": direct_hoist_3
         });
         const direct_hoist_5 = new ConstRuntype(undefined, "custom");
         const direct_hoist_6 = new TypeofRuntype(undefined, "string");
@@ -2526,6 +2532,10 @@ mod tests {
             direct_hoist_1,
             direct_hoist_3
         ], "_tag", {
+            "custom": direct_hoist_13,
+            "logical": direct_hoist_1,
+            "none": direct_hoist_3
+        }, {
             "custom": direct_hoist_13,
             "logical": direct_hoist_1,
             "none": direct_hoist_3
@@ -2623,6 +2633,9 @@ mod tests {
             direct_hoist_8,
             direct_hoist_5
         ], "kind", {
+            ["__proto__"]: direct_hoist_5,
+            "toString": direct_hoist_8
+        }, {
             ["__proto__"]: direct_hoist_5,
             "toString": direct_hoist_8
         });
@@ -2778,6 +2791,9 @@ mod tests {
         ], "t", {
             "a": direct_hoist_7,
             "b": direct_hoist_8
+        }, {
+            "a": direct_hoist_7,
+            "b": direct_hoist_8
         });
         const namedRuntypes = {
             "A": direct_hoist_3,
@@ -2894,6 +2910,9 @@ mod tests {
             direct_hoist_3,
             direct_hoist_6
         ], "t", {
+            "a": direct_hoist_3,
+            "b": direct_hoist_6
+        }, {
             "a": direct_hoist_3,
             "b": direct_hoist_6
         });

@@ -1561,6 +1561,7 @@ type ValueKind = (typeof VALUE_KINDS)[number];
 
 // Returns the index in VALUE_KINDS of the kind of the input.
 // Returns VALUE_KINDS.length for a value that has no kind (a symbol).
+// The numbers below must agree with the order of VALUE_KINDS.
 const valueKindIndexOf = (input: unknown): number => {
   if (input == null) return 0;
   switch (typeof input) {
@@ -1855,16 +1856,19 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
   private schemas: Runtype[];
   private discriminator: string;
   private mapping: Record<string, Runtype>;
+  private schemaMapping: Record<string, Runtype>;
   constructor(
     metadata: RuntypeMetadata | undefined,
     schemas: Runtype[],
     discriminator: string,
     mapping: Record<string, Runtype>,
+    schemaMapping: Record<string, Runtype>,
   ) {
     super(metadata);
     this.schemas = schemas;
     this.discriminator = discriminator;
     this.mapping = mapping;
+    this.schemaMapping = schemaMapping;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     if (ctx.mode === "contextual" && ctx.printingContext != null) {
@@ -1890,7 +1894,7 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
   }
   private getSchemaVariantRefs(ctx: SchemaContext): Array<{ key: string; ref: string }> {
     const unionHash = this.hash({ seen: {} });
-    return Object.entries(this.mapping).map(([key, schema]) => ({
+    return Object.entries(this.schemaMapping).map(([key, schema]) => ({
       key,
       ref: this.ensureSchemaVariantRef(schema, key, unionHash, ctx),
     }));

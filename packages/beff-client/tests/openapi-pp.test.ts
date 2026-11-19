@@ -157,10 +157,19 @@ describe("discriminated union schemas", () => {
       definitionContainerKey: null,
     });
 
-    const schema = new AnyOfDiscriminatedRuntype(undefined, [cron, event], "type", {
-      EVENT: event,
-      CRON: cron,
-    }).schema({
+    const schema = new AnyOfDiscriminatedRuntype(
+      undefined,
+      [cron, event],
+      "type",
+      {
+        EVENT: event,
+        CRON: cron,
+      },
+      {
+        EVENT: event,
+        CRON: cron,
+      },
+    ).schema({
       path: [],
       seen: {},
       mode: "contextual",
@@ -211,10 +220,19 @@ describe("discriminated union schemas", () => {
       definitionContainerKey: null,
     });
 
-    const schema = new AnyOfDiscriminatedRuntype(undefined, [cron, event], "type", {
-      EVENT: event,
-      CRON: cron,
-    }).schema({
+    const schema = new AnyOfDiscriminatedRuntype(
+      undefined,
+      [cron, event],
+      "type",
+      {
+        EVENT: event,
+        CRON: cron,
+      },
+      {
+        EVENT: event,
+        CRON: cron,
+      },
+    ).schema({
       path: [],
       seen: {},
       mode: "contextual",

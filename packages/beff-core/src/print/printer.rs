@@ -528,7 +528,7 @@ fn runtype_any_of_discriminated(
         }
     }
 
-    let mapping_obj = object_lit(
+    let schema_mapping_obj = object_lit(
         discriminator_strings
             .iter()
             .map(|current_key| {
@@ -554,6 +554,9 @@ fn runtype_any_of_discriminated(
             .collect(),
     );
 
+    // The validation mapping is printed from the same cases as the schema mapping.
+    let mapping_obj = schema_mapping_obj.clone();
+
     let flat_values_schema = flat_values
         .iter()
         .map(|it| {
@@ -566,7 +569,12 @@ fn runtype_any_of_discriminated(
 
     new_runtype_class(
         "AnyOfDiscriminatedRuntype",
-        vec![flat_values_schema_arr, disc.clone(), mapping_obj],
+        vec![
+            flat_values_schema_arr,
+            disc.clone(),
+            mapping_obj,
+            schema_mapping_obj,
+        ],
         original_runtype,
     )
 }
@@ -854,7 +862,8 @@ fn print_kind_table(
         .iter()
         .map(|member| member.js_value_kinds(&validators))
         .collect::<Vec<_>>();
-    // A member that accepts all kinds (for example `unknown`) must check every input. No table.
+    // A member that accepts all kinds (for example `unknown`) can also accept a symbol. A symbol
+    // has no kind, so a union with a table rejects it. No table.
     if kinds_of_members
         .iter()
         .any(|kinds| kinds.len() == JsValueKind::ALL.len())
