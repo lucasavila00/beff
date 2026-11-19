@@ -85,6 +85,33 @@ Parsers.User.parse({ name: "John Doe", age: 42 }, { objectKeyOrder: "sorted" });
 // { age: 42, name: "John Doe" }
 ```
 
+## Class instances
+
+Beff does not examine the class of an object. Where the type is an object type, an instance of a class is valid if its properties are valid.
+
+- `validate` returns `true`.
+- `parse` and `safeParse` return a new plain object. The result is not an instance of the class and does not have its methods.
+
+```ts
+class Person {
+  name = "John Doe";
+  age = 42;
+  greet() {}
+}
+
+const person = new Person();
+Parsers.User.validate(person);
+// true
+const user = Parsers.User.parse(person);
+// { name: "John Doe", age: 42 }
+user instanceof Person;
+// false
+```
+
+The same rule applies to other objects that are not plain objects, for example a `Date` object or a `Map` object. Arrays are the exception: an array is not valid for an object type.
+
+CAUTION: `validate` also reads the properties that an object gets from its prototype, for example a getter of a class. `parse` copies only the own enumerable properties. Thus, the result of `parse` does not have a property that comes from the prototype, although the type shows that property. Change such instances to plain objects before you parse them.
+
 ## `zod`
 
 `zod` returns a zod version 3 schema that uses the Beff validator. Use it to add Beff validators to a project that uses zod.
