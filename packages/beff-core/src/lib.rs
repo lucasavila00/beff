@@ -125,7 +125,7 @@ pub trait FileManager {
 
 fn debug_print_type_list(vs: Vec<(RuntypeUUID, String)>) -> String {
     let mut acc = String::new();
-    let all_names = vs.iter().map(|(name, _)| name).collect::<Vec<_>>();
+    let all_names = NameIndex::new(vs.iter().map(|(name, _)| name));
     let mut type_with_args_counter = BTreeMap::new();
     let ctx = DebugPrintCtx {
         all_names: &all_names,
@@ -159,10 +159,7 @@ impl ParserExtractResult {
         let mut sorted_validators = self.validators.iter().collect::<Vec<_>>();
         sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
 
-        let all_names = sorted_validators
-            .iter()
-            .map(|it| &it.name)
-            .collect::<Vec<_>>();
+        let all_names = NameIndex::new(sorted_validators.iter().map(|it| &it.name));
         let mut type_with_args_counter = BTreeMap::new();
         let debug_print_ctx = DebugPrintCtx {
             all_names: &all_names,
@@ -282,25 +279,15 @@ impl TypeAddress {
         this_parts[min_index..].join("/")
     }
 
-    fn ts_identifier(&self, all_names: &[&RuntypeUUID]) -> String {
-        let mut has_same_name = vec![];
-        for name in all_names {
-            match &name.ty {
-                RuntypeName::EnumItem {
-                    address: type_address,
-                    ..
-                }
-                | RuntypeName::Address(type_address) => {
-                    if type_address == self {
-                        continue;
-                    }
-                    if type_address.name == self.name {
-                        has_same_name.push(type_address.clone());
-                    }
-                }
-                RuntypeName::SemtypeRecursiveGenerated(_) | RuntypeName::BuiltIn(_) => {}
-            }
-        }
+    fn ts_identifier(&self, all_names: &NameIndex) -> String {
+        let has_same_name: Vec<TypeAddress> = all_names
+            .0
+            .get(&self.name)
+            .into_iter()
+            .flatten()
+            .filter(|it| *it != self)
+            .cloned()
+            .collect();
 
         if has_same_name.is_empty() {
             // no conflict, just print name
@@ -318,6 +305,28 @@ impl TypeAddress {
         );
 
         acc
+    }
+}
+
+/// Type addresses grouped by type name. `ts_identifier` only needs the
+/// addresses with the same name, so it does not scan all names.
+#[derive(Default)]
+pub struct NameIndex(BTreeMap<String, BTreeSet<TypeAddress>>);
+
+impl NameIndex {
+    pub fn new<'a>(names: impl Iterator<Item = &'a RuntypeUUID>) -> Self {
+        let mut acc: BTreeMap<String, BTreeSet<TypeAddress>> = BTreeMap::new();
+        for name in names {
+            match &name.ty {
+                RuntypeName::EnumItem { address, .. } | RuntypeName::Address(address) => {
+                    acc.entry(address.name.clone())
+                        .or_default()
+                        .insert(address.clone());
+                }
+                RuntypeName::SemtypeRecursiveGenerated(_) | RuntypeName::BuiltIn(_) => {}
+            }
+        }
+        NameIndex(acc)
     }
 }
 
@@ -383,7 +392,7 @@ pub(crate) enum RuntypeName {
 }
 
 impl RuntypeName {
-    fn print_name_for_js_codegen(&self, all_names: &[&RuntypeUUID]) -> String {
+    fn print_name_for_js_codegen(&self, all_names: &NameIndex) -> String {
         match self {
             RuntypeName::Address(addr) => addr.ts_identifier(all_names),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
@@ -428,7 +437,7 @@ impl RuntypeUUID {
     fn diag_print(&self) -> String {
         let mut type_with_args_counter = BTreeMap::new();
         let empty_ctx = DebugPrintCtx {
-            all_names: &[],
+            all_names: &NameIndex::default(),
             type_with_args_names: &mut type_with_args_counter,
         };
         self.debug_print(&empty_ctx)

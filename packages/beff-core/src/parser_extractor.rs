@@ -5,7 +5,7 @@ use crate::{BeffUserSettings, ParsedModule, RuntypeUUID};
 use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::Result;
 use anyhow::anyhow;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use swc_atoms::Atom;
 use swc_common::{DUMMY_SP, Span};
@@ -83,9 +83,15 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
     }
 
     fn extend_components(&mut self, defs: Vec<NamedSchema>, span: &Span) {
+        let mut index: BTreeMap<RuntypeUUID, usize> = self
+            .validators
+            .iter()
+            .enumerate()
+            .map(|(i, it)| (it.name.clone(), i))
+            .collect();
         for d in defs {
-            let found = self.validators.iter_mut().find(|x| x.name == d.name);
-            if let Some(found) = found {
+            if let Some(&i) = index.get(&d.name) {
+                let found = &self.validators[i];
                 if found.schema != d.schema {
                     // let found_schema = format!("{:?}", found.schema);
                     // let d_schema = format!("{:?}", d.schema);
@@ -102,6 +108,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                     );
                 }
             } else {
+                index.insert(d.name.clone(), self.validators.len());
                 self.validators.push(d);
             }
         }

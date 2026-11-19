@@ -1,4 +1,5 @@
 use super::json::N;
+use crate::NameIndex;
 use crate::NamedSchema;
 use crate::RuntypeUUID;
 use crate::ast::json::Json;
@@ -433,7 +434,7 @@ impl UnionMerger {
     }
 }
 pub(crate) struct DebugPrintCtx<'a> {
-    pub all_names: &'a [&'a RuntypeUUID],
+    pub all_names: &'a NameIndex,
     pub type_with_args_names: &'a mut BTreeMap<RuntypeUUID, String>,
 }
 impl Runtype {
