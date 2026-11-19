@@ -243,17 +243,17 @@ describe("discriminated union schemas", () => {
       {
         "discriminator": {
           "mapping": {
-            "CRON": "#/components/schemas/DiscriminatedTypeCRON1000470817",
-            "EVENT": "#/components/schemas/DiscriminatedTypeEVENT1000470817",
+            "CRON": "#/components/schemas/DiscriminatedTypeCRON1234721724",
+            "EVENT": "#/components/schemas/DiscriminatedTypeEVENT1234721724",
           },
           "propertyName": "type",
         },
         "oneOf": [
           {
-            "$ref": "#/components/schemas/DiscriminatedTypeEVENT1000470817",
+            "$ref": "#/components/schemas/DiscriminatedTypeEVENT1234721724",
           },
           {
-            "$ref": "#/components/schemas/DiscriminatedTypeCRON1000470817",
+            "$ref": "#/components/schemas/DiscriminatedTypeCRON1234721724",
           },
         ],
         "type": "object",
@@ -262,8 +262,8 @@ describe("discriminated union schemas", () => {
 
     expect(Object.keys(printingContext.exportDefinitions())).toMatchInlineSnapshot(`
       [
-        "DiscriminatedTypeEVENT1000470817",
-        "DiscriminatedTypeCRON1000470817",
+        "DiscriminatedTypeEVENT1234721724",
+        "DiscriminatedTypeCRON1234721724",
       ]
     `);
   });

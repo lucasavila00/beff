@@ -232,17 +232,3 @@ name: string;
 role: ("admin" | "member");
 }>, nextCursor?: string };
 ```
-
-## Detect changes to an API type
-
-Keep the hash of the type in a test. The test fails when the type changes.
-
-```ts
-import { expect, it } from "vitest";
-
-it("the User API type did not change", () => {
-  expect(Parsers.User.hash256()).toMatchInlineSnapshot();
-});
-```
-
-For more information, refer to [Hashes](./hashes.md).
