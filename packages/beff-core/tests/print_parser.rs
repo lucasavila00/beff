@@ -838,7 +838,10 @@ mod tests {
         parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "DiscriminatedUnion4");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "DiscriminatedUnion4", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ConstRuntype(undefined, "a1");
         const direct_hoist_3 = new ObjectRuntype(undefined, {
@@ -863,9 +866,9 @@ mod tests {
             direct_hoist_5,
             direct_hoist_8
         ]);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "DiscriminatedUnion4": direct_hoist_9
-        };
+        });
         const buildParsersInput = {
             "DiscriminatedUnion4": direct_hoist_0
         };
@@ -901,7 +904,10 @@ mod tests {
         parse.buildParsers<{ WorkflowSource: WorkflowSource }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "WorkflowSource");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "WorkflowSource", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new NullishRuntype(undefined, "undefined");
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
@@ -914,7 +920,7 @@ mod tests {
             "eventName": direct_hoist_3,
             "type": direct_hoist_4
         }, []);
-        const direct_hoist_6 = new RefRuntype(undefined, "WorkflowSourceBase");
+        const direct_hoist_6 = new RefRuntype(undefined, "WorkflowSourceBase", namedRuntypes);
         const direct_hoist_7 = new AllOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_6
@@ -956,8 +962,8 @@ mod tests {
             "updatedAt": direct_hoist_1,
             "workflowID": direct_hoist_1
         }, []);
-        const direct_hoist_15 = new RefRuntype(undefined, "EventWorkflowSource");
-        const direct_hoist_16 = new RefRuntype(undefined, "CronWorkflowSource");
+        const direct_hoist_15 = new RefRuntype(undefined, "EventWorkflowSource", namedRuntypes);
+        const direct_hoist_16 = new RefRuntype(undefined, "CronWorkflowSource", namedRuntypes);
         const direct_hoist_17 = new AnyOfDiscriminatedRuntype(undefined, [
             direct_hoist_15,
             direct_hoist_16
@@ -980,12 +986,12 @@ mod tests {
             "updatedAt": direct_hoist_1,
             "workflowID": direct_hoist_1
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "CronWorkflowSource": direct_hoist_7,
             "EventWorkflowSource": direct_hoist_10,
             "WorkflowSource": direct_hoist_17,
             "WorkflowSourceBase": direct_hoist_19
-        };
+        });
         const buildParsersInput = {
             "WorkflowSource": direct_hoist_0
         };
@@ -1463,11 +1469,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1482,12 +1491,15 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ArrayRuntype(undefined, direct_hoist_1);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_2
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1516,7 +1528,10 @@ mod tests {
                 "#
             )
         ]), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "KnownConstants");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "KnownConstants", namedRuntypes);
         const direct_hoist_1 = new AnyOfConstsRuntype(undefined, [
             "blue",
             "red"
@@ -1528,9 +1543,9 @@ mod tests {
             "BAZ_VALUES": direct_hoist_3,
             "FOO_VALUE": direct_hoist_2
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "KnownConstants": direct_hoist_4
-        };
+        });
         const buildParsersInput = {
             "KnownConstants": direct_hoist_0
         };
@@ -1545,13 +1560,16 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new StringWithFormatRuntype(undefined, [
             "password"
-        ]);
-        const namedRuntypes = {
+        ], stringFormatters);
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1567,21 +1585,24 @@ mod tests {
         parse.buildParsers<{ PassLenghts: PassLenghts }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "PassLenghts");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "PassLenghts", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "number");
         const direct_hoist_2 = new StringWithFormatRuntype(undefined, [
             "password"
-        ]);
+        ], stringFormatters);
         const direct_hoist_3 = new ObjectRuntype(undefined, {}, [
             {
                 "key": direct_hoist_2,
                 "value": direct_hoist_1
             }
         ]);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "PassLenghts": direct_hoist_3,
             "Password": direct_hoist_2
-        };
+        });
         const buildParsersInput = {
             "PassLenghts": direct_hoist_0
         };
@@ -1598,22 +1619,25 @@ mod tests {
         parse.buildParsers<{ PassLengthGet: PassLengthGet }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "PassLengthGet");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "PassLengthGet", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "number");
         const direct_hoist_2 = new StringWithFormatRuntype(undefined, [
             "password"
-        ]);
+        ], stringFormatters);
         const direct_hoist_3 = new ObjectRuntype(undefined, {}, [
             {
                 "key": direct_hoist_2,
                 "value": direct_hoist_1
             }
         ]);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "PassLenghts": direct_hoist_3,
             "PassLengthGet": direct_hoist_1,
             "Password": direct_hoist_2
-        };
+        });
         const buildParsersInput = {
             "PassLengthGet": direct_hoist_0
         };
@@ -1629,7 +1653,10 @@ mod tests {
         parse.buildParsers<{ NumberRecGet: NumberRecGet }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "NumberRecGet");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "NumberRecGet", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ObjectRuntype(undefined, {}, [
             {
@@ -1637,10 +1664,10 @@ mod tests {
                 "value": direct_hoist_1
             }
         ]);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "NumberRec": direct_hoist_2,
             "NumberRecGet": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "NumberRecGet": direct_hoist_0
         };
@@ -1657,26 +1684,29 @@ mod tests {
         parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "User");
-        const direct_hoist_1 = new RefRuntype(undefined, "ReadAuthorizedUser");
-        const direct_hoist_2 = new RefRuntype(undefined, "WriteAuthorizedUser");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "User", namedRuntypes);
+        const direct_hoist_1 = new RefRuntype(undefined, "ReadAuthorizedUser", namedRuntypes);
+        const direct_hoist_2 = new RefRuntype(undefined, "WriteAuthorizedUser", namedRuntypes);
         const direct_hoist_3 = new StringWithFormatRuntype(undefined, [
             "User",
             "ReadAuthorizedUser"
-        ]);
+        ], stringFormatters);
         const direct_hoist_4 = new StringWithFormatRuntype(undefined, [
             "User"
-        ]);
+        ], stringFormatters);
         const direct_hoist_5 = new StringWithFormatRuntype(undefined, [
             "User",
             "ReadAuthorizedUser",
             "WriteAuthorizedUser"
-        ]);
-        const namedRuntypes = {
+        ], stringFormatters);
+        Object.assign(namedRuntypes, {
             "ReadAuthorizedUser": direct_hoist_3,
             "User": direct_hoist_4,
             "WriteAuthorizedUser": direct_hoist_5
-        };
+        });
         const buildParsersInput = {
             "User": direct_hoist_0,
             "ReadAuthorizedUser": direct_hoist_1,
@@ -1695,26 +1725,29 @@ mod tests {
         parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "NonInfiniteNumber");
-        const direct_hoist_1 = new RefRuntype(undefined, "NonNegativeNumber");
-        const direct_hoist_2 = new RefRuntype(undefined, "Rate");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "NonInfiniteNumber", namedRuntypes);
+        const direct_hoist_1 = new RefRuntype(undefined, "NonNegativeNumber", namedRuntypes);
+        const direct_hoist_2 = new RefRuntype(undefined, "Rate", namedRuntypes);
         const direct_hoist_3 = new NumberWithFormatRuntype(undefined, [
             "NonInfiniteNumber"
-        ]);
+        ], numberFormatters);
         const direct_hoist_4 = new NumberWithFormatRuntype(undefined, [
             "NonInfiniteNumber",
             "NonNegativeNumber"
-        ]);
+        ], numberFormatters);
         const direct_hoist_5 = new NumberWithFormatRuntype(undefined, [
             "NonInfiniteNumber",
             "NonNegativeNumber",
             "Rate"
-        ]);
-        const namedRuntypes = {
+        ], numberFormatters);
+        Object.assign(namedRuntypes, {
             "NonInfiniteNumber": direct_hoist_3,
             "NonNegativeNumber": direct_hoist_4,
             "Rate": direct_hoist_5
-        };
+        });
         const buildParsersInput = {
             "NonInfiniteNumber": direct_hoist_0,
             "NonNegativeNumber": direct_hoist_1,
@@ -1756,11 +1789,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new ConstRuntype(undefined, "some_string_const");
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1774,11 +1810,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new DateRuntype(undefined);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1792,11 +1831,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(__)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}__${number}`");
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1810,15 +1852,18 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "number");
         const direct_hoist_2 = new TupleRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_1
         ], null);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_2
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1832,14 +1877,17 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ObjectRuntype(undefined, {
             "a": direct_hoist_1
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_2
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1857,7 +1905,10 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype({
             "description": "Stable user id."
         }, "string");
@@ -1866,9 +1917,9 @@ mod tests {
         }, {
             "id": direct_hoist_1
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_2
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1884,13 +1935,16 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype({
             "description": "New payload."
         }, "string");
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1906,11 +1960,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1926,11 +1983,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1951,20 +2011,23 @@ mod tests {
         parse.buildParsers<{ Dec: Wrapper }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Wrapper");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Wrapper", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype({
             "description": "Declared alias."
         }, "string");
-        const direct_hoist_2 = new RefRuntype(undefined, "Alias");
+        const direct_hoist_2 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_3 = new ObjectRuntype({
             "description": "Declared interface."
         }, {
             "value": direct_hoist_2
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1,
             "Wrapper": direct_hoist_3
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -1981,16 +2044,19 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype({
             "description": "Quoted property."
         }, "string");
         const direct_hoist_2 = new ObjectRuntype(undefined, {
             "quoted-key": direct_hoist_1
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_2
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -2004,16 +2070,19 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new TypeofRuntype(undefined, "number");
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
         ]);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_3
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -2027,16 +2096,19 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new TypeofRuntype(undefined, "number");
         const direct_hoist_3 = new ObjectRuntype(undefined, {
             "a": direct_hoist_1,
             "b": direct_hoist_2
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_3
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -2049,8 +2121,11 @@ mod tests {
         parse.buildParsers<{ Dec: string }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new TypeofRuntype(undefined, "string");
         const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new TypeofRuntype(undefined, "string");
+        Object.assign(namedRuntypes, {});
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -2065,11 +2140,14 @@ mod tests {
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "Alias", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "Alias": direct_hoist_1
-        };
+        });
         const buildParsersInput = {
             "Dec": direct_hoist_0
         };
@@ -2295,9 +2373,12 @@ mod tests {
             parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper", namedRuntypes);
         const direct_hoist_1 = new NullishRuntype(undefined, "null");
-        const direct_hoist_2 = new RefRuntype(undefined, "GenericWrapper_string");
+        const direct_hoist_2 = new RefRuntype(undefined, "GenericWrapper_string", namedRuntypes);
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
@@ -2313,7 +2394,7 @@ mod tests {
             "value": direct_hoist_4,
             "value2": direct_hoist_6
         }, []);
-        const direct_hoist_8 = new RefRuntype(undefined, "GenericWrapper_number");
+        const direct_hoist_8 = new RefRuntype(undefined, "GenericWrapper_number", namedRuntypes);
         const direct_hoist_9 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_8
@@ -2332,11 +2413,11 @@ mod tests {
             "wrappedNumber": direct_hoist_8,
             "wrappedString": direct_hoist_2
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "GenericWrapper_string": direct_hoist_7,
             "GenericWrapper_number": direct_hoist_12,
             "UsesGenericWrapper": direct_hoist_13
-        };
+        });
         const buildParsersInput = {
             "UsesGenericWrapper": direct_hoist_0
         };
@@ -2362,8 +2443,11 @@ mod tests {
             parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper");
-        const direct_hoist_1 = new RefRuntype(undefined, "GenericWrapper_string");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper", namedRuntypes);
+        const direct_hoist_1 = new RefRuntype(undefined, "GenericWrapper_string", namedRuntypes);
         const direct_hoist_2 = new TypeofRuntype(undefined, "string");
         const direct_hoist_3 = new TypeofRuntype(undefined, "boolean");
         const direct_hoist_4 = new AnyOfRuntype(undefined, [
@@ -2375,7 +2459,7 @@ mod tests {
             "value": direct_hoist_2,
             "value2": direct_hoist_4
         }, []);
-        const direct_hoist_6 = new RefRuntype(undefined, "GenericWrapper_number");
+        const direct_hoist_6 = new RefRuntype(undefined, "GenericWrapper_number", namedRuntypes);
         const direct_hoist_7 = new TypeofRuntype(undefined, "number");
         const direct_hoist_8 = new AnyOfRuntype(undefined, [
             direct_hoist_3,
@@ -2390,11 +2474,11 @@ mod tests {
             "wrappedNumber": direct_hoist_6,
             "wrappedString": direct_hoist_1
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "GenericWrapper_string": direct_hoist_5,
             "GenericWrapper_number": direct_hoist_9,
             "UsesGenericWrapper": direct_hoist_10
-        };
+        });
         const buildParsersInput = {
             "UsesGenericWrapper": direct_hoist_0
         };
@@ -2418,7 +2502,10 @@ mod tests {
             parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper", namedRuntypes);
         const direct_hoist_1 = new TypeofRuntype(undefined, "string");
         const direct_hoist_2 = new ObjectRuntype(undefined, {
             "value": direct_hoist_1
@@ -2427,17 +2514,17 @@ mod tests {
         const direct_hoist_4 = new ObjectRuntype(undefined, {
             "value": direct_hoist_3
         }, []);
-        const direct_hoist_5 = new RefRuntype(undefined, "GenericWrapper_number");
-        const direct_hoist_6 = new RefRuntype(undefined, "GenericWrapper_string");
+        const direct_hoist_5 = new RefRuntype(undefined, "GenericWrapper_number", namedRuntypes);
+        const direct_hoist_6 = new RefRuntype(undefined, "GenericWrapper_string", namedRuntypes);
         const direct_hoist_7 = new ObjectRuntype(undefined, {
             "wrappedNumber": direct_hoist_5,
             "wrappedString": direct_hoist_6
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "GenericWrapper_string": direct_hoist_2,
             "GenericWrapper_number": direct_hoist_4,
             "UsesGenericWrapper": direct_hoist_7
-        };
+        });
         const buildParsersInput = {
             "UsesGenericWrapper": direct_hoist_0
         };
@@ -2471,8 +2558,11 @@ mod tests {
             parse.buildParsers<{ X: X, }>();
       "#
         ), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "X");
-        const direct_hoist_1 = new RefRuntype(undefined, "EditableLogicalConditionsAstLogicalOp_string");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "X", namedRuntypes);
+        const direct_hoist_1 = new RefRuntype(undefined, "EditableLogicalConditionsAstLogicalOp_string", namedRuntypes);
         const direct_hoist_2 = new ConstRuntype(undefined, "none");
         const direct_hoist_3 = new ObjectRuntype(undefined, {
             "_tag": direct_hoist_2
@@ -2494,15 +2584,15 @@ mod tests {
             "data": direct_hoist_6
         }, []);
         const direct_hoist_8 = new ConstRuntype(undefined, "logical");
-        const direct_hoist_9 = new RefRuntype(undefined, "EditableLogicalConditionsAstNode_string");
+        const direct_hoist_9 = new RefRuntype(undefined, "EditableLogicalConditionsAstNode_string", namedRuntypes);
         const direct_hoist_10 = new ArrayRuntype(undefined, direct_hoist_9);
-        const direct_hoist_11 = new RefRuntype(undefined, "LogicalOp");
+        const direct_hoist_11 = new RefRuntype(undefined, "LogicalOp", namedRuntypes);
         const direct_hoist_12 = new ObjectRuntype(undefined, {
             "_tag": direct_hoist_8,
             "nodes": direct_hoist_10,
             "op": direct_hoist_11
         }, []);
-        const direct_hoist_13 = new RefRuntype(undefined, "EditableLogicalConditionsAstCustom_string");
+        const direct_hoist_13 = new RefRuntype(undefined, "EditableLogicalConditionsAstCustom_string", namedRuntypes);
         const direct_hoist_14 = new AnyOfDiscriminatedRuntype(undefined, [
             direct_hoist_13,
             direct_hoist_1,
@@ -2520,15 +2610,15 @@ mod tests {
             "AND",
             "OR"
         ]);
-        const direct_hoist_16 = new RefRuntype(undefined, "EditableLogicalConditionsAst_string");
-        const namedRuntypes = {
+        const direct_hoist_16 = new RefRuntype(undefined, "EditableLogicalConditionsAst_string", namedRuntypes);
+        Object.assign(namedRuntypes, {
             "EditableLogicalConditionsAst_string": direct_hoist_4,
             "EditableLogicalConditionsAstCustom_string": direct_hoist_7,
             "EditableLogicalConditionsAstLogicalOp_string": direct_hoist_12,
             "EditableLogicalConditionsAstNode_string": direct_hoist_14,
             "LogicalOp": direct_hoist_15,
             "X": direct_hoist_16
-        };
+        });
         const buildParsersInput = {
             "X": direct_hoist_0
         };
@@ -2590,9 +2680,12 @@ mod tests {
     parse.buildParsers<{ ProtoDiscriminated: ProtoDiscriminated, ProtoKeyObject: ProtoKeyObject, __proto__: __proto__ }>();
   "#;
         insta::assert_snapshot!(print_cgen(from), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "ProtoDiscriminated");
-        const direct_hoist_1 = new RefRuntype(undefined, "ProtoKeyObject");
-        const direct_hoist_2 = new RefRuntype(undefined, "__proto__");
+        const namedRuntypes = {};
+        const stringFormatters = {};
+        const numberFormatters = {};
+        const direct_hoist_0 = new RefRuntype(undefined, "ProtoDiscriminated", namedRuntypes);
+        const direct_hoist_1 = new RefRuntype(undefined, "ProtoKeyObject", namedRuntypes);
+        const direct_hoist_2 = new RefRuntype(undefined, "__proto__", namedRuntypes);
         const direct_hoist_3 = new TypeofRuntype(undefined, "boolean");
         const direct_hoist_4 = new ConstRuntype(undefined, "__proto__");
         const direct_hoist_5 = new ObjectRuntype(undefined, {
@@ -2623,11 +2716,11 @@ mod tests {
         const direct_hoist_12 = new ObjectRuntype(undefined, {
             "a": direct_hoist_6
         }, []);
-        const namedRuntypes = {
+        Object.assign(namedRuntypes, {
             "ProtoDiscriminated": direct_hoist_9,
             "ProtoKeyObject": direct_hoist_11,
             ["__proto__"]: direct_hoist_12
-        };
+        });
         const buildParsersInput = {
             "ProtoDiscriminated": direct_hoist_0,
             "ProtoKeyObject": direct_hoist_1,
