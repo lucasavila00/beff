@@ -98,3 +98,11 @@ Use Prettier for JS/TS/JSON/Markdown formatting; the repo enforces `printWidth: 
 ## Testing Guidelines
 
 Run `pnpm run all` or to debug `DEBUG=true pnpm run all` where it will not optimize the Rust code but makes it easier to debug it.
+
+## Benchmarks
+
+- The benchmarks in `bench/` are manual. Do not run them as part of `pnpm test`, and do not add them to the Tests workflow or to any automatic trigger (push or pull request).
+- To measure, start the Bench workflow by hand on your branch: `gh workflow run bench.yml --ref <branch>`. Read the results with `gh run download <id> -n bench-results`. See `bench/README.md`.
+- Do not run benchmarks or stress tests on a development machine, except to debug a benchmark script.
+- Compare versions in the same run or in runs started at the same time. CI runners vary between runs.
+- Every performance change needs before and after numbers from the Bench workflow in its PR.

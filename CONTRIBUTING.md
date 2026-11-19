@@ -19,6 +19,10 @@ It takes a minute to compile in release mode and a second on dev mode.
 
 Dev mode contains function names in stack traces.
 
+## Benchmarks
+
+The benchmarks in `bench/` are manual and do not run automatically. To measure a change, push your branch and start the Bench workflow on it with `gh workflow run bench.yml --ref <branch>`. See `bench/README.md` for options and how to read the results.
+
 ## Publishing to npm
 
 Creating a GitHub release runs `.github/workflows/publish.yml` to build and publish `@beff/cli` and
