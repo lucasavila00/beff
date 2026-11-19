@@ -8,7 +8,7 @@ Build first. Use a release build for numbers, because `DEBUG=true` builds are mu
 
 ```sh
 pnpm build
-pnpm bench                 # all four scripts below, with default options
+pnpm bench                 # compile, runtime, stress and load below, with default options
 ```
 
 Each script writes synthetic projects to `bench/out/<shape>-<scale>/` (ignored by git).
@@ -53,11 +53,20 @@ node stress.mjs [--shape records] [--scale 8] [--runs 500] [--seed 1]
 # Size of the generated parser.js (raw, gzip, minified), and the time and heap that loading it takes.
 # Also prints the size of the @beff/client/codegen-v2 runtime.
 node load.mjs [--shape objects] [--scale 800]
+
+# Compare two versions on the same machine: runtime, load time, heap and minified sizes.
+# The baseline is another built checkout of beff (a clone or a worktree, after `pnpm install && pnpm build`).
+# The versions take turns, each in a new process, for --rounds rounds.
+node compare.mjs --baseline <checkout> [--shape union] [--rounds 5] [--scale 16] [--load-scale 800]
 ```
+
+`compare.mjs` prints the ratio candidate / baseline of each cell: the median of the rounds, and the lowest and the highest round in parentheses. Use it to compare two versions. Do not compare the tables of two different runs: the runners are different machines, and the same version can take 1.5 times the time on one runner.
 
 ## Running in CI
 
 `.github/workflows/bench.yml` runs only when you start it. It does a release build, runs `compile.mjs`, `runtime.mjs`, `stress.mjs` and `load.mjs`, writes the tables to the job summary, and uploads the raw output as the `bench-results` artifact. The job fails if `stress.mjs` finds failures.
+
+Then it builds `baseline_ref` (default `main`) in a worktree on the same runner and runs `compare.mjs` with it as the baseline. Set `baseline_ref` to an empty string to skip the comparison. The baseline does not need the bench scripts: `compare.mjs` of the branch uses only the CLI and the client of the baseline.
 
 1. Push the branch with the change to measure.
 2. Start the workflow on that branch. With no inputs it runs all shapes with default options:
@@ -65,6 +74,7 @@ node load.mjs [--shape objects] [--scale 800]
    ```sh
    gh workflow run bench.yml --ref <branch>
    gh workflow run bench.yml --ref <branch> -f shape=recursive -f runtime_args="--scale 32" -f stress_args="--runs 2000"
+   gh workflow run bench.yml --ref <branch> -f baseline_ref=<other-branch> -f compare_args="--rounds 9"
    ```
 
 3. Read the results:
@@ -74,7 +84,7 @@ node load.mjs [--shape objects] [--scale 800]
    gh run download <id> -n bench-results
    ```
 
-CI runners differ by 1.1x to 1.5x between runs. To compare two versions, run both in the same job, or start both runs at the same time. Do not compare against an old run.
+CI runners differ by 1.1x to 1.5x between runs, also when the runs start at the same time. To compare two versions, use the comparison in the same job (`baseline_ref`). To see the noise of the comparison, compare a branch with itself, for example `--ref main -f baseline_ref=main`.
 
 ## Profiling
 

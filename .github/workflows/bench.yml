@@ -24,12 +24,23 @@ on:
         description: "Extra args for load.mjs (--scale)"
         required: false
         default: ""
+      baseline_ref:
+        description: "Branch, tag or commit to compare with in the same job (empty = no comparison)"
+        required: false
+        default: "main"
+      compare_args:
+        description: "Extra args for compare.mjs (--rounds, --scale, --load-scale)"
+        required: false
+        default: ""
 jobs:
   bench:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
+        with:
+          # The baseline can be any commit of the repository.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v2
         with:
           version: 10
@@ -77,6 +88,28 @@ jobs:
             echo >> "$GITHUB_STEP_SUMMARY"
           done
           exit $status
+      - name: Build the baseline (release)
+        if: ${{ !cancelled() && inputs.baseline_ref != '' }}
+        env:
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+        run: |
+          commit=$(git rev-parse --verify --quiet "origin/$BASELINE_REF^{commit}" || git rev-parse --verify "$BASELINE_REF^{commit}")
+          git worktree add --detach "$RUNNER_TEMP/baseline" "$commit"
+          cd "$RUNNER_TEMP/baseline"
+          pnpm install
+          pnpm build
+      - name: Compare with the baseline
+        if: ${{ !cancelled() && inputs.baseline_ref != '' }}
+        working-directory: bench
+        env:
+          SHAPE: ${{ inputs.shape }}
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+          COMPARE_ARGS: ${{ inputs.compare_args }}
+        run: |
+          shape=${SHAPE:+--shape $SHAPE}
+          echo "## node compare.mjs $shape $COMPARE_ARGS (baseline: $BASELINE_REF, candidate: $GITHUB_REF_NAME)" >> "$GITHUB_STEP_SUMMARY"
+          node compare.mjs --baseline "$RUNNER_TEMP/baseline" $shape $COMPARE_ARGS | tee compare.txt
+          cat compare.txt >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
