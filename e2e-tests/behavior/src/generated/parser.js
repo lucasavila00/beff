@@ -120,7 +120,7 @@ const direct_hoist_26 = new RefRuntype(undefined, "Nested");
 const direct_hoist_27 = new RefRuntype(undefined, "ManyFields");
 const direct_hoist_28 = new RefRuntype(undefined, "Optionals");
 const direct_hoist_29 = new ObjectRuntype(undefined, {
-    "__proto__": direct_hoist_0,
+    ["__proto__"]: direct_hoist_0,
     "toString": direct_hoist_1
 }, []);
 const direct_hoist_30 = new ObjectRuntype(undefined, {}, [
@@ -617,11 +617,11 @@ const direct_hoist_185 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_182,
     direct_hoist_180
 ], "kind", {
-    "__proto__": direct_hoist_180,
+    ["__proto__"]: direct_hoist_180,
     "constructor": direct_hoist_182,
     "toString": direct_hoist_184
 }, {
-    "__proto__": direct_hoist_180,
+    ["__proto__"]: direct_hoist_180,
     "constructor": direct_hoist_182,
     "toString": direct_hoist_184
 });
