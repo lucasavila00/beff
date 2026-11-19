@@ -1800,13 +1800,17 @@ function cellOf(registry: Registry, name: string): { runtype: Runtype | undefine
   return cell;
 }
 
-export function reference(registry: Registry, name: string): Runtype {
+// `target` is the node of the type, if the compiler wrote the type before this reference. Then the reference
+// uses the functions of the type, and it adds no call. Without `target` (a type that refers to itself, or the
+// runtime registry), the reference reads the cell on every call.
+export function reference(registry: Registry, name: string, target?: Runtype): Runtype {
   const cell = cellOf(registry, name);
   const referenceNode = node({
     tag: TAG_REFERENCE,
-    validate: (ctx, input) => cell.runtype!.validate(ctx, input),
-    parse: (ctx, input) => cell.runtype!.parse(ctx, input),
-    reportErrors: (ctx, input) => cell.runtype!.reportErrors(ctx, input),
+    validate: target !== undefined ? target.validate : (ctx, input) => cell.runtype!.validate(ctx, input),
+    parse: target !== undefined ? target.parse : (ctx, input) => cell.runtype!.parse(ctx, input),
+    reportErrors:
+      target !== undefined ? target.reportErrors : (ctx, input) => cell.runtype!.reportErrors(ctx, input),
     describe: (ctx) => {
       const to = cell.runtype!;
       if (ctx.refCounts[name] > 1) {

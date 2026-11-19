@@ -1,8 +1,5 @@
-
 use swc_common::DUMMY_SP;
-use swc_ecma_ast::{
-    Bool, Expr, Lit, Number, Str,
-};
+use swc_ecma_ast::{Bool, Expr, Lit, Number, Str};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct N {
