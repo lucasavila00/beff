@@ -1369,9 +1369,12 @@ export function arr(item: Runtype): Runtype {
       return true;
     },
     (c, i) => {
+      // An item of a sparse array that is not set stays not set.
       const acc = new Array(i.length);
       for (let k = 0; k < i.length; k++) {
-        acc[k] = itemP(c, i[k]);
+        if (k in i) {
+          acc[k] = itemP(c, i[k]);
+        }
       }
       return acc;
     },
