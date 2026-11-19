@@ -4,18 +4,14 @@
   "type": "module",
   "description": "Manual compiler and runtime benchmarks. Not part of pnpm test.",
   "scripts": {
-    "bench": "node compile.mjs && node runtime.mjs && node stress.mjs && node load.mjs",
+    "bench": "node compile.mjs && node runtime.mjs && node stress.mjs",
     "gen": "node gen.mjs",
     "bench:compile": "node compile.mjs",
     "bench:runtime": "node runtime.mjs",
-    "stress": "node stress.mjs",
-    "bench:load": "node load.mjs"
+    "stress": "node stress.mjs"
   },
   "dependencies": {
     "@beff/cli": "workspace:^",
     "@beff/client": "workspace:^"
-  },
-  "devDependencies": {
-    "esbuild": "^0.19.3"
   }
 }

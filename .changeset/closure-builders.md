@@ -11,6 +11,7 @@ Visible changes:
 
 - The format of `parser.js` changed: it calls the builders.
 - The runtype classes (`ObjectRuntype`, `AnyOfRuntype`, ...) are no longer exported from `@beff/client/codegen-v2`.
-- Loaded parsers use more memory, and the deepest recursive input that does not overflow the stack is a little smaller.
+- Loaded parsers use more memory (1.3 to 2.2 times the heap in the benchmarks). The deepest recursive input that does not overflow the stack is up to 11% smaller (`validate`: 3437 levels instead of 3687; `safeParse` of a valid input: 2656 instead of 3000).
+- `createNamedType` now accepts names that are also properties of `Object.prototype`, such as `"constructor"` and `"toString"`. Before, it threw "Named type ... already exists" for these names.
 
 The accepted inputs, the parsed values, the error messages and the output of `describe`, `schema`, `hash` and `hash256` did not change.

@@ -514,7 +514,8 @@ type Ctx = {
   path: string[];
 };
 
-// Every call creates the context with all its fields, so that its shape never changes.
+// All contexts get the same fields in the same order when they are created. Then V8 uses one hidden class for
+// all of them, and the reads of these fields in validate and parse stay fast.
 function newCtx(options: ParseOptions | undefined): Ctx {
   return {
     disallowExtraProperties: options?.disallowExtraProperties ?? false,
@@ -544,11 +545,13 @@ type Hash256Context = {
   nextCycleId: number;
 };
 
-type Validate = (c: Ctx, i: any) => boolean;
-type Parse = (c: Ctx, i: any) => any;
-type Report = (c: Ctx, i: any) => DecodeError[];
+type Validate = (ctx: Ctx, input: any) => boolean;
+type Parse = (ctx: Ctx, input: any) => any;
+type Report = (ctx: Ctx, input: any) => DecodeError[];
 
-// What `tag` says about a node, where other nodes need to know it.
+// The tag of a node tells other nodes what kind of node it is, where they must know it. For example, `object`
+// finds its optional properties by the tag TAG_OPTIONAL. Most nodes have the tag TAG_NONE.
+const TAG_NONE = 0;
 const TAG_OPTIONAL = 1;
 const TAG_NEVER = 2;
 const TAG_ANY = 3;
@@ -574,62 +577,57 @@ export type Runtype = {
 };
 
 const noChildren = (): Runtype[] => [];
-const same: Parse = (_c, i) => i;
+const parseReturnsInput: Parse = (_ctx, input) => input;
 
-function node(
-  tag: number,
-  validate: Validate,
-  parse: Parse,
-  reportErrors: Report,
-  describe: Runtype["describe"],
-  schema: Runtype["schema"],
-  hash: Runtype["hash"],
-  hash256: Runtype["hash256"],
-  children: () => Runtype[],
-): Runtype {
+// Makes a node. All nodes get the same fields in the same order, so V8 uses one hidden class for all of them.
+function node(fields: Omit<Runtype, "name">): Runtype {
   return {
-    tag,
-    validate,
-    parse,
-    reportErrors,
-    describe,
-    schema,
-    hash,
-    hash256,
+    tag: fields.tag,
+    validate: fields.validate,
+    parse: fields.parse,
+    reportErrors: fields.reportErrors,
+    describe: fields.describe,
+    schema: fields.schema,
+    hash: fields.hash,
+    hash256: fields.hash256,
     name: undefined,
-    children,
+    children: fields.children,
   };
 }
 
 // A node without children. Parsing returns the input.
-function leaf(
-  tag: number,
-  validate: Validate,
-  message: string,
-  typeExpr: string,
-  schema: Runtype["schema"],
-  hash: Runtype["hash"],
-  hash256: Runtype["hash256"],
-): Runtype {
-  return node(
-    tag,
-    validate,
-    same,
-    (c, i) => buildError(c, message, i),
-    () => ({ typeExpr }),
-    schema,
-    hash,
-    hash256,
-    noChildren,
-  );
+function leaf(fields: {
+  tag: number;
+  validate: Validate;
+  message: string;
+  typeExpr: string;
+  schema: Runtype["schema"];
+  hash: Runtype["hash"];
+  hash256: Runtype["hash256"];
+}): Runtype {
+  const { message, typeExpr } = fields;
+  return node({
+    tag: fields.tag,
+    validate: fields.validate,
+    parse: parseReturnsInput,
+    reportErrors: (ctx, input) => buildError(ctx, message, input),
+    describe: () => ({ typeExpr }),
+    schema: fields.schema,
+    hash: fields.hash,
+    hash256: fields.hash256,
+    children: noChildren,
+  });
 }
 
-// Adds a description to a node. It replaces the node's own doc text, and it is added to its schema.
+// Returns a copy of the node with a description. The description replaces the doc text of the node, and it is
+// added to its schema. The node itself does not change, because other nodes can use it.
 export function withDescription(runtype: Runtype, description: string): Runtype {
   const { describe, schema } = runtype;
-  runtype.describe = (ctx) => ({ typeExpr: describe(ctx).typeExpr, docText: description });
-  runtype.schema = (ctx) => ({ ...schema(ctx), description });
-  return runtype;
+  return {
+    ...runtype,
+    describe: (ctx) => ({ typeExpr: describe(ctx).typeExpr, docText: description }),
+    schema: (ctx) => ({ ...schema(ctx), description }),
+  };
 }
 
 function jsdocDescription(description: string): string {
@@ -722,84 +720,86 @@ const hash256Tag =
     ctx.writer.updateTag(tag);
 
 function typeOf(typeName: string, validate: Validate, hash: number): Runtype {
-  return leaf(
-    0,
+  return leaf({
+    tag: TAG_NONE,
     validate,
-    "expected " + typeName,
-    typeName,
-    () => ({ type: typeName as JSONSchema7TypeName }),
-    () => hash,
-    (ctx) => {
+    message: "expected " + typeName,
+    typeExpr: typeName,
+    schema: () => ({ type: typeName as JSONSchema7TypeName }),
+    hash: () => hash,
+    hash256: (ctx) => {
       ctx.writer.updateTag("typeof");
       ctx.writer.updateString(typeName);
     },
-  );
+  });
 }
-export const string = (): Runtype => typeOf("string", (_c, i) => typeof i === "string", stringHash);
-export const number = (): Runtype => typeOf("number", (_c, i) => typeof i === "number", numberHash);
-export const boolean = (): Runtype => typeOf("boolean", (_c, i) => typeof i === "boolean", booleanHash);
-// A function type has never had a hash of its own.
+export const string = (): Runtype => typeOf("string", (_ctx, input) => typeof input === "string", stringHash);
+export const number = (): Runtype => typeOf("number", (_ctx, input) => typeof input === "number", numberHash);
+export const boolean = (): Runtype =>
+  typeOf("boolean", (_ctx, input) => typeof input === "boolean", booleanHash);
+// The hash of a function type is undefined. It was undefined on the runtype classes too, and the hash must not
+// change.
 export const functionType = (): Runtype =>
-  typeOf("function", (_c, i) => typeof i === "function", undefined as any);
+  typeOf("function", (_ctx, input) => typeof input === "function", undefined as any);
 
 // The key of a number index signature, such as Record<number, T>.
 // Object keys are always strings, so the key must be a numeric string.
 const NUMBER_KEY_PATTERN = "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$";
 const NUMBER_KEY_REGEX = new RegExp(NUMBER_KEY_PATTERN);
 export const numberKey = (): Runtype =>
-  leaf(
-    0,
-    (_c, i) => typeof i === "string" && NUMBER_KEY_REGEX.test(i),
-    "expected number key",
-    "number",
-    () => ({ type: "string", pattern: NUMBER_KEY_PATTERN }),
+  leaf({
+    tag: TAG_NONE,
+    validate: (_ctx, input) => typeof input === "string" && NUMBER_KEY_REGEX.test(input),
+    message: "expected number key",
+    typeExpr: "number",
+    schema: () => ({ type: "string", pattern: NUMBER_KEY_PATTERN }),
     // Hash as `number`, so the hash of Record<number, T> does not change.
-    () => numberHash,
-    (ctx) => {
+    hash: () => numberHash,
+    hash256: (ctx) => {
       ctx.writer.updateTag("typeof");
       ctx.writer.updateString("number");
     },
-  );
+  });
 
 export const any = (): Runtype =>
-  leaf(
-    TAG_ANY,
-    () => true,
-    "expected any",
-    "any",
-    () => ({}),
-    () => unknownHash,
-    hash256Tag("any"),
-  );
+  leaf({
+    tag: TAG_ANY,
+    validate: () => true,
+    message: "expected any",
+    typeExpr: "any",
+    schema: () => ({}),
+    hash: () => unknownHash,
+    hash256: hash256Tag("any"),
+  });
 
 const nullish = (description: "undefined" | "null" | "void"): Runtype =>
-  leaf(
-    0,
-    (_c, i) => i == null,
-    "expected nullish value",
-    description,
-    () => ({ type: "null" }),
-    () => nullishHash,
-    hash256Tag("nullish"),
-  );
+  leaf({
+    tag: TAG_NONE,
+    validate: (_ctx, input) => input == null,
+    message: "expected nullish value",
+    typeExpr: description,
+    schema: () => ({ type: "null" }),
+    hash: () => nullishHash,
+    hash256: hash256Tag("nullish"),
+  });
 export const nullType = (): Runtype => nullish("null");
 export const undefinedType = (): Runtype => nullish("undefined");
 export const voidType = (): Runtype => nullish("void");
 
 export const never = (): Runtype =>
-  node(
-    TAG_NEVER,
-    () => false,
-    () => {
+  node({
+    tag: TAG_NEVER,
+    validate: () => false,
+    parse: () => {
       throw new Error("unreachable");
     },
-    (c, i) => buildError(c, "expected never", i),
-    () => ({ typeExpr: "never" }),
-    () => ({ anyOf: [] }),
-    () => undefinedHash,
-    hash256Tag("never"),
-    noChildren,
-  );
+    reportErrors: (ctx, input) => buildError(ctx, "expected never", input),
+    describe: () => ({ typeExpr: "never" }),
+    schema: () => ({ anyOf: [] }),
+    hash: () => undefinedHash,
+    hash256: hash256Tag("never"),
+    children: noChildren,
+  });
 
 type Const = string | number | boolean | null;
 
@@ -849,12 +849,12 @@ function hash256Const(ctx: Hash256Context, value: Const): void {
 
 export function literal(constValue: Const): Runtype {
   const value = constValue ?? null;
-  return leaf(
-    0,
-    value == null ? (_c, i) => i == null : (_c, i) => i === value,
-    `expected ${JSON.stringify(value)}`,
-    JSON.stringify(value),
-    (ctx) => {
+  return leaf({
+    tag: TAG_NONE,
+    validate: value == null ? (_ctx, input) => input == null : (_ctx, input) => input === value,
+    message: `expected ${JSON.stringify(value)}`,
+    typeExpr: JSON.stringify(value),
+    schema: (ctx) => {
       if (ctx.mode == "contextual") {
         const tp = typeof value;
         if (tp === "string" || tp === "number" || tp === "boolean") {
@@ -868,27 +868,27 @@ export function literal(constValue: Const): Runtype {
 
       return { const: value };
     },
-    () => hashConst(value),
-    (ctx) => {
+    hash: () => hashConst(value),
+    hash256: (ctx) => {
       ctx.writer.updateTag("const");
       hash256Const(ctx, value);
     },
-  );
+  });
 }
 
 export const regex = (re: RegExp, description: string): Runtype =>
-  leaf(
-    0,
-    (_c, i) => typeof i === "string" && re.test(i),
-    `expected string matching ${description}`,
-    description,
-    () => ({ type: "string", pattern: re.source }),
-    () => generateHashFromString(description),
-    (ctx) => {
+  leaf({
+    tag: TAG_NONE,
+    validate: (_ctx, input) => typeof input === "string" && re.test(input),
+    message: `expected string matching ${description}`,
+    typeExpr: description,
+    schema: () => ({ type: "string", pattern: re.source }),
+    hash: () => generateHashFromString(description),
+    hash256: (ctx) => {
       ctx.writer.updateTag("regex");
       ctx.writer.updateString(description);
     },
-  );
+  });
 
 const noSchema =
   (typeName: string): Runtype["schema"] =>
@@ -897,44 +897,44 @@ const noSchema =
   };
 
 export const date = (): Runtype =>
-  leaf(
-    0,
-    (_c, i) => i instanceof Date,
-    "expected Date",
-    "Date",
-    noSchema("Date"),
-    () => dateHash,
-    hash256Tag("date"),
-  );
+  leaf({
+    tag: TAG_NONE,
+    validate: (_ctx, input) => input instanceof Date,
+    message: "expected Date",
+    typeExpr: "Date",
+    schema: noSchema("Date"),
+    hash: () => dateHash,
+    hash256: hash256Tag("date"),
+  });
 
 export const bigint = (): Runtype =>
-  leaf(
-    0,
-    (_c, i) => typeof i === "bigint",
-    "expected BigInt",
-    "BigInt",
-    noSchema("BigInt"),
-    () => bigintHash,
-    hash256Tag("bigint"),
-  );
+  leaf({
+    tag: TAG_NONE,
+    validate: (_ctx, input) => typeof input === "bigint",
+    message: "expected BigInt",
+    typeExpr: "BigInt",
+    schema: noSchema("BigInt"),
+    hash: () => bigintHash,
+    hash256: hash256Tag("bigint"),
+  });
 
 export const typedArray = (ctorName: string): Runtype =>
-  leaf(
-    0,
-    (_c, i) => {
+  leaf({
+    tag: TAG_NONE,
+    validate: (_ctx, input) => {
       const ctor = (globalThis as any)[ctorName];
       if (ctor == null) return false;
-      return i instanceof ctor;
+      return input instanceof ctor;
     },
-    `expected ${ctorName}`,
-    ctorName,
-    noSchema(ctorName),
-    () => generateHashFromString(ctorName.toLowerCase()),
-    (ctx) => {
+    message: `expected ${ctorName}`,
+    typeExpr: ctorName,
+    schema: noSchema(ctorName),
+    hash: () => generateHashFromString(ctorName.toLowerCase()),
+    hash256: (ctx) => {
       ctx.writer.updateTag("typedArray");
       ctx.writer.updateString(ctorName);
     },
-  );
+  });
 
 function withFormat(
   typeName: "string" | "number",
@@ -945,43 +945,45 @@ function withFormat(
   formats: string[],
 ): Runtype {
   const expected = `expected ${typeName} with format "${formats.join(" and ")}"`;
-  return node(
-    0,
-    (_c, i) => {
-      if (typeof i !== typeName) {
+  return node({
+    tag: TAG_NONE,
+    validate: (_ctx, input) => {
+      if (typeof input !== typeName) {
         return false;
       }
 
-      for (const f of formats) {
-        const validator = formatters[f]?.validator;
+      for (const format of formats) {
+        const validator = formatters[format]?.validator;
 
         if (validator == null) {
           return false;
         }
 
-        if (!validator(i)) {
+        if (!validator(input)) {
           return false;
         }
       }
 
       return true;
     },
-    same,
-    (c, i) =>
+    parse: parseReturnsInput,
+    reportErrors: (ctx, input) =>
       buildError(
-        c,
-        typeof i === typeName ? (resolveFormatErrorMessage(formatters, formats, i) ?? expected) : expected,
-        i,
+        ctx,
+        typeof input === typeName
+          ? (resolveFormatErrorMessage(formatters, formats, input) ?? expected)
+          : expected,
+        input,
       ),
-    () => ({ typeExpr: describeFormats(typeName === "string" ? "String" : "Number", formats) }),
-    () => ({
+    describe: () => ({ typeExpr: describeFormats(typeName === "string" ? "String" : "Number", formats) }),
+    schema: () => ({
       type: typeName,
       format: formatters[formats[formats.length - 1]]?.jsonSchemaFormat ?? formats.join(" and "),
     }),
-    () => hashFormats(typeName === "string" ? stringWithFormatHash : numberWithFormatHash, formats),
-    (ctx) => hash256Formats(ctx, `${typeName}WithFormat`, formats),
-    noChildren,
-  );
+    hash: () => hashFormats(typeName === "string" ? stringWithFormatHash : numberWithFormatHash, formats),
+    hash256: (ctx) => hash256Formats(ctx, `${typeName}WithFormat`, formats),
+    children: noChildren,
+  });
 }
 export const stringWithFormat = (formats: string[]): Runtype =>
   withFormat("string", stringFormatters, formats);
@@ -991,12 +993,12 @@ export const numberWithFormat = (formats: string[]): Runtype =>
 export function literals(values: Const[]): Runtype {
   const known = new Set<unknown>(values);
   const hasNull = known.has(null);
-  return leaf(
-    0,
-    (_c, i) => (i == null && hasNull) || known.has(i),
-    `expected one of ${limitedCommaJoinJson(values)}`,
-    `(${values.map((it) => JSON.stringify(it)).join(" | ")})`,
-    () => {
+  return leaf({
+    tag: TAG_NONE,
+    validate: (_ctx, input) => (input == null && hasNull) || known.has(input),
+    message: `expected one of ${limitedCommaJoinJson(values)}`,
+    typeExpr: `(${values.map((it) => JSON.stringify(it)).join(" | ")})`,
+    schema: () => {
       const isSingleTypeof = values.length > 0 && values.every((v) => typeof v === typeof values[0]);
       if (isSingleTypeof) {
         const tp = typeof values[0];
@@ -1012,8 +1014,8 @@ export function literals(values: Const[]): Runtype {
         enum: values,
       };
     },
-    () => generateHashFromNumbers([anyOfConstsHash, ...[...values].sort().map(hashConst)]),
-    (ctx) => {
+    hash: () => generateHashFromNumbers([anyOfConstsHash, ...[...values].sort().map(hashConst)]),
+    hash256: (ctx) => {
       ctx.writer.updateTag("anyOfConsts");
       const sorted = [...values].sort((a, b) => compareConst(a, b));
       ctx.writer.updateNumber(sorted.length);
@@ -1021,7 +1023,7 @@ export function literals(values: Const[]): Runtype {
         hash256Const(ctx, v);
       }
     },
-  );
+  });
 }
 
 export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
@@ -1032,66 +1034,66 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
   const validateRest = rest?.validate;
   const parseRest = rest?.parse;
   const reportRest = rest?.reportErrors;
-  return node(
-    0,
-    (c, i) => {
-      if (!Array.isArray(i)) {
+  return node({
+    tag: TAG_NONE,
+    validate: (ctx, input) => {
+      if (!Array.isArray(input)) {
         return false;
       }
-      for (let k = 0; k < count; k++) {
-        if (!validators[k](c, i[k])) {
+      for (let index = 0; index < count; index++) {
+        if (!validators[index](ctx, input[index])) {
           return false;
         }
       }
       if (validateRest === undefined) {
-        return i.length <= count;
+        return input.length <= count;
       }
-      for (let k = count; k < i.length; k++) {
-        if (!validateRest(c, i[k])) {
+      for (let index = count; index < input.length; index++) {
+        if (!validateRest(ctx, input[index])) {
           return false;
         }
       }
       return true;
     },
-    (c, i) => {
+    parse: (ctx, input) => {
       const acc = [];
-      for (let k = 0; k < count; k++) {
-        acc.push(parsers[k](c, i[k]));
+      for (let index = 0; index < count; index++) {
+        acc.push(parsers[index](ctx, input[index]));
       }
       if (parseRest !== undefined) {
-        for (let k = count; k < i.length; k++) {
-          acc.push(parseRest(c, i[k]));
+        for (let index = count; index < input.length; index++) {
+          acc.push(parseRest(ctx, input[index]));
         }
       }
       return acc;
     },
-    (c, i) => {
-      if (!Array.isArray(i)) {
-        return buildError(c, "expected tuple", i);
+    reportErrors: (ctx, input) => {
+      if (!Array.isArray(input)) {
+        return buildError(ctx, "expected tuple", input);
       }
 
       const acc: DecodeError[] = [];
-      for (let k = 0; k < count; k++) {
-        reportAtPath(c, acc, `[${k}]`, validators[k], reporters[k], i[k]);
+      for (let index = 0; index < count; index++) {
+        reportAtPath(ctx, acc, `[${index}]`, validators[index], reporters[index], input[index]);
       }
       if (validateRest !== undefined) {
-        for (let k = count; k < i.length; k++) {
-          reportAtPath(c, acc, `[${k}]`, validateRest, reportRest!, i[k]);
+        for (let index = count; index < input.length; index++) {
+          reportAtPath(ctx, acc, `[${index}]`, validateRest, reportRest!, input[index]);
         }
-      } else if (i.length > count) {
-        acc.push(...buildError(c, `expected tuple with ${count} items, got ${i.length}`, i));
+      } else if (input.length > count) {
+        acc.push(...buildError(ctx, `expected tuple with ${count} items, got ${input.length}`, input));
       }
 
       return acc;
     },
-    (ctx) => {
+    describe: (ctx) => {
       const prefixExpr = prefix.map((it) => describeTypeExpr(ctx, it)).join(", ");
       const restExpr = rest != null ? `...Array<${describeTypeExpr(ctx, rest)}>` : null;
 
       const inner = [prefixExpr, restExpr].filter((it) => it != null && it.length > 0).join(", ");
       return { typeExpr: `[${inner}]` };
     },
-    (ctx) => {
+    schema: (ctx) => {
       pushPath(ctx, "[]");
       const prefixItems = prefix.map((it) => it.schema(ctx));
       const items = rest != null ? rest.schema(ctx) : false;
@@ -1102,7 +1104,7 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
         items,
       } as any;
     },
-    (ctx) => {
+    hash: (ctx) => {
       let acc: number[] = [tupleHash];
       for (const p of prefix) {
         acc.push(p.hash(ctx));
@@ -1114,7 +1116,7 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
       }
       return generateHashFromNumbers(acc);
     },
-    (ctx) => {
+    hash256: (ctx) => {
       ctx.writer.updateTag("tuple");
       ctx.writer.updateNumber(prefix.length);
       for (const p of prefix) {
@@ -1127,8 +1129,8 @@ export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
         rest.hash256(ctx);
       }
     },
-    () => [...prefix, ...(rest == null ? [] : [rest])],
-  );
+    children: () => [...prefix, ...(rest == null ? [] : [rest])],
+  });
 }
 
 export function intersection(members: Runtype[]): Runtype {
@@ -1136,10 +1138,10 @@ export function intersection(members: Runtype[]): Runtype {
   const validators = members.map((it) => it.validate);
   const parsers = members.map((it) => it.parse);
   const reporters = members.map((it) => it.reportErrors);
-  const parseMembers = (c: Ctx, i: any): object => {
+  const parseMembers = (ctx: Ctx, input: any): object => {
     let acc = {};
-    for (let k = 0; k < count; k++) {
-      const parsed = parsers[k](c, i);
+    for (let index = 0; index < count; index++) {
+      const parsed = parsers[index](ctx, input);
       if (typeof parsed !== "object") {
         throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
       }
@@ -1148,59 +1150,60 @@ export function intersection(members: Runtype[]): Runtype {
     return acc;
   };
   // Keys of a valid input that no member of the intersection knows about.
-  const extraKeys = (i: object): string[] => {
+  const extraKeys = (input: object): string[] => {
     const known = parseMembers(
-      { disallowExtraProperties: true, objectKeyOrder: "input", intersectionInput: i, path: [] },
-      i,
+      { disallowExtraProperties: true, objectKeyOrder: "input", intersectionInput: input, path: [] },
+      input,
     );
-    return Object.keys(i).filter((k) => !hasOwn.call(known, k));
+    return Object.keys(input).filter((key) => !hasOwn.call(known, key));
   };
-  return node(
-    0,
-    (c, i) => {
-      const checksExtraProperties = intersectionChecksExtraProperties(c, i);
-      // The members run on the input of the intersection.
-      const old = c.intersectionInput;
-      c.intersectionInput = i;
+  return node({
+    tag: TAG_NONE,
+    validate: (ctx, input) => {
+      const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
+      // An object member must not reject a key of this input only because the member does not know the key:
+      // another member can know it. The intersection checks the extra keys itself, after its members.
+      const old = ctx.intersectionInput;
+      ctx.intersectionInput = input;
       let ok = true;
-      for (let k = 0; k < count; k++) {
-        if (typeof i !== "object" || !validators[k](c, i)) {
+      for (let index = 0; index < count; index++) {
+        if (typeof input !== "object" || !validators[index](ctx, input)) {
           ok = false;
           break;
         }
       }
-      c.intersectionInput = old;
-      return ok && !(checksExtraProperties && extraKeys(i).length > 0);
+      ctx.intersectionInput = old;
+      return ok && !(checksExtraProperties && extraKeys(input).length > 0);
     },
-    (c, i) => {
-      const old = c.intersectionInput;
-      c.intersectionInput = i;
-      const parsed = parseMembers(c, i);
-      c.intersectionInput = old;
+    parse: (ctx, input) => {
+      const old = ctx.intersectionInput;
+      ctx.intersectionInput = input;
+      const parsed = parseMembers(ctx, input);
+      ctx.intersectionInput = old;
       return parsed;
     },
-    (c, i) => {
-      const checksExtraProperties = intersectionChecksExtraProperties(c, i);
-      const old = c.intersectionInput;
-      c.intersectionInput = i;
+    reportErrors: (ctx, input) => {
+      const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
+      const old = ctx.intersectionInput;
+      ctx.intersectionInput = input;
       const errors: DecodeError[] = [];
-      for (let k = 0; k < count; k++) {
-        errors.push(...reporters[k](c, i));
+      for (let index = 0; index < count; index++) {
+        errors.push(...reporters[index](ctx, input));
       }
-      c.intersectionInput = old;
+      ctx.intersectionInput = old;
       if (errors.length > 0 || !checksExtraProperties) {
         return errors;
       }
       const acc: DecodeError[] = [];
-      for (const k of extraKeys(i)) {
-        pushPath(c, k);
-        acc.push(...buildError(c, `extra property`, i[k]));
-        popPath(c);
+      for (const key of extraKeys(input)) {
+        pushPath(ctx, key);
+        acc.push(...buildError(ctx, `extra property`, input[key]));
+        popPath(ctx);
       }
       return acc;
     },
-    (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" & ")})` }),
-    (ctx) => {
+    describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" & ")})` }),
+    schema: (ctx) => {
       const schemas = members.map((it) => it.schema(ctx));
       const merged = tryMergeAllOfObjectSchemas(schemas);
       if (merged != null) {
@@ -1211,16 +1214,16 @@ export function intersection(members: Runtype[]): Runtype {
         allOf: schemas,
       };
     },
-    (ctx) => generateHashFromNumbers([allOfHash, ...members.map((it) => it.hash(ctx))]),
-    (ctx) => {
+    hash: (ctx) => generateHashFromNumbers([allOfHash, ...members.map((it) => it.hash(ctx))]),
+    hash256: (ctx) => {
       ctx.writer.updateTag("allOf");
       ctx.writer.updateNumber(members.length);
       for (const s of members) {
         s.hash256(ctx);
       }
     },
-    () => members,
-  );
+    children: () => members,
+  });
 }
 
 const MERGEABLE_OBJECT_SCHEMA_KEYS = new Set(["type", "properties", "required", "additionalProperties"]);
@@ -1299,21 +1302,21 @@ export function union(members: Runtype[]): Runtype {
   const validators = members.map((it) => it.validate);
   const parsers = members.map((it) => it.parse);
   const reporters = members.map((it) => it.reportErrors);
-  return node(
-    0,
-    (c, i) => {
-      for (let k = 0; k < validators.length; k++) {
-        if (validators[k](c, i)) {
+  return node({
+    tag: TAG_NONE,
+    validate: (ctx, input) => {
+      for (let index = 0; index < validators.length; index++) {
+        if (validators[index](ctx, input)) {
           return true;
         }
       }
       return false;
     },
-    (c, i) => {
+    parse: (ctx, input) => {
       const items = [];
-      for (let k = 0; k < validators.length; k++) {
-        if (validators[k](c, i)) {
-          items.push(parsers[k](c, i));
+      for (let index = 0; index < validators.length; index++) {
+        if (validators[index](ctx, input)) {
+          items.push(parsers[index](ctx, input));
         }
       }
       if (items.length === 1) {
@@ -1321,80 +1324,82 @@ export function union(members: Runtype[]): Runtype {
       }
       return deepmerge(...items);
     },
-    (c, i) => {
+    reportErrors: (ctx, input) => {
       const branchErrors: DecodeError[][] = [];
-      const oldPaths = c.path;
-      c.path = [];
-      for (let k = 0; k < validators.length; k++) {
-        branchErrors.push(reporters[k](c, i));
+      const oldPaths = ctx.path;
+      ctx.path = [];
+      for (let index = 0; index < validators.length; index++) {
+        branchErrors.push(reporters[index](ctx, input));
       }
-      c.path = oldPaths;
+      ctx.path = oldPaths;
 
       // Filter to closest-matching branches by max error depth
       const depths = branchErrors.map((errors) => maxErrorDepth(errors));
       const bestDepth = Math.max(...depths);
       const filtered =
-        bestDepth > 0 ? branchErrors.filter((_, k) => depths[k] === bestDepth).flat() : branchErrors.flat();
+        bestDepth > 0
+          ? branchErrors.filter((_, index) => depths[index] === bestDepth).flat()
+          : branchErrors.flat();
 
-      return buildUnionError(c, filtered, i);
+      return buildUnionError(ctx, filtered, input);
     },
-    (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
-    (ctx) => ({
+    describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
+    schema: (ctx) => ({
       anyOf: members.map((it) => it.schema(ctx)),
     }),
-    (ctx) => generateHashFromNumbers([anyOfHash, ...members.map((it) => it.hash(ctx))]),
-    (ctx) => {
+    hash: (ctx) => generateHashFromNumbers([anyOfHash, ...members.map((it) => it.hash(ctx))]),
+    hash256: (ctx) => {
       ctx.writer.updateTag("anyOf");
       ctx.writer.updateNumber(members.length);
       for (const s of members) {
         s.hash256(ctx);
       }
     },
-    () => members,
-  );
+    children: () => members,
+  });
 }
 
 export function array(item: Runtype): Runtype {
   const validateItem = item.validate;
   const parseItem = item.parse;
   const reportItem = item.reportErrors;
-  return node(
-    0,
-    (c, i) => {
-      if (!Array.isArray(i)) {
+  return node({
+    tag: TAG_NONE,
+    validate: (ctx, input) => {
+      if (!Array.isArray(input)) {
         return false;
       }
-      for (let k = 0; k < i.length; k++) {
-        if (!validateItem(c, i[k])) {
+      for (let index = 0; index < input.length; index++) {
+        if (!validateItem(ctx, input[index])) {
           return false;
         }
       }
       return true;
     },
-    (c, i) => {
+    parse: (ctx, input) => {
       // An item of a sparse array that is not set stays not set.
-      const acc = new Array(i.length);
-      for (let k = 0; k < i.length; k++) {
-        if (k in i) {
-          acc[k] = parseItem(c, i[k]);
+      const acc = new Array(input.length);
+      for (let index = 0; index < input.length; index++) {
+        if (index in input) {
+          acc[index] = parseItem(ctx, input[index]);
         }
       }
       return acc;
     },
-    (c, i) => {
-      if (!Array.isArray(i)) {
-        return buildError(c, "expected array", i);
+    reportErrors: (ctx, input) => {
+      if (!Array.isArray(input)) {
+        return buildError(ctx, "expected array", input);
       }
 
       const acc: DecodeError[] = [];
-      for (let k = 0; k < i.length; k++) {
-        reportAtPath(c, acc, `[${k}]`, validateItem, reportItem, i[k]);
+      for (let index = 0; index < input.length; index++) {
+        reportAtPath(ctx, acc, `[${index}]`, validateItem, reportItem, input[index]);
       }
 
       return acc;
     },
-    (ctx) => ({ typeExpr: `Array<${describeTypeExpr(ctx, item)}>` }),
-    (ctx) => {
+    describe: (ctx) => ({ typeExpr: `Array<${describeTypeExpr(ctx, item)}>` }),
+    schema: (ctx) => {
       pushPath(ctx, "[]");
       const items = item.schema(ctx);
       popPath(ctx);
@@ -1403,13 +1408,13 @@ export function array(item: Runtype): Runtype {
         items,
       };
     },
-    (ctx) => generateHashFromNumbers([arrayHash, item.hash(ctx)]),
-    (ctx) => {
+    hash: (ctx) => generateHashFromNumbers([arrayHash, item.hash(ctx)]),
+    hash256: (ctx) => {
       ctx.writer.updateTag("array");
       item.hash256(ctx);
     },
-    () => [item],
-  );
+    children: () => [item],
+  });
 }
 
 export function map(key: Runtype, value: Runtype): Runtype {
@@ -1419,92 +1424,99 @@ export function map(key: Runtype, value: Runtype): Runtype {
   const validateValue = value.validate;
   const parseValue = value.parse;
   const reportValue = value.reportErrors;
-  return node(
-    0,
-    (c, i) => {
-      if (!(i instanceof Map)) {
+  return node({
+    tag: TAG_NONE,
+    validate: (ctx, input) => {
+      if (!(input instanceof Map)) {
         return false;
       }
-      for (const [k, v] of i) {
-        if (!validateKey(c, k) || !validateValue(c, v)) {
+      for (const [entryKey, entryValue] of input) {
+        if (!validateKey(ctx, entryKey) || !validateValue(ctx, entryValue)) {
           return false;
         }
       }
       return true;
     },
-    (c, i) => {
+    parse: (ctx, input) => {
       const res = new Map();
-      for (const [k, v] of i as Map<any, any>) {
-        res.set(parseKey(c, k), parseValue(c, v));
+      for (const [entryKey, entryValue] of input as Map<any, any>) {
+        res.set(parseKey(ctx, entryKey), parseValue(ctx, entryValue));
       }
       return res;
     },
-    (c, i) => {
-      if (!(i instanceof Map)) {
-        return buildError(c, "expected Map", i);
+    reportErrors: (ctx, input) => {
+      if (!(input instanceof Map)) {
+        return buildError(ctx, "expected Map", input);
       }
       const acc: DecodeError[] = [];
-      for (const [k, v] of i) {
-        reportAtPath(c, acc, `key(${stringifyWithBigInt(k)})`, validateKey, reportKey, k);
-        reportAtPath(c, acc, `value(${stringifyWithBigInt(k)})`, validateValue, reportValue, v);
+      for (const [entryKey, entryValue] of input) {
+        reportAtPath(ctx, acc, `key(${stringifyWithBigInt(entryKey)})`, validateKey, reportKey, entryKey);
+        reportAtPath(
+          ctx,
+          acc,
+          `value(${stringifyWithBigInt(entryKey)})`,
+          validateValue,
+          reportValue,
+          entryValue,
+        );
       }
       return acc;
     },
-    (ctx) => ({ typeExpr: `Map<${describeTypeExpr(ctx, key)}, ${describeTypeExpr(ctx, value)}>` }),
-    noSchema("Map"),
-    (ctx) => generateHashFromNumbers([mapHash, key.hash(ctx), value.hash(ctx)]),
-    (ctx) => {
+    describe: (ctx) => ({ typeExpr: `Map<${describeTypeExpr(ctx, key)}, ${describeTypeExpr(ctx, value)}>` }),
+    schema: noSchema("Map"),
+    hash: (ctx) => generateHashFromNumbers([mapHash, key.hash(ctx), value.hash(ctx)]),
+    hash256: (ctx) => {
       ctx.writer.updateTag("map");
       key.hash256(ctx);
       value.hash256(ctx);
     },
-    () => [key, value],
-  );
+    children: () => [key, value],
+  });
 }
 
 export function set(item: Runtype): Runtype {
   const validateItem = item.validate;
   const parseItem = item.parse;
   const reportItem = item.reportErrors;
-  return node(
-    0,
-    (c, i) => {
-      if (!(i instanceof Set)) {
+  return node({
+    tag: TAG_NONE,
+    validate: (ctx, input) => {
+      if (!(input instanceof Set)) {
         return false;
       }
-      for (const v of i) {
-        if (!validateItem(c, v)) {
+      for (const entry of input) {
+        if (!validateItem(ctx, entry)) {
           return false;
         }
       }
       return true;
     },
-    (c, i) => {
+    parse: (ctx, input) => {
       const res = new Set();
-      for (const v of i as Set<any>) {
-        res.add(parseItem(c, v));
+      for (const entry of input as Set<any>) {
+        res.add(parseItem(ctx, entry));
       }
       return res;
     },
-    (c, i) => {
-      if (!(i instanceof Set)) {
-        return buildError(c, "expected Set", i);
+    reportErrors: (ctx, input) => {
+      if (!(input instanceof Set)) {
+        return buildError(ctx, "expected Set", input);
       }
       const acc: DecodeError[] = [];
-      for (const v of i) {
-        reportAtPath(c, acc, `item(${stringifyWithBigInt(v)})`, validateItem, reportItem, v);
+      for (const entry of input) {
+        reportAtPath(ctx, acc, `item(${stringifyWithBigInt(entry)})`, validateItem, reportItem, entry);
       }
       return acc;
     },
-    (ctx) => ({ typeExpr: `Set<${describeTypeExpr(ctx, item)}>` }),
-    noSchema("Set"),
-    (ctx) => generateHashFromNumbers([setHash, item.hash(ctx)]),
-    (ctx) => {
+    describe: (ctx) => ({ typeExpr: `Set<${describeTypeExpr(ctx, item)}>` }),
+    schema: noSchema("Set"),
+    hash: (ctx) => generateHashFromNumbers([setHash, item.hash(ctx)]),
+    hash256: (ctx) => {
       ctx.writer.updateTag("set");
       item.hash256(ctx);
     },
-    () => [item],
-  );
+    children: () => [item],
+  });
 }
 
 function sanitizeComponentNamePart(value: string): string {
@@ -1542,58 +1554,58 @@ export function discriminatedUnion(
   const variants = new Map(Object.entries(mapping));
   const hash: Runtype["hash"] = (ctx) =>
     generateHashFromNumbers([anyOfHash, ...members.map((it) => it.hash(ctx))]);
-  return node(
-    0,
-    (c, i) => {
-      if (typeof i !== "object" || i == null) {
+  return node({
+    tag: TAG_NONE,
+    validate: (ctx, input) => {
+      if (typeof input !== "object" || input == null) {
         return false;
       }
-      const d = i[discriminator];
-      if (d == null) {
+      const discriminatorValue = input[discriminator];
+      if (discriminatorValue == null) {
         return false;
       }
-      const variant = variants.get(String(d));
-      return variant !== undefined && variant.validate(c, i);
+      const variant = variants.get(String(discriminatorValue));
+      return variant !== undefined && variant.validate(ctx, input);
     },
-    (c, i) => {
-      const variant = variants.get(String(i[discriminator]));
+    parse: (ctx, input) => {
+      const variant = variants.get(String(input[discriminator]));
       if (variant === undefined) {
         throw new Error(
-          "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(i[discriminator]),
+          "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[discriminator]),
         );
       }
       return {
-        ...(variant.parse(c, i) as object),
-        [discriminator]: i[discriminator],
+        ...(variant.parse(ctx, input) as object),
+        [discriminator]: input[discriminator],
       };
     },
-    (c, i) => {
-      if (i == null || typeof i !== "object") {
-        return buildError(c, "expected object", i);
+    reportErrors: (ctx, input) => {
+      if (input == null || typeof input !== "object") {
+        return buildError(ctx, "expected object", input);
       }
 
-      const d = i[discriminator];
-      if (d == null) {
-        return buildError(c, "expected discriminator key " + JSON.stringify(discriminator), i);
+      const discriminatorValue = input[discriminator];
+      if (discriminatorValue == null) {
+        return buildError(ctx, "expected discriminator key " + JSON.stringify(discriminator), input);
       }
-      const variant = variants.get(String(d));
+      const variant = variants.get(String(discriminatorValue));
       if (variant === undefined) {
-        pushPath(c, discriminator);
-        const errs = buildError(
-          c,
+        pushPath(ctx, discriminator);
+        const errors = buildError(
+          ctx,
           "expected one of " +
             Object.keys(mapping)
               .map((it) => JSON.stringify(it))
               .join(", "),
-          d,
+          discriminatorValue,
         );
-        popPath(c);
-        return errs;
+        popPath(ctx);
+        return errors;
       }
-      return variant.reportErrors(c, i);
+      return variant.reportErrors(ctx, input);
     },
-    (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
-    (ctx) => {
+    describe: (ctx) => ({ typeExpr: `(${members.map((it) => describeTypeExpr(ctx, it)).join(" | ")})` }),
+    schema: (ctx) => {
       const printingContext = ctx.printingContext;
       if (ctx.mode === "contextual" && printingContext != null) {
         const unionHash = hash({ seen: {} });
@@ -1627,7 +1639,7 @@ export function discriminatedUnion(
       };
     },
     hash,
-    (ctx) => {
+    hash256: (ctx) => {
       ctx.writer.updateTag("anyOfDiscriminated");
       ctx.writer.updateString(discriminator);
       ctx.writer.updateNumber(members.length);
@@ -1641,32 +1653,32 @@ export function discriminatedUnion(
         mapping[key].hash256(ctx);
       }
     },
-    () => members,
-  );
+    children: () => members,
+  });
 }
 
 // An optional property of an object.
 export function optional(inner: Runtype): Runtype {
   const validateInner = inner.validate;
   const parseInner = inner.parse;
-  return node(
-    TAG_OPTIONAL,
-    (c, i) => i == null || validateInner(c, i),
-    (c, i) => (i == null ? i : parseInner(c, i)),
+  return node({
+    tag: TAG_OPTIONAL,
+    validate: (ctx, input) => input == null || validateInner(ctx, input),
+    parse: (ctx, input) => (input == null ? input : parseInner(ctx, input)),
     // `validate` accepts null and undefined, so the input here is neither of them. Only the errors of the inner
     // type are relevant.
-    inner.reportErrors,
-    (ctx) => inner.describe(ctx),
-    (ctx) => ({
+    reportErrors: inner.reportErrors,
+    describe: (ctx) => inner.describe(ctx),
+    schema: (ctx) => ({
       anyOf: [inner.schema(ctx), { type: "null" }],
     }),
-    (ctx) => generateHashFromNumbers([optionalFieldHash, inner.hash(ctx)]),
-    (ctx) => {
+    hash: (ctx) => generateHashFromNumbers([optionalFieldHash, inner.hash(ctx)]),
+    hash256: (ctx) => {
       ctx.writer.updateTag("optionalField");
       inner.hash256(ctx);
     },
-    () => [inner],
-  );
+    children: () => [inner],
+  });
 }
 
 const hasOwn = Object.prototype.hasOwnProperty;
@@ -1682,51 +1694,74 @@ function setOwnProperty(target: Record<string, unknown>, key: string, value: unk
 
 type Indexed = Array<{ key: Runtype; value: Runtype }>;
 
+// `object` keeps its properties in one flat array, a PropertyList. Each property uses PROPERTY_SIZE items of
+// the array, at these offsets.
+const PROPERTY_KEY = 0;
+const PROPERTY_OPTIONAL = 1;
+const PROPERTY_VALIDATE = 2;
+const PROPERTY_PARSE = 3;
+const PROPERTY_SIZE = 4;
+type PropertyList = Array<string | boolean | Validate | Parse>;
+// The position of each property in a PropertyList.
+type PropertyPositions = Record<string, number | undefined>;
+
 // In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
-function leavesKeyToIntersection(indexed: Indexed, c: Ctx, i: object, k: string): boolean {
-  return c.intersectionInput === i && !indexed.some((p) => p.key.validate(c, k));
+function leavesKeyToIntersection(indexed: Indexed, ctx: Ctx, input: object, key: string): boolean {
+  return ctx.intersectionInput === input && !indexed.some((signature) => signature.key.validate(ctx, key));
 }
 
-function parseIndexed(indexed: Indexed, c: Ctx, acc: Record<string, unknown>, k: string, v: unknown): void {
-  for (const p of indexed) {
-    if (p.key.validate(c, k) && p.value.validate(c, v)) {
-      const itemParsed = p.value.parse(c, v);
-      setOwnProperty(acc, p.key.parse(c, k), itemParsed);
+function parseIndexed(
+  indexed: Indexed,
+  ctx: Ctx,
+  acc: Record<string, unknown>,
+  key: string,
+  value: unknown,
+): void {
+  for (const signature of indexed) {
+    if (signature.key.validate(ctx, key) && signature.value.validate(ctx, value)) {
+      const parsedValue = signature.value.parse(ctx, value);
+      setOwnProperty(acc, signature.key.parse(ctx, key), parsedValue);
     }
   }
 }
 
 // Parse with `objectKeyOrder: "sorted"`.
 function parseSorted(
-  fields: any[],
-  index: Record<string, number | undefined>,
+  propertyList: PropertyList,
+  positions: PropertyPositions,
   indexed: Indexed,
-  c: Ctx,
-  i: any,
+  ctx: Ctx,
+  input: any,
 ): unknown {
   const acc: any = {};
-  for (const k of Object.keys(index).sort()) {
-    if (!hasOwn.call(i, k)) {
+  for (const key of Object.keys(positions).sort()) {
+    if (!hasOwn.call(input, key)) {
       continue;
     }
-    const x = i[k];
-    const j = index[k]!;
-    setOwnProperty(acc, k, x == null && fields[j + 1] ? x : fields[j + 3](c, x));
+    const value = input[key];
+    const position = positions[key]!;
+    setOwnProperty(
+      acc,
+      key,
+      value == null && propertyList[position + PROPERTY_OPTIONAL]
+        ? value
+        : (propertyList[position + PROPERTY_PARSE] as Parse)(ctx, value),
+    );
   }
 
   if (indexed.length > 0) {
-    for (const k of Object.keys(i)
-      .filter((k) => index[k] === undefined)
+    for (const key of Object.keys(input)
+      .filter((key) => positions[key] === undefined)
       .sort()) {
-      parseIndexed(indexed, c, acc, k, i[k]);
+      parseIndexed(indexed, ctx, acc, key, input[key]);
     }
   }
   return acc;
 }
 
-function hasExtraKeys(index: Record<string, number | undefined>, i: object): boolean {
-  for (const k of Object.keys(i)) {
-    if (index[k] === undefined) {
+function hasExtraKeys(positions: PropertyPositions, input: object): boolean {
+  for (const key of Object.keys(input)) {
+    if (positions[key] === undefined) {
       return true;
     }
   }
@@ -1735,133 +1770,159 @@ function hasExtraKeys(index: Record<string, number | undefined>, i: object): boo
 
 export function object(properties: Record<string, Runtype>, indexed: Indexed = []): Runtype {
   const keys = Object.keys(properties);
-  // Four items for each property: the key, whether it is optional, and the validate and parse functions.
-  // An optional property has the functions of its inner type. The hot functions read only this array,
-  // so they keep few values on the stack: validation of deep inputs must not overflow the stack.
-  const fields: any[] = [];
-  // The position of each property in `fields`. It has no prototype, so only the keys of `properties` are in it.
-  const index: Record<string, number | undefined> = Object.create(null);
-  for (const k of keys) {
-    const optional = properties[k].tag === TAG_OPTIONAL;
-    const inner = optional ? properties[k].children()[0] : properties[k];
-    index[k] = fields.length;
-    fields.push(k, optional, inner.validate, inner.parse);
+  // The property list has the key, the optional flag, and the validate and parse functions of each property.
+  // An optional property has the functions of its inner type, so it does not add a call.
+  // The validate and parse functions below read only this array, and they do not call helper functions for
+  // the properties. Then each level of a deep input puts fewer values and calls on the stack, and validation
+  // can go deeper before the stack overflows.
+  const propertyList: PropertyList = [];
+  // It has no prototype, so only the keys of `properties` are in it.
+  const positions: PropertyPositions = Object.create(null);
+  for (const key of keys) {
+    const optional = properties[key].tag === TAG_OPTIONAL;
+    const inner = optional ? properties[key].children()[0] : properties[key];
+    positions[key] = propertyList.length;
+    propertyList.push(key, optional, inner.validate, inner.parse);
   }
   const hasIndexed = indexed.length > 0;
   // There is one validate function for objects with an index signature and one for objects without.
-  const v: Validate = hasIndexed
-    ? (c, i) => {
-        if (typeof i !== "object" || i === null || Array.isArray(i)) {
+  const validateObject: Validate = hasIndexed
+    ? (ctx, input) => {
+        if (typeof input !== "object" || input === null || Array.isArray(input)) {
           return false;
         }
-        for (let j = 0; j < fields.length; j += 4) {
-          const x = i[fields[j]];
-          if (!(x == null && fields[j + 1]) && !fields[j + 2](c, x)) {
+        for (let position = 0; position < propertyList.length; position += PROPERTY_SIZE) {
+          const value = input[propertyList[position + PROPERTY_KEY] as string];
+          if (
+            !(value == null && propertyList[position + PROPERTY_OPTIONAL]) &&
+            !(propertyList[position + PROPERTY_VALIDATE] as Validate)(ctx, value)
+          ) {
             return false;
           }
         }
-        for (const k of Object.keys(i)) {
-          if (index[k] !== undefined) {
+        for (const key of Object.keys(input)) {
+          if (positions[key] !== undefined) {
             continue;
           }
           let isValid = false;
-          for (const p of indexed) {
-            if (p.key.validate(c, k) && p.value.validate(c, i[k])) {
+          for (const signature of indexed) {
+            if (signature.key.validate(ctx, key) && signature.value.validate(ctx, input[key])) {
               isValid = true;
               break;
             }
           }
-          if (!isValid && !leavesKeyToIntersection(indexed, c, i, k)) {
+          if (!isValid && !leavesKeyToIntersection(indexed, ctx, input, key)) {
             return false;
           }
         }
         return true;
       }
-    : (c, i) => {
-        if (typeof i !== "object" || i === null || Array.isArray(i)) {
+    : (ctx, input) => {
+        if (typeof input !== "object" || input === null || Array.isArray(input)) {
           return false;
         }
-        for (let j = 0; j < fields.length; j += 4) {
-          const x = i[fields[j]];
-          if (!(x == null && fields[j + 1]) && !fields[j + 2](c, x)) {
+        for (let position = 0; position < propertyList.length; position += PROPERTY_SIZE) {
+          const value = input[propertyList[position + PROPERTY_KEY] as string];
+          if (
+            !(value == null && propertyList[position + PROPERTY_OPTIONAL]) &&
+            !(propertyList[position + PROPERTY_VALIDATE] as Validate)(ctx, value)
+          ) {
             return false;
           }
         }
-        return !(c.disallowExtraProperties && c.intersectionInput !== i && hasExtraKeys(index, i));
+        return !(
+          ctx.disallowExtraProperties &&
+          ctx.intersectionInput !== input &&
+          hasExtraKeys(positions, input)
+        );
       };
-  return node(
-    0,
-    v,
-    (c, i) => {
-      if (c.objectKeyOrder !== "input") {
-        return parseSorted(fields, index, indexed, c, i);
+  return node({
+    tag: TAG_NONE,
+    validate: validateObject,
+    parse: (ctx, input) => {
+      if (ctx.objectKeyOrder !== "input") {
+        return parseSorted(propertyList, positions, indexed, ctx, input);
       }
       const acc: any = {};
-      const inputKeys = Object.keys(i);
-      for (let n = 0; n < inputKeys.length; n++) {
-        const k = inputKeys[n];
-        const x = i[k];
-        const j = index[k];
-        if (j !== undefined) {
-          setOwnProperty(acc, k, x == null && fields[j + 1] ? x : fields[j + 3](c, x));
+      const inputKeys = Object.keys(input);
+      for (let keyIndex = 0; keyIndex < inputKeys.length; keyIndex++) {
+        const key = inputKeys[keyIndex];
+        const value = input[key];
+        const position = positions[key];
+        if (position !== undefined) {
+          setOwnProperty(
+            acc,
+            key,
+            value == null && propertyList[position + PROPERTY_OPTIONAL]
+              ? value
+              : (propertyList[position + PROPERTY_PARSE] as Parse)(ctx, value),
+          );
         } else if (hasIndexed) {
-          parseIndexed(indexed, c, acc, k, x);
+          parseIndexed(indexed, ctx, acc, key, value);
         }
       }
       return acc;
     },
-    (c, i) => {
-      if (typeof i !== "object" || Array.isArray(i) || i === null) {
-        return buildError(c, "expected object", i);
+    reportErrors: (ctx, input) => {
+      if (typeof input !== "object" || Array.isArray(input) || input === null) {
+        return buildError(ctx, "expected object", input);
       }
 
       const acc: DecodeError[] = [];
 
-      for (let j = 0; j < fields.length; j += 4) {
-        const x = i[fields[j]];
-        if (!(x == null && fields[j + 1])) {
-          reportAtPath(c, acc, fields[j], fields[j + 2], properties[fields[j]].reportErrors, x);
+      for (let position = 0; position < propertyList.length; position += PROPERTY_SIZE) {
+        const key = propertyList[position + PROPERTY_KEY] as string;
+        const value = input[key];
+        if (!(value == null && propertyList[position + PROPERTY_OPTIONAL])) {
+          reportAtPath(
+            ctx,
+            acc,
+            key,
+            propertyList[position + PROPERTY_VALIDATE] as Validate,
+            properties[key].reportErrors,
+            value,
+          );
         }
       }
 
       if (hasIndexed) {
-        for (const k of Object.keys(i)) {
-          if (index[k] !== undefined || leavesKeyToIntersection(indexed, c, i, k)) {
+        for (const key of Object.keys(input)) {
+          if (positions[key] !== undefined || leavesKeyToIntersection(indexed, ctx, input, key)) {
             continue;
           }
-          for (const p of indexed) {
-            const keyOk = p.key.validate(c, k);
-            const valueOk = p.value.validate(c, i[k]);
+          for (const signature of indexed) {
+            const keyOk = signature.key.validate(ctx, key);
+            const valueOk = signature.value.validate(ctx, input[key]);
             if (!keyOk || !valueOk) {
-              pushPath(c, k);
+              pushPath(ctx, key);
               if (!keyOk) {
-                acc.push(...p.key.reportErrors(c, k));
+                acc.push(...signature.key.reportErrors(ctx, key));
               }
               if (!valueOk) {
-                acc.push(...p.value.reportErrors(c, i[k]));
+                acc.push(...signature.value.reportErrors(ctx, input[key]));
               }
-              popPath(c);
+              popPath(ctx);
             }
           }
         }
-      } else if (c.disallowExtraProperties && c.intersectionInput !== i) {
-        const extraKeys = Object.keys(i).filter((k) => index[k] === undefined);
+      } else if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
+        const extraKeys = Object.keys(input).filter((key) => positions[key] === undefined);
         if (extraKeys.length > 0) {
-          return extraKeys.flatMap((k) => {
-            pushPath(c, k);
-            const err = buildError(c, `extra property`, i[k]);
-            popPath(c);
-            return err;
+          return extraKeys.flatMap((key) => {
+            pushPath(ctx, key);
+            const errors = buildError(ctx, `extra property`, input[key]);
+            popPath(ctx);
+            return errors;
           });
         }
       }
 
       return acc;
     },
-    (ctx) => {
+    describe: (ctx) => {
       const props = [...keys]
         .sort()
-        .map((k) => describeObjectMember(ctx, describePropertyKey(k), properties[k]));
+        .map((key) => describeObjectMember(ctx, describePropertyKey(key), properties[key]));
 
       const indexProps = indexed.map(({ key, value }) => describeIndexObjectMember(ctx, key, value));
 
@@ -1878,23 +1939,23 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
       const content = members.map((it) => it.member).join(", ");
       return { typeExpr: `{ ${content} }` };
     },
-    (ctx) => {
+    schema: (ctx) => {
       const schemaProperties: Record<string, JSONSchema7Definition> = {};
       const optionalized = new Set<string>();
-      for (const k of keys) {
-        pushPath(ctx, k);
-        const raw = properties[k].schema(ctx);
+      for (const key of keys) {
+        pushPath(ctx, key);
+        const raw = properties[key].schema(ctx);
         const rewrite = removeNullUnionBranch(raw);
         if (rewrite != null) {
-          schemaProperties[k] = rewrite;
-          optionalized.add(k);
+          schemaProperties[key] = rewrite;
+          optionalized.add(key);
         } else {
-          schemaProperties[k] = raw;
+          schemaProperties[key] = raw;
         }
         popPath(ctx);
       }
 
-      const required = keys.filter((k) => !optionalized.has(k));
+      const required = keys.filter((key) => !optionalized.has(key));
       const base: JSONSchema7 = {
         type: "object",
         properties: schemaProperties,
@@ -1941,19 +2002,19 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
         allOf: [base, ...indexSchemas],
       };
     },
-    (ctx) => {
+    hash: (ctx) => {
       let acc: number[] = [objectHash];
       for (const key of [...keys].sort()) {
         acc.push(generateHashFromString(key));
         acc.push(properties[key].hash(ctx));
       }
-      for (const p of indexed) {
-        acc.push(p.key.hash(ctx));
-        acc.push(p.value.hash(ctx));
+      for (const signature of indexed) {
+        acc.push(signature.key.hash(ctx));
+        acc.push(signature.value.hash(ctx));
       }
       return generateHashFromNumbers(acc);
     },
-    (ctx) => {
+    hash256: (ctx) => {
       ctx.writer.updateTag("object");
       ctx.writer.updateNumber(keys.length);
       for (const key of [...keys].sort()) {
@@ -1963,13 +2024,13 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
         parser.hash256(ctx);
       }
       ctx.writer.updateNumber(indexed.length);
-      for (const p of indexed) {
-        p.key.hash256(ctx);
-        p.value.hash256(ctx);
+      for (const signature of indexed) {
+        signature.key.hash256(ctx);
+        signature.value.hash256(ctx);
       }
     },
-    () => [...Object.values(properties), ...indexed.flatMap(({ key, value }) => [key, value])],
-  );
+    children: () => [...Object.values(properties), ...indexed.flatMap(({ key, value }) => [key, value])],
+  });
 }
 
 // The named types of one module. A reference reads the cell of its name on every call, so it always uses the
@@ -1987,12 +2048,12 @@ function cellOf(registry: Registry, name: string): { runtype: Runtype | undefine
 
 export function reference(registry: Registry, name: string): Runtype {
   const cell = cellOf(registry, name);
-  const referenceNode = node(
-    TAG_REFERENCE,
-    (c, i) => cell.runtype!.validate(c, i),
-    (c, i) => cell.runtype!.parse(c, i),
-    (c, i) => cell.runtype!.reportErrors(c, i),
-    (ctx) => {
+  const referenceNode = node({
+    tag: TAG_REFERENCE,
+    validate: (ctx, input) => cell.runtype!.validate(ctx, input),
+    parse: (ctx, input) => cell.runtype!.parse(ctx, input),
+    reportErrors: (ctx, input) => cell.runtype!.reportErrors(ctx, input),
+    describe: (ctx) => {
       const to = cell.runtype!;
       if (ctx.refCounts[name] > 1) {
         if (!ctx.activeRefs.has(name) && ctx.definitions[name] == null) {
@@ -2004,7 +2065,7 @@ export function reference(registry: Registry, name: string): Runtype {
       }
       return to.describe(ctx);
     },
-    (ctx) => {
+    schema: (ctx) => {
       const to = cell.runtype!;
       if (ctx.mode === "contextual") {
         const printingContext = ctx.printingContext;
@@ -2027,7 +2088,7 @@ export function reference(registry: Registry, name: string): Runtype {
       delete ctx.seen[name];
       return tmp;
     },
-    (ctx) => {
+    hash: (ctx) => {
       if (ctx.seen[name]) {
         return generateHashFromString(name);
       }
@@ -2036,7 +2097,7 @@ export function reference(registry: Registry, name: string): Runtype {
       delete ctx.seen[name];
       return tmp;
     },
-    (ctx) => {
+    hash256: (ctx) => {
       const to = cell.runtype!;
       const activeId = ctx.active.get(to);
       if (activeId != null) {
@@ -2051,8 +2112,8 @@ export function reference(registry: Registry, name: string): Runtype {
       to.hash256(ctx);
       ctx.active.delete(to);
     },
-    () => [cell.runtype!],
-  );
+    children: () => [cell.runtype!],
+  });
   referenceNode.name = name;
   return referenceNode;
 }
