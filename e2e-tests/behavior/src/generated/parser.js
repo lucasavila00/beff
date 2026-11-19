@@ -243,204 +243,223 @@ const direct_hoist_68 = new AllOfRuntype(undefined, [
 ]);
 const direct_hoist_69 = new RefRuntype(undefined, "IntersectionUnion");
 const direct_hoist_70 = new ObjectRuntype(undefined, {
+    "foo": direct_hoist_0
+}, []);
+const direct_hoist_71 = new AllOfRuntype(undefined, [
+    direct_hoist_70,
+    direct_hoist_8
+]);
+const direct_hoist_72 = new AnyOfRuntype(undefined, [
+    direct_hoist_3,
+    direct_hoist_58
+]);
+const direct_hoist_73 = new AnyOfRuntype(undefined, [
+    direct_hoist_4,
+    direct_hoist_59
+]);
+const direct_hoist_74 = new AllOfRuntype(undefined, [
+    direct_hoist_72,
+    direct_hoist_73
+]);
+const direct_hoist_75 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
     "c": new OptionalFieldRuntype(direct_hoist_2)
 }, []);
-const direct_hoist_71 = new ObjectRuntype(undefined, {
+const direct_hoist_76 = new ObjectRuntype(undefined, {
     "a": new OptionalFieldRuntype(direct_hoist_0),
     "b": new OptionalFieldRuntype(direct_hoist_1),
     "c": new OptionalFieldRuntype(direct_hoist_2)
 }, []);
-const direct_hoist_72 = new ObjectRuntype(undefined, {
+const direct_hoist_77 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
     "b": direct_hoist_1,
     "c": direct_hoist_2
 }, []);
-const direct_hoist_73 = new ConstRuntype(undefined, "rect");
-const direct_hoist_74 = new ObjectRuntype(undefined, {
+const direct_hoist_78 = new ConstRuntype(undefined, "rect");
+const direct_hoist_79 = new ObjectRuntype(undefined, {
     "h": direct_hoist_1,
-    "kind": direct_hoist_73,
+    "kind": direct_hoist_78,
     "w": direct_hoist_1
 }, []);
-const direct_hoist_75 = new ConstRuntype(undefined, "square");
-const direct_hoist_76 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_75,
+const direct_hoist_80 = new ConstRuntype(undefined, "square");
+const direct_hoist_81 = new ObjectRuntype(undefined, {
+    "kind": direct_hoist_80,
     "size": direct_hoist_1
 }, []);
-const direct_hoist_77 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_74,
-    direct_hoist_76
+const direct_hoist_82 = new AnyOfDiscriminatedRuntype(undefined, [
+    direct_hoist_79,
+    direct_hoist_81
 ], "kind", {
-    "rect": direct_hoist_74,
-    "square": direct_hoist_76
+    "rect": direct_hoist_79,
+    "square": direct_hoist_81
 }, {
-    "rect": direct_hoist_74,
-    "square": direct_hoist_76
+    "rect": direct_hoist_79,
+    "square": direct_hoist_81
 });
-const direct_hoist_78 = new AnyOfConstsRuntype(undefined, [
+const direct_hoist_83 = new AnyOfConstsRuntype(undefined, [
     "a",
     "c"
 ]);
-const direct_hoist_79 = new RefRuntype(undefined, "ShapeKind");
-const direct_hoist_80 = new RefRuntype(undefined, "Box_string");
-const direct_hoist_81 = new RefRuntype(undefined, "Box_Box__number__");
-const direct_hoist_82 = new RefRuntype(undefined, "Pair_number");
-const direct_hoist_83 = new RefRuntype(undefined, "Pair_instance_3");
-const direct_hoist_84 = new RefRuntype(undefined, "ListOf_number");
-const direct_hoist_85 = new RefRuntype(undefined, "WithDefault_boolean");
-const direct_hoist_86 = new RefRuntype(undefined, "GenericRecursive_string");
-const direct_hoist_87 = new RefRuntype(undefined, "LinkedList");
-const direct_hoist_88 = new RefRuntype(undefined, "Tree");
-const direct_hoist_89 = new RefRuntype(undefined, "Json");
-const direct_hoist_90 = new RefRuntype(undefined, "Expr");
-const direct_hoist_91 = new RefRuntype(undefined, "MutualA");
-const direct_hoist_92 = new RefRuntype(undefined, "RecursiveFirst");
-const direct_hoist_93 = new RefRuntype(undefined, "RecursiveMiddle");
-const direct_hoist_94 = new RefRuntype(undefined, "RecursiveLast");
-const direct_hoist_95 = new RefRuntype(undefined, "RecursiveInTuple");
-const direct_hoist_96 = new RegexRuntype(undefined, /^(a)([\s\S]*)$/, "`a${string}`");
-const direct_hoist_97 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}`");
-const direct_hoist_98 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}.${number}.${number}`");
-const direct_hoist_99 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}x${number}`");
-const direct_hoist_100 = new RegexRuntype(undefined, /^((a)|(b))(-)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, '`("a" | "b")-${number}`');
-const direct_hoist_101 = new RegexRuntype(undefined, /^(true|false)$/, "`${boolean}`");
-const direct_hoist_102 = new RegexRuntype(undefined, /^([\s\S]*)$/, "`${string}`");
-const direct_hoist_103 = new RegexRuntype(undefined, /^((green)|(red))$/, '`("green" | "red")`');
-const direct_hoist_104 = new RefRuntype(undefined, "UserId");
-const direct_hoist_105 = new RefRuntype(undefined, "AdminId");
-const direct_hoist_106 = new RefRuntype(undefined, "NonNegative");
-const direct_hoist_107 = new RefRuntype(undefined, "Rate");
-const direct_hoist_108 = new ObjectRuntype(undefined, {
-    "id": direct_hoist_104,
-    "rate": direct_hoist_107
+const direct_hoist_84 = new RefRuntype(undefined, "ShapeKind");
+const direct_hoist_85 = new RefRuntype(undefined, "Box_string");
+const direct_hoist_86 = new RefRuntype(undefined, "Box_Box__number__");
+const direct_hoist_87 = new RefRuntype(undefined, "Pair_number");
+const direct_hoist_88 = new RefRuntype(undefined, "Pair_instance_3");
+const direct_hoist_89 = new RefRuntype(undefined, "ListOf_number");
+const direct_hoist_90 = new RefRuntype(undefined, "WithDefault_boolean");
+const direct_hoist_91 = new RefRuntype(undefined, "GenericRecursive_string");
+const direct_hoist_92 = new RefRuntype(undefined, "LinkedList");
+const direct_hoist_93 = new RefRuntype(undefined, "Tree");
+const direct_hoist_94 = new RefRuntype(undefined, "Json");
+const direct_hoist_95 = new RefRuntype(undefined, "Expr");
+const direct_hoist_96 = new RefRuntype(undefined, "MutualA");
+const direct_hoist_97 = new RefRuntype(undefined, "RecursiveFirst");
+const direct_hoist_98 = new RefRuntype(undefined, "RecursiveMiddle");
+const direct_hoist_99 = new RefRuntype(undefined, "RecursiveLast");
+const direct_hoist_100 = new RefRuntype(undefined, "RecursiveInTuple");
+const direct_hoist_101 = new RegexRuntype(undefined, /^(a)([\s\S]*)$/, "`a${string}`");
+const direct_hoist_102 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}`");
+const direct_hoist_103 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}.${number}.${number}`");
+const direct_hoist_104 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}x${number}`");
+const direct_hoist_105 = new RegexRuntype(undefined, /^((a)|(b))(-)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, '`("a" | "b")-${number}`');
+const direct_hoist_106 = new RegexRuntype(undefined, /^(true|false)$/, "`${boolean}`");
+const direct_hoist_107 = new RegexRuntype(undefined, /^([\s\S]*)$/, "`${string}`");
+const direct_hoist_108 = new RegexRuntype(undefined, /^((green)|(red))$/, '`("green" | "red")`');
+const direct_hoist_109 = new RefRuntype(undefined, "UserId");
+const direct_hoist_110 = new RefRuntype(undefined, "AdminId");
+const direct_hoist_111 = new RefRuntype(undefined, "NonNegative");
+const direct_hoist_112 = new RefRuntype(undefined, "Rate");
+const direct_hoist_113 = new ObjectRuntype(undefined, {
+    "id": direct_hoist_109,
+    "rate": direct_hoist_112
 }, []);
-const direct_hoist_109 = new MapRuntype(undefined, direct_hoist_0, direct_hoist_8);
-const direct_hoist_110 = new ObjectRuntype(undefined, {
-    "m": direct_hoist_109
-}, []);
-const direct_hoist_111 = new TypedArrayRuntype(undefined, "Uint8Array");
-const direct_hoist_112 = new TypedArrayRuntype(undefined, "Int32Array");
-const direct_hoist_113 = new TypedArrayRuntype(undefined, "Float64Array");
-const direct_hoist_114 = new TypedArrayRuntype(undefined, "BigInt64Array");
+const direct_hoist_114 = new MapRuntype(undefined, direct_hoist_0, direct_hoist_8);
 const direct_hoist_115 = new ObjectRuntype(undefined, {
+    "m": direct_hoist_114
+}, []);
+const direct_hoist_116 = new TypedArrayRuntype(undefined, "Uint8Array");
+const direct_hoist_117 = new TypedArrayRuntype(undefined, "Int32Array");
+const direct_hoist_118 = new TypedArrayRuntype(undefined, "Float64Array");
+const direct_hoist_119 = new TypedArrayRuntype(undefined, "BigInt64Array");
+const direct_hoist_120 = new ObjectRuntype(undefined, {
     "at": direct_hoist_8,
     "big": direct_hoist_7
 }, []);
-const direct_hoist_116 = new StringWithFormatRuntype(undefined, [
+const direct_hoist_121 = new StringWithFormatRuntype(undefined, [
     "UserId",
     "AdminId"
 ]);
-const direct_hoist_117 = new ObjectRuntype(undefined, {
+const direct_hoist_122 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
     "b": direct_hoist_1,
     "c": new OptionalFieldRuntype(direct_hoist_2)
 }, []);
-const direct_hoist_118 = new ObjectRuntype(undefined, {
+const direct_hoist_123 = new ObjectRuntype(undefined, {
     "value": direct_hoist_0
 }, []);
-const direct_hoist_119 = new ObjectRuntype(undefined, {
+const direct_hoist_124 = new ObjectRuntype(undefined, {
     "value": direct_hoist_1
 }, []);
-const direct_hoist_120 = new RefRuntype(undefined, "Box_number");
-const direct_hoist_121 = new ObjectRuntype(undefined, {
-    "value": direct_hoist_120
+const direct_hoist_125 = new RefRuntype(undefined, "Box_number");
+const direct_hoist_126 = new ObjectRuntype(undefined, {
+    "value": direct_hoist_125
 }, []);
-const direct_hoist_122 = new AnyOfConstsRuntype(undefined, [
+const direct_hoist_127 = new AnyOfConstsRuntype(undefined, [
     "green",
     "red"
 ]);
-const direct_hoist_123 = new ConstRuntype(undefined, "add");
-const direct_hoist_124 = new ObjectRuntype(undefined, {
-    "left": direct_hoist_90,
-    "op": direct_hoist_123,
-    "right": direct_hoist_90
+const direct_hoist_128 = new ConstRuntype(undefined, "add");
+const direct_hoist_129 = new ObjectRuntype(undefined, {
+    "left": direct_hoist_95,
+    "op": direct_hoist_128,
+    "right": direct_hoist_95
 }, []);
-const direct_hoist_125 = new ConstRuntype(undefined, "neg");
-const direct_hoist_126 = new ObjectRuntype(undefined, {
-    "arg": direct_hoist_90,
-    "op": direct_hoist_125
+const direct_hoist_130 = new ConstRuntype(undefined, "neg");
+const direct_hoist_131 = new ObjectRuntype(undefined, {
+    "arg": direct_hoist_95,
+    "op": direct_hoist_130
 }, []);
-const direct_hoist_127 = new ConstRuntype(undefined, "num");
-const direct_hoist_128 = new ObjectRuntype(undefined, {
-    "op": direct_hoist_127,
+const direct_hoist_132 = new ConstRuntype(undefined, "num");
+const direct_hoist_133 = new ObjectRuntype(undefined, {
+    "op": direct_hoist_132,
     "value": direct_hoist_1
 }, []);
-const direct_hoist_129 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_126,
-    direct_hoist_124,
-    direct_hoist_128
+const direct_hoist_134 = new AnyOfDiscriminatedRuntype(undefined, [
+    direct_hoist_131,
+    direct_hoist_129,
+    direct_hoist_133
 ], "op", {
-    "add": direct_hoist_124,
-    "neg": direct_hoist_126,
-    "num": direct_hoist_128
+    "add": direct_hoist_129,
+    "neg": direct_hoist_131,
+    "num": direct_hoist_133
 }, {
-    "add": direct_hoist_124,
-    "neg": direct_hoist_126,
-    "num": direct_hoist_128
+    "add": direct_hoist_129,
+    "neg": direct_hoist_131,
+    "num": direct_hoist_133
 });
-const direct_hoist_130 = new ArrayRuntype(undefined, direct_hoist_86);
-const direct_hoist_131 = new ObjectRuntype(undefined, {
-    "children": direct_hoist_130,
+const direct_hoist_135 = new ArrayRuntype(undefined, direct_hoist_91);
+const direct_hoist_136 = new ObjectRuntype(undefined, {
+    "children": direct_hoist_135,
     "value": direct_hoist_0
 }, []);
-const direct_hoist_132 = new ObjectRuntype(undefined, {
+const direct_hoist_137 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0
 }, []);
-const direct_hoist_133 = new ObjectRuntype(undefined, {
+const direct_hoist_138 = new ObjectRuntype(undefined, {
     "b": new OptionalFieldRuntype(direct_hoist_1)
 }, []);
-const direct_hoist_134 = new ConstRuntype(undefined, "u");
-const direct_hoist_135 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_134,
+const direct_hoist_139 = new ConstRuntype(undefined, "u");
+const direct_hoist_140 = new ObjectRuntype(undefined, {
+    "kind": direct_hoist_139,
     "u": direct_hoist_0
 }, []);
-const direct_hoist_136 = new ConstRuntype(undefined, "v");
-const direct_hoist_137 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_136,
+const direct_hoist_141 = new ConstRuntype(undefined, "v");
+const direct_hoist_142 = new ObjectRuntype(undefined, {
+    "kind": direct_hoist_141,
     "v": new OptionalFieldRuntype(direct_hoist_1)
 }, []);
-const direct_hoist_138 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_135,
-    direct_hoist_137
+const direct_hoist_143 = new AnyOfDiscriminatedRuntype(undefined, [
+    direct_hoist_140,
+    direct_hoist_142
 ], "kind", {
-    "u": direct_hoist_135,
-    "v": direct_hoist_137
+    "u": direct_hoist_140,
+    "v": direct_hoist_142
 }, {
-    "u": direct_hoist_135,
-    "v": direct_hoist_137
+    "u": direct_hoist_140,
+    "v": direct_hoist_142
 });
-const direct_hoist_139 = new AllOfRuntype(undefined, [
+const direct_hoist_144 = new AllOfRuntype(undefined, [
     direct_hoist_58,
-    direct_hoist_138
+    direct_hoist_143
 ]);
-const direct_hoist_140 = new ObjectRuntype(undefined, {}, [
+const direct_hoist_145 = new ObjectRuntype(undefined, {}, [
     {
         "key": direct_hoist_0,
-        "value": direct_hoist_89
+        "value": direct_hoist_94
     }
 ]);
-const direct_hoist_141 = new ArrayRuntype(undefined, direct_hoist_89);
-const direct_hoist_142 = new AnyOfRuntype(undefined, [
+const direct_hoist_146 = new ArrayRuntype(undefined, direct_hoist_94);
+const direct_hoist_147 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_2,
     direct_hoist_0,
     direct_hoist_1,
-    direct_hoist_140,
-    direct_hoist_141
+    direct_hoist_145,
+    direct_hoist_146
 ]);
-const direct_hoist_143 = new AnyOfRuntype(undefined, [
+const direct_hoist_148 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
-    direct_hoist_87
+    direct_hoist_92
 ]);
-const direct_hoist_144 = new ObjectRuntype(undefined, {
-    "next": direct_hoist_143,
+const direct_hoist_149 = new ObjectRuntype(undefined, {
+    "next": direct_hoist_148,
     "value": direct_hoist_1
 }, []);
-const direct_hoist_145 = new ObjectRuntype(undefined, {
+const direct_hoist_150 = new ObjectRuntype(undefined, {
     "item": direct_hoist_1,
     "items": direct_hoist_20
 }, []);
-const direct_hoist_146 = new ObjectRuntype(undefined, {
+const direct_hoist_151 = new ObjectRuntype(undefined, {
     "f01": direct_hoist_0,
     "f02": direct_hoist_1,
     "f03": direct_hoist_2,
@@ -462,223 +481,223 @@ const direct_hoist_146 = new ObjectRuntype(undefined, {
     "f19": direct_hoist_0,
     "f20": direct_hoist_1
 }, []);
-const direct_hoist_147 = new ConstRuntype(undefined, "alpha");
-const direct_hoist_148 = new AnyOfRuntype(undefined, [
-    direct_hoist_147,
+const direct_hoist_152 = new ConstRuntype(undefined, "alpha");
+const direct_hoist_153 = new AnyOfRuntype(undefined, [
+    direct_hoist_152,
     direct_hoist_39
 ]);
-const direct_hoist_149 = new ObjectRuntype(undefined, {
+const direct_hoist_154 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
-    "type": direct_hoist_78
+    "type": direct_hoist_83
 }, []);
-const direct_hoist_150 = new ObjectRuntype(undefined, {
+const direct_hoist_155 = new ObjectRuntype(undefined, {
     "b": direct_hoist_1,
     "type": direct_hoist_42
 }, []);
-const direct_hoist_151 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_149,
-    direct_hoist_150
+const direct_hoist_156 = new AnyOfDiscriminatedRuntype(undefined, [
+    direct_hoist_154,
+    direct_hoist_155
 ], "type", {
-    "a": direct_hoist_149,
-    "b": direct_hoist_150,
-    "c": direct_hoist_149
+    "a": direct_hoist_154,
+    "b": direct_hoist_155,
+    "c": direct_hoist_154
 }, {
-    "a": direct_hoist_149,
-    "b": direct_hoist_150,
-    "c": direct_hoist_149
+    "a": direct_hoist_154,
+    "b": direct_hoist_155,
+    "c": direct_hoist_154
 });
-const direct_hoist_152 = new RefRuntype(undefined, "MutualB");
-const direct_hoist_153 = new ObjectRuntype(undefined, {
-    "b": new OptionalFieldRuntype(direct_hoist_152),
+const direct_hoist_157 = new RefRuntype(undefined, "MutualB");
+const direct_hoist_158 = new ObjectRuntype(undefined, {
+    "b": new OptionalFieldRuntype(direct_hoist_157),
     "tag": direct_hoist_13
 }, []);
-const direct_hoist_154 = new ObjectRuntype(undefined, {
-    "a": new OptionalFieldRuntype(direct_hoist_91),
+const direct_hoist_159 = new ObjectRuntype(undefined, {
+    "a": new OptionalFieldRuntype(direct_hoist_96),
     "tag": direct_hoist_42
 }, []);
-const direct_hoist_155 = new ObjectRuntype(undefined, {
-    "deep": direct_hoist_119
+const direct_hoist_160 = new ObjectRuntype(undefined, {
+    "deep": direct_hoist_124
 }, []);
-const direct_hoist_156 = new ObjectRuntype(undefined, {
+const direct_hoist_161 = new ObjectRuntype(undefined, {
     "id": direct_hoist_0
 }, []);
-const direct_hoist_157 = new ArrayRuntype(undefined, direct_hoist_156);
-const direct_hoist_158 = new ObjectRuntype(undefined, {
-    "inner": direct_hoist_155,
-    "list": direct_hoist_157
+const direct_hoist_162 = new ArrayRuntype(undefined, direct_hoist_161);
+const direct_hoist_163 = new ObjectRuntype(undefined, {
+    "inner": direct_hoist_160,
+    "list": direct_hoist_162
 }, []);
-const direct_hoist_159 = new ConstRuntype(undefined, "a1");
-const direct_hoist_160 = new ObjectRuntype(undefined, {
+const direct_hoist_164 = new ConstRuntype(undefined, "a1");
+const direct_hoist_165 = new ObjectRuntype(undefined, {
     "a1": direct_hoist_0,
-    "subType": direct_hoist_159,
+    "subType": direct_hoist_164,
     "type": direct_hoist_13
 }, []);
-const direct_hoist_161 = new ConstRuntype(undefined, "a2");
-const direct_hoist_162 = new ObjectRuntype(undefined, {
+const direct_hoist_166 = new ConstRuntype(undefined, "a2");
+const direct_hoist_167 = new ObjectRuntype(undefined, {
     "a2": direct_hoist_0,
-    "subType": direct_hoist_161,
+    "subType": direct_hoist_166,
     "type": direct_hoist_13
 }, []);
-const direct_hoist_163 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_160,
-    direct_hoist_162
+const direct_hoist_168 = new AnyOfDiscriminatedRuntype(undefined, [
+    direct_hoist_165,
+    direct_hoist_167
 ], "subType", {
-    "a1": direct_hoist_160,
-    "a2": direct_hoist_162
+    "a1": direct_hoist_165,
+    "a2": direct_hoist_167
 }, {
-    "a1": direct_hoist_160,
-    "a2": direct_hoist_162
+    "a1": direct_hoist_165,
+    "a2": direct_hoist_167
 });
-const direct_hoist_164 = new ObjectRuntype(undefined, {
+const direct_hoist_169 = new ObjectRuntype(undefined, {
     "type": direct_hoist_42,
     "value": direct_hoist_1
 }, []);
-const direct_hoist_165 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_160,
-    direct_hoist_162,
-    direct_hoist_164
+const direct_hoist_170 = new AnyOfDiscriminatedRuntype(undefined, [
+    direct_hoist_165,
+    direct_hoist_167,
+    direct_hoist_169
 ], "type", {
-    "a": direct_hoist_163,
-    "b": direct_hoist_164
+    "a": direct_hoist_168,
+    "b": direct_hoist_169
 }, {
-    "a": direct_hoist_163,
-    "b": direct_hoist_164
+    "a": direct_hoist_168,
+    "b": direct_hoist_169
 });
-const direct_hoist_166 = new NumberWithFormatRuntype(undefined, [
+const direct_hoist_171 = new NumberWithFormatRuntype(undefined, [
     "NonNegative"
 ]);
-const direct_hoist_167 = new ObjectRuntype(undefined, {}, [
+const direct_hoist_172 = new ObjectRuntype(undefined, {}, [
     {
         "key": new NumberKeyRuntype(undefined),
         "value": direct_hoist_2
     }
 ]);
-const direct_hoist_168 = new ObjectRuntype(undefined, {
+const direct_hoist_173 = new ObjectRuntype(undefined, {
     "b": direct_hoist_1
 }, []);
-const direct_hoist_169 = new ObjectRuntype(undefined, {
+const direct_hoist_174 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
     "type": direct_hoist_13
 }, []);
-const direct_hoist_170 = new ConstRuntype(undefined, "d");
-const direct_hoist_171 = new ObjectRuntype(undefined, {
+const direct_hoist_175 = new ConstRuntype(undefined, "d");
+const direct_hoist_176 = new ObjectRuntype(undefined, {
     "d": direct_hoist_1,
-    "type": new OptionalFieldRuntype(direct_hoist_170)
+    "type": new OptionalFieldRuntype(direct_hoist_175)
 }, []);
-const direct_hoist_172 = new AnyOfRuntype(undefined, [
-    direct_hoist_169,
-    direct_hoist_171
+const direct_hoist_177 = new AnyOfRuntype(undefined, [
+    direct_hoist_174,
+    direct_hoist_176
 ]);
-const direct_hoist_173 = new AnyOfRuntype(undefined, [
+const direct_hoist_178 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_0
 ]);
-const direct_hoist_174 = new AnyOfRuntype(undefined, [
+const direct_hoist_179 = new AnyOfRuntype(undefined, [
     direct_hoist_4,
     direct_hoist_0
 ]);
-const direct_hoist_175 = new AnyOfRuntype(undefined, [
+const direct_hoist_180 = new AnyOfRuntype(undefined, [
     direct_hoist_5,
     direct_hoist_0
 ]);
-const direct_hoist_176 = new ObjectRuntype(undefined, {
-    "nul": direct_hoist_173,
+const direct_hoist_181 = new ObjectRuntype(undefined, {
+    "nul": direct_hoist_178,
     "opt": new OptionalFieldRuntype(direct_hoist_0),
     "req": direct_hoist_0,
-    "undef": direct_hoist_174,
-    "voided": direct_hoist_175
+    "undef": direct_hoist_179,
+    "voided": direct_hoist_180
 }, []);
-const direct_hoist_177 = new ObjectRuntype(undefined, {
+const direct_hoist_182 = new ObjectRuntype(undefined, {
     "first": direct_hoist_1,
     "second": direct_hoist_0
 }, []);
-const direct_hoist_178 = new ObjectRuntype(undefined, {
+const direct_hoist_183 = new ObjectRuntype(undefined, {
     "first": direct_hoist_1,
     "second": direct_hoist_2
 }, []);
-const direct_hoist_179 = new ConstRuntype(undefined, "__proto__");
-const direct_hoist_180 = new ObjectRuntype(undefined, {
+const direct_hoist_184 = new ConstRuntype(undefined, "__proto__");
+const direct_hoist_185 = new ObjectRuntype(undefined, {
     "c": direct_hoist_2,
-    "kind": direct_hoist_179
+    "kind": direct_hoist_184
 }, []);
-const direct_hoist_181 = new ConstRuntype(undefined, "constructor");
-const direct_hoist_182 = new ObjectRuntype(undefined, {
+const direct_hoist_186 = new ConstRuntype(undefined, "constructor");
+const direct_hoist_187 = new ObjectRuntype(undefined, {
     "b": direct_hoist_1,
-    "kind": direct_hoist_181
+    "kind": direct_hoist_186
 }, []);
-const direct_hoist_183 = new ConstRuntype(undefined, "toString");
-const direct_hoist_184 = new ObjectRuntype(undefined, {
+const direct_hoist_188 = new ConstRuntype(undefined, "toString");
+const direct_hoist_189 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
-    "kind": direct_hoist_183
+    "kind": direct_hoist_188
 }, []);
-const direct_hoist_185 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_184,
-    direct_hoist_182,
-    direct_hoist_180
+const direct_hoist_190 = new AnyOfDiscriminatedRuntype(undefined, [
+    direct_hoist_189,
+    direct_hoist_187,
+    direct_hoist_185
 ], "kind", {
-    ["__proto__"]: direct_hoist_180,
-    "constructor": direct_hoist_182,
-    "toString": direct_hoist_184
+    ["__proto__"]: direct_hoist_185,
+    "constructor": direct_hoist_187,
+    "toString": direct_hoist_189
 }, {
-    ["__proto__"]: direct_hoist_180,
-    "constructor": direct_hoist_182,
-    "toString": direct_hoist_184
+    ["__proto__"]: direct_hoist_185,
+    "constructor": direct_hoist_187,
+    "toString": direct_hoist_189
 });
-const direct_hoist_186 = new NumberWithFormatRuntype(undefined, [
+const direct_hoist_191 = new NumberWithFormatRuntype(undefined, [
     "NonNegative",
     "Rate"
 ]);
-const direct_hoist_187 = new ArrayRuntype(undefined, direct_hoist_92);
-const direct_hoist_188 = new AnyOfRuntype(undefined, [
+const direct_hoist_192 = new ArrayRuntype(undefined, direct_hoist_97);
+const direct_hoist_193 = new AnyOfRuntype(undefined, [
     direct_hoist_0,
-    direct_hoist_187
+    direct_hoist_192
 ]);
-const direct_hoist_189 = new AnyOfRuntype(undefined, [
-    direct_hoist_3,
-    direct_hoist_95
-]);
-const direct_hoist_190 = new TupleRuntype(undefined, [
-    direct_hoist_1,
-    direct_hoist_189
-], null);
-const direct_hoist_191 = new ArrayRuntype(undefined, direct_hoist_94);
-const direct_hoist_192 = new AnyOfRuntype(undefined, [
-    direct_hoist_0,
-    direct_hoist_1,
-    direct_hoist_191
-]);
-const direct_hoist_193 = new ObjectRuntype(undefined, {
-    "child": direct_hoist_93
-}, []);
 const direct_hoist_194 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
-    direct_hoist_1,
-    direct_hoist_193
+    direct_hoist_100
 ]);
-const direct_hoist_195 = new ConstRuntype(undefined, "circle");
-const direct_hoist_196 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_195,
+const direct_hoist_195 = new TupleRuntype(undefined, [
+    direct_hoist_1,
+    direct_hoist_194
+], null);
+const direct_hoist_196 = new ArrayRuntype(undefined, direct_hoist_99);
+const direct_hoist_197 = new AnyOfRuntype(undefined, [
+    direct_hoist_0,
+    direct_hoist_1,
+    direct_hoist_196
+]);
+const direct_hoist_198 = new ObjectRuntype(undefined, {
+    "child": direct_hoist_98
+}, []);
+const direct_hoist_199 = new AnyOfRuntype(undefined, [
+    direct_hoist_3,
+    direct_hoist_1,
+    direct_hoist_198
+]);
+const direct_hoist_200 = new ConstRuntype(undefined, "circle");
+const direct_hoist_201 = new ObjectRuntype(undefined, {
+    "kind": direct_hoist_200,
     "radius": direct_hoist_1
 }, []);
-const direct_hoist_197 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_74,
-    direct_hoist_196,
-    direct_hoist_76
+const direct_hoist_202 = new AnyOfDiscriminatedRuntype(undefined, [
+    direct_hoist_79,
+    direct_hoist_201,
+    direct_hoist_81
 ], "kind", {
-    "circle": direct_hoist_196,
-    "rect": direct_hoist_74,
-    "square": direct_hoist_76
+    "circle": direct_hoist_201,
+    "rect": direct_hoist_79,
+    "square": direct_hoist_81
 }, {
-    "circle": direct_hoist_196,
-    "rect": direct_hoist_74,
-    "square": direct_hoist_76
+    "circle": direct_hoist_201,
+    "rect": direct_hoist_79,
+    "square": direct_hoist_81
 });
-const direct_hoist_198 = new AnyOfConstsRuntype(undefined, [
+const direct_hoist_203 = new AnyOfConstsRuntype(undefined, [
     "circle",
     "rect",
     "square"
 ]);
-const direct_hoist_199 = new ObjectRuntype(undefined, {
+const direct_hoist_204 = new ObjectRuntype(undefined, {
     "a": direct_hoist_1
 }, [
     {
@@ -686,63 +705,63 @@ const direct_hoist_199 = new ObjectRuntype(undefined, {
         "value": direct_hoist_1
     }
 ]);
-const direct_hoist_200 = new ArrayRuntype(undefined, direct_hoist_88);
-const direct_hoist_201 = new ObjectRuntype(undefined, {
-    "children": direct_hoist_200,
+const direct_hoist_205 = new ArrayRuntype(undefined, direct_hoist_93);
+const direct_hoist_206 = new ObjectRuntype(undefined, {
+    "children": direct_hoist_205,
     "name": direct_hoist_0
 }, []);
-const direct_hoist_202 = new StringWithFormatRuntype(undefined, [
+const direct_hoist_207 = new StringWithFormatRuntype(undefined, [
     "UserId"
 ]);
-const direct_hoist_203 = new ArrayRuntype(undefined, direct_hoist_2);
-const direct_hoist_204 = new ObjectRuntype(undefined, {
+const direct_hoist_208 = new ArrayRuntype(undefined, direct_hoist_2);
+const direct_hoist_209 = new ObjectRuntype(undefined, {
     "a": direct_hoist_2,
-    "b": direct_hoist_203
+    "b": direct_hoist_208
 }, []);
-const direct_hoist_205 = new ConstRuntype(undefined, "red");
+const direct_hoist_210 = new ConstRuntype(undefined, "red");
 const namedRuntypes = {
-    "AdminId": direct_hoist_116,
-    "Base": direct_hoist_117,
-    "Box_string": direct_hoist_118,
-    "Box_number": direct_hoist_119,
-    "Box_Box__number__": direct_hoist_121,
-    "Color": direct_hoist_122,
-    "Expr": direct_hoist_129,
-    "GenericRecursive_string": direct_hoist_131,
-    "IA": direct_hoist_132,
-    "IB": direct_hoist_133,
-    "IntersectionUnion": direct_hoist_139,
-    "Json": direct_hoist_142,
-    "LinkedList": direct_hoist_144,
-    "ListOf_number": direct_hoist_145,
-    "ManyFields": direct_hoist_146,
-    "MetaKey": direct_hoist_148,
-    "MultiValueDiscriminated": direct_hoist_151,
-    "MutualA": direct_hoist_153,
-    "MutualB": direct_hoist_154,
-    "Nested": direct_hoist_158,
-    "NestedDiscriminated": direct_hoist_165,
-    "NonNegative": direct_hoist_166,
-    "NumberKeyedObj": direct_hoist_167,
-    "ObjA": direct_hoist_132,
-    "ObjB": direct_hoist_168,
-    "OptionalDiscriminated": direct_hoist_172,
-    "Optionals": direct_hoist_176,
-    "Pair_number": direct_hoist_177,
-    "Pair_instance_3": direct_hoist_178,
-    "ProtoDiscriminated": direct_hoist_185,
-    "Rate": direct_hoist_186,
-    "RecursiveFirst": direct_hoist_188,
-    "RecursiveInTuple": direct_hoist_190,
-    "RecursiveLast": direct_hoist_192,
-    "RecursiveMiddle": direct_hoist_194,
-    "Shape": direct_hoist_197,
-    "ShapeKind": direct_hoist_198,
-    "TplIndexWithProps": direct_hoist_199,
-    "Tree": direct_hoist_201,
-    "UserId": direct_hoist_202,
-    "WithDefault_boolean": direct_hoist_204,
-    "Color__Red": direct_hoist_205
+    "AdminId": direct_hoist_121,
+    "Base": direct_hoist_122,
+    "Box_string": direct_hoist_123,
+    "Box_number": direct_hoist_124,
+    "Box_Box__number__": direct_hoist_126,
+    "Color": direct_hoist_127,
+    "Expr": direct_hoist_134,
+    "GenericRecursive_string": direct_hoist_136,
+    "IA": direct_hoist_137,
+    "IB": direct_hoist_138,
+    "IntersectionUnion": direct_hoist_144,
+    "Json": direct_hoist_147,
+    "LinkedList": direct_hoist_149,
+    "ListOf_number": direct_hoist_150,
+    "ManyFields": direct_hoist_151,
+    "MetaKey": direct_hoist_153,
+    "MultiValueDiscriminated": direct_hoist_156,
+    "MutualA": direct_hoist_158,
+    "MutualB": direct_hoist_159,
+    "Nested": direct_hoist_163,
+    "NestedDiscriminated": direct_hoist_170,
+    "NonNegative": direct_hoist_171,
+    "NumberKeyedObj": direct_hoist_172,
+    "ObjA": direct_hoist_137,
+    "ObjB": direct_hoist_173,
+    "OptionalDiscriminated": direct_hoist_177,
+    "Optionals": direct_hoist_181,
+    "Pair_number": direct_hoist_182,
+    "Pair_instance_3": direct_hoist_183,
+    "ProtoDiscriminated": direct_hoist_190,
+    "Rate": direct_hoist_191,
+    "RecursiveFirst": direct_hoist_193,
+    "RecursiveInTuple": direct_hoist_195,
+    "RecursiveLast": direct_hoist_197,
+    "RecursiveMiddle": direct_hoist_199,
+    "Shape": direct_hoist_202,
+    "ShapeKind": direct_hoist_203,
+    "TplIndexWithProps": direct_hoist_204,
+    "Tree": direct_hoist_206,
+    "UserId": direct_hoist_207,
+    "WithDefault_boolean": direct_hoist_209,
+    "Color__Red": direct_hoist_210
 };
 const buildParsersInput = {
     "String": direct_hoist_0,
@@ -798,51 +817,53 @@ const buildParsersInput = {
     "IntersectionIndex": direct_hoist_67,
     "IntersectionTplIndex": direct_hoist_68,
     "IntersectionUnion": direct_hoist_69,
-    "OmitT": direct_hoist_70,
-    "PickT": direct_hoist_70,
-    "PartialT": direct_hoist_71,
-    "RequiredT": direct_hoist_72,
-    "ExcludeT": direct_hoist_77,
-    "ExcludeLit": direct_hoist_78,
+    "IntersectionDate": direct_hoist_71,
+    "IntersectionNullish": direct_hoist_74,
+    "OmitT": direct_hoist_75,
+    "PickT": direct_hoist_75,
+    "PartialT": direct_hoist_76,
+    "RequiredT": direct_hoist_77,
+    "ExcludeT": direct_hoist_82,
+    "ExcludeLit": direct_hoist_83,
     "KeyofT": direct_hoist_12,
-    "IndexedAccess": direct_hoist_79,
-    "BoxString": direct_hoist_80,
-    "BoxBox": direct_hoist_81,
-    "PairDefault": direct_hoist_82,
-    "PairExplicit": direct_hoist_83,
-    "ListOfDefault": direct_hoist_84,
-    "WithDefault": direct_hoist_85,
-    "GenericRecursive": direct_hoist_86,
-    "LinkedList": direct_hoist_87,
-    "Tree": direct_hoist_88,
-    "Json": direct_hoist_89,
-    "Expr": direct_hoist_90,
-    "MutualA": direct_hoist_91,
-    "RecursiveFirst": direct_hoist_92,
-    "RecursiveMiddle": direct_hoist_93,
-    "RecursiveLast": direct_hoist_94,
-    "RecursiveInTuple": direct_hoist_95,
-    "TplPrefix": direct_hoist_96,
-    "TplNumber": direct_hoist_97,
-    "TplVersion": direct_hoist_98,
-    "TplSize": direct_hoist_99,
-    "TplLitUnion": direct_hoist_100,
-    "TplBoolean": direct_hoist_101,
-    "TplString": direct_hoist_102,
-    "TplEnum": direct_hoist_103,
-    "UserId": direct_hoist_104,
-    "AdminId": direct_hoist_105,
-    "NonNegative": direct_hoist_106,
-    "Rate": direct_hoist_107,
-    "FormatsInObject": direct_hoist_108,
+    "IndexedAccess": direct_hoist_84,
+    "BoxString": direct_hoist_85,
+    "BoxBox": direct_hoist_86,
+    "PairDefault": direct_hoist_87,
+    "PairExplicit": direct_hoist_88,
+    "ListOfDefault": direct_hoist_89,
+    "WithDefault": direct_hoist_90,
+    "GenericRecursive": direct_hoist_91,
+    "LinkedList": direct_hoist_92,
+    "Tree": direct_hoist_93,
+    "Json": direct_hoist_94,
+    "Expr": direct_hoist_95,
+    "MutualA": direct_hoist_96,
+    "RecursiveFirst": direct_hoist_97,
+    "RecursiveMiddle": direct_hoist_98,
+    "RecursiveLast": direct_hoist_99,
+    "RecursiveInTuple": direct_hoist_100,
+    "TplPrefix": direct_hoist_101,
+    "TplNumber": direct_hoist_102,
+    "TplVersion": direct_hoist_103,
+    "TplSize": direct_hoist_104,
+    "TplLitUnion": direct_hoist_105,
+    "TplBoolean": direct_hoist_106,
+    "TplString": direct_hoist_107,
+    "TplEnum": direct_hoist_108,
+    "UserId": direct_hoist_109,
+    "AdminId": direct_hoist_110,
+    "NonNegative": direct_hoist_111,
+    "Rate": direct_hoist_112,
+    "FormatsInObject": direct_hoist_113,
     "MapT": direct_hoist_55,
     "SetT": direct_hoist_56,
-    "MapInObject": direct_hoist_110,
-    "Uint8ArrayT": direct_hoist_111,
-    "Int32ArrayT": direct_hoist_112,
-    "Float64ArrayT": direct_hoist_113,
-    "BigInt64ArrayT": direct_hoist_114,
-    "DateInObject": direct_hoist_115
+    "MapInObject": direct_hoist_115,
+    "Uint8ArrayT": direct_hoist_116,
+    "Int32ArrayT": direct_hoist_117,
+    "Float64ArrayT": direct_hoist_118,
+    "BigInt64ArrayT": direct_hoist_119,
+    "DateInObject": direct_hoist_120
 };
 
 export default { buildParsers };
