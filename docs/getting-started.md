@@ -15,7 +15,7 @@ npm i @beff/cli @beff/client
 
 ## Create the configuration file
 
-Beff reads its configuration from a JSON file. The file can have any name. The usual name is `beff.json`.
+Beff reads its configuration from a JSON file. The file can have any name. The default name is `beff.json`: without `-p`, the CLI reads `beff.json` in the current directory.
 
 ```json
 {
