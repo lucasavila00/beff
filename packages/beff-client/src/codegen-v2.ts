@@ -228,20 +228,54 @@ function deepmergeArray(options: any) {
 
 const deepmerge = deepmergeConstructor({ mergeArray: deepmergeArray }) as (...args: unknown[]) => unknown;
 
+// The depth of the errors inside each union error, so that an outer union does not walk them again.
+const unionErrorDepth = new WeakMap<DecodeError, number>();
+
 function maxErrorDepth(errors: DecodeError[]): number {
   let max = 0;
   for (const err of errors) {
-    const depth = "isUnionError" in err ? err.path.length + maxErrorDepth(err.errors) : err.path.length;
+    const depth = "isUnionError" in err ? err.path.length + unionErrorDepth.get(err)! : err.path.length;
     if (depth > max) max = depth;
   }
   return max;
 }
 
-function prependPath(parentPath: string[], err: DecodeError): DecodeError {
-  if ("isUnionError" in err) {
-    return { ...err, path: [...parentPath, ...err.path] };
+function prependPath(parentPath: ReportContext["path"], err: DecodeError): DecodeError {
+  for (let i = parentPath.length - 1; i >= 0; i--) {
+    err.path.push(pathItem(parentPath[i]));
   }
-  return { ...err, path: [...parentPath, ...err.path] };
+  return err;
+}
+
+function pathItem(it: string | number): string {
+  return typeof it === "number" ? `[${it}]` : it;
+}
+
+// While errors are reported, their paths are stored reversed (innermost key first). A union that
+// flattens a single error can then add its own path to it in place, instead of copying the whole
+// path at every level of a recursive type. finishErrors puts the paths back in order.
+function reversedPath(ctx: ReportContext): string[] {
+  const path = [];
+  for (let i = ctx.path.length - 1; i >= 0; i--) {
+    path.push(pathItem(ctx.path[i]));
+  }
+  return path;
+}
+
+function finishErrors(errors: DecodeError[]): DecodeError[] {
+  for (const err of errors) {
+    err.path.reverse();
+    if ("isUnionError" in err) {
+      finishErrors(err.errors);
+    }
+  }
+  return errors;
+}
+
+function pushAll<T>(acc: T[], items: T[]): void {
+  for (let i = 0; i < items.length; i++) {
+    acc.push(items[i]);
+  }
 }
 
 // JSON.stringify throws on bigint values. Write them as `123n`.
@@ -250,6 +284,18 @@ function stringifyWithBigInt(value: unknown): string {
 }
 
 function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
+  if (errors.length < 2) {
+    return errors;
+  }
+  // Errors with different messages or paths are never equal. Only stringify whole errors, with
+  // their received values and nested errors, when two of them have the same message and path.
+  const messagesAndPaths = new Set<string>();
+  for (const err of errors) {
+    messagesAndPaths.add(JSON.stringify(["message" in err ? err.message : null, err.path]));
+  }
+  if (messagesAndPaths.size === errors.length) {
+    return errors;
+  }
   const seen = new Set<string>();
   return errors.filter((err) => {
     const key = stringifyWithBigInt(err);
@@ -259,43 +305,47 @@ function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
   });
 }
 
-function buildUnionError(ctx: { path: string[] }, errors: DecodeError[], received: unknown): DecodeError[] {
+function buildUnionError(
+  ctx: ReportContext,
+  errors: DecodeError[],
+  received: unknown,
+  depth: number,
+): DecodeError[] {
   const deduplicated = deduplicateErrors(errors);
   // Single branch survived filtering — flatten instead of wrapping
   if (deduplicated.length === 1) {
     return [prependPath(ctx.path, deduplicated[0])];
   }
-  return [
-    {
-      path: [...ctx.path],
-      received,
-      errors: deduplicated,
-      isUnionError: true,
-    },
-  ];
+  const err: DecodeError = {
+    path: reversedPath(ctx),
+    received,
+    errors: deduplicated,
+    isUnionError: true,
+  };
+  unionErrorDepth.set(err, depth);
+  return [err];
 }
-function buildError(ctx: { path: string[] }, message: string, received: unknown): RegularDecodeError[] {
+function buildError(ctx: ReportContext, message: string, received: unknown): RegularDecodeError[] {
   return [
     {
       message,
-      path: [...ctx.path],
+      path: reversedPath(ctx),
       received,
     },
   ];
 }
-// Reports the errors of the child value at `key`, if it is invalid.
+// Reports the errors of the child value at `key`. Valid children report no errors, so reporting does
+// not validate a child before it reports on it, and each value is visited once.
 function reportAtPath(
   ctx: ReportContext,
   acc: DecodeError[],
-  key: string,
-  runtype: Runtype,
+  key: string | number,
+  child: Compiled,
   input: unknown,
 ): void {
-  if (!runtype.validate(ctx, input)) {
-    pushPath(ctx, key);
-    acc.push(...runtype.reportDecodeError(ctx, input));
-    popPath(ctx);
-  }
+  ctx.path.push(key);
+  pushAll(acc, child.report(ctx, input));
+  ctx.path.pop();
 }
 function pushPath(ctx: { path: string[] }, key: string) {
   ctx.path.push(key);
@@ -384,6 +434,20 @@ function resolveFormatErrorMessage<T>(
     }
   }
   return undefined;
+}
+
+function checkFormats<T>(
+  formatters: Record<string, { validator: (input: T) => boolean }>,
+  formats: string[],
+  input: T,
+): boolean {
+  for (const f of formats) {
+    const validator = formatters[f]?.validator;
+    if (validator == null || !validator(input)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function describeFormats(typeName: "String" | "Number", formats: string[]): string {
@@ -516,7 +580,8 @@ type ParseContext = ValidateContext & {
 };
 
 type ReportContext = ValidateContext & {
-  path: string[];
+  // Array indexes are numbers. See reversedPath.
+  path: Array<string | number>;
 };
 
 // Should an intersection check the extra properties of this input against the keys of all its members?
@@ -527,15 +592,6 @@ function intersectionChecksExtraProperties(ctx: ValidateContext, input: unknown)
     input !== null &&
     ctx.intersectionInput !== input
   );
-}
-
-// Run the members of an intersection on its input.
-function withIntersectionInput<T>(ctx: ValidateContext, input: unknown, f: () => T): T {
-  const old = ctx.intersectionInput;
-  ctx.intersectionInput = input;
-  const result = f();
-  ctx.intersectionInput = old;
-  return result;
 }
 
 type HashContext = {
@@ -554,9 +610,86 @@ export interface Runtype {
   schema(ctx: SchemaContext): JSONSchema7;
   hash(ctx: HashContext): number;
   hash256(ctx: Hash256Context): void;
-  validate(ctx: ValidateContext, input: unknown): boolean;
-  parseAfterValidation(ctx: ParseContext, input: any): unknown;
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
+  // Use getCompiled, which caches the result.
+  compile(): Compiled;
+}
+
+type ValidateFn = (ctx: ValidateContext, input: any) => boolean;
+// Only called on inputs that passed validate.
+type ParseFn = (ctx: ParseContext, input: any) => unknown;
+// Returns no errors exactly when validate returns true. The paths of the errors are reversed, see reversedPath.
+type ReportFn = (ctx: ReportContext, input: any) => DecodeError[];
+
+// A runtype compiled to closures. Each runtype is compiled once and its closures call the closures
+// of its children directly.
+export class Compiled {
+  validate: ValidateFn;
+  parse: ParseFn;
+  report: ReportFn;
+  // The kinds of value validate can accept. See kindOfValue.
+  kinds: () => number;
+  constructor(validate: ValidateFn, parse: ParseFn, report: ReportFn, kinds: () => number) {
+    this.validate = validate;
+    this.parse = parse;
+    this.report = report;
+    this.kinds = kinds;
+  }
+}
+
+const compiledRuntypes = new WeakMap<Runtype, Compiled>();
+export function getCompiled(runtype: Runtype): Compiled {
+  let compiled = compiledRuntypes.get(runtype);
+  if (compiled === undefined) {
+    compiled = runtype.compile();
+    compiledRuntypes.set(runtype, compiled);
+  }
+  return compiled;
+}
+
+// Incremented by overrideNamedType. Compiled refs look up their target again when it changes.
+let refGeneration = 0;
+
+// Never mutated.
+const NO_ERRORS: DecodeError[] = [];
+const identityParse: ParseFn = (_ctx, input) => input;
+
+function leafCompiled(kinds: number, validate: ValidateFn, message: (input: any) => string): Compiled {
+  return new Compiled(
+    validate,
+    identityParse,
+    (ctx, input) => (validate(ctx, input) ? NO_ERRORS : buildError(ctx, message(input), input)),
+    () => kinds,
+  );
+}
+
+// The kinds of value a runtype can accept, as a bitmask. A union only parses the branches that
+// accept the kind of its input.
+const KIND_NULLISH = 1;
+const KIND_BOOLEAN = 2;
+const KIND_NUMBER = 4;
+const KIND_STRING = 8;
+const KIND_BIGINT = 16;
+const KIND_ARRAY = 32;
+const KIND_OBJECT = 64;
+const KIND_OTHER = 128;
+const KIND_ALL = 255;
+
+function kindOfValue(input: unknown): number {
+  if (input == null) return KIND_NULLISH;
+  switch (typeof input) {
+    case "boolean":
+      return KIND_BOOLEAN;
+    case "number":
+      return KIND_NUMBER;
+    case "string":
+      return KIND_STRING;
+    case "bigint":
+      return KIND_BIGINT;
+    case "object":
+      return Array.isArray(input) ? KIND_ARRAY : KIND_OBJECT;
+    default:
+      return KIND_OTHER;
+  }
 }
 
 export type RuntypeMetadata = {
@@ -609,9 +742,7 @@ abstract class BaseRuntype implements Runtype {
   abstract schema(ctx: SchemaContext): JSONSchema7;
   abstract hash(ctx: HashContext): number;
   abstract hash256(ctx: Hash256Context): void;
-  abstract validate(ctx: ValidateContext, input: unknown): boolean;
-  abstract parseAfterValidation(ctx: ParseContext, input: any): unknown;
-  abstract reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
+  abstract compile(): Compiled;
 }
 
 function describeTypeExpr(ctx: DescribeContext, runtype: Runtype): string {
@@ -692,14 +823,16 @@ export class TypeofRuntype extends BaseRuntype {
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { type: this.typeName });
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return typeof input === this.typeName;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected " + this.typeName, input);
+  compile(): Compiled {
+    const message = () => "expected " + this.typeName;
+    switch (this.typeName) {
+      case "string":
+        return leafCompiled(KIND_STRING, (_ctx, input) => typeof input === "string", message);
+      case "number":
+        return leafCompiled(KIND_NUMBER, (_ctx, input) => typeof input === "number", message);
+      case "boolean":
+        return leafCompiled(KIND_BOOLEAN, (_ctx, input) => typeof input === "boolean", message);
+    }
   }
   hash(_ctx: HashContext): number {
     switch (this.typeName) {
@@ -728,14 +861,12 @@ export class NumberKeyRuntype extends BaseRuntype {
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { type: "string", pattern: NUMBER_KEY_PATTERN });
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return typeof input === "string" && NUMBER_KEY_REGEX.test(input);
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected number key", input);
+  compile(): Compiled {
+    return leafCompiled(
+      KIND_STRING,
+      (_ctx, input) => typeof input === "string" && NUMBER_KEY_REGEX.test(input),
+      () => "expected number key",
+    );
   }
   // Hash as `number`, so the hash of Record<number, T> does not change.
   hash(_ctx: HashContext): number {
@@ -758,14 +889,13 @@ export class AnyRuntype extends BaseRuntype {
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, {});
   }
-  validate(_ctx: ValidateContext, _input: unknown): boolean {
-    return true;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected any", input);
+  compile(): Compiled {
+    return new Compiled(
+      () => true,
+      identityParse,
+      () => NO_ERRORS,
+      () => KIND_ALL,
+    );
   }
   hash(_ctx: HashContext): number {
     return unknownHash;
@@ -788,14 +918,12 @@ export class NullishRuntype extends BaseRuntype {
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { type: "null" });
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return input == null;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected nullish value", input);
+  compile(): Compiled {
+    return leafCompiled(
+      KIND_NULLISH,
+      (_ctx, input) => input == null,
+      () => "expected nullish value",
+    );
   }
   hash(_ctx: HashContext): number {
     return nullishHash;
@@ -816,14 +944,12 @@ export class NeverRuntype extends BaseRuntype {
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { anyOf: [] });
   }
-  validate(_ctx: ValidateContext, _input: unknown): boolean {
-    return false;
-  }
-  parseAfterValidation(_ctx: ParseContext, _input: unknown): unknown {
-    throw new Error("unreachable");
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected never", input);
+  compile(): Compiled {
+    return leafCompiled(
+      0,
+      () => false,
+      () => "expected never",
+    );
   }
   hash(_ctx: HashContext): number {
     return undefinedHash;
@@ -888,17 +1014,13 @@ export class ConstRuntype extends BaseRuntype {
 
     return annotateSchema(this.metadata, { const: this.value });
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (this.value == null) {
-      return input == this.value;
+  compile(): Compiled {
+    const value = this.value;
+    const message = () => `expected ${JSON.stringify(value)}`;
+    if (value == null) {
+      return leafCompiled(KIND_NULLISH, (_ctx, input) => input == null, message);
     }
-    return input === this.value;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
+    return leafCompiled(kindOfValue(value), (_ctx, input) => input === value, message);
   }
   hash(_ctx: HashContext): number {
     if (this.value == null) {
@@ -952,17 +1074,13 @@ export class RegexRuntype extends BaseRuntype {
   schema(_ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, { type: "string", pattern: this.regex.source });
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input === "string") {
-      return this.regex.test(input);
-    }
-    return false;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected string matching ${this.description}`, input);
+  compile(): Compiled {
+    const regex = this.regex;
+    return leafCompiled(
+      KIND_STRING,
+      (_ctx, input) => typeof input === "string" && regex.test(input),
+      () => `expected string matching ${this.description}`,
+    );
   }
   hash(_ctx: HashContext): number {
     return generateHashFromString(this.description);
@@ -984,14 +1102,12 @@ export class DateRuntype extends BaseRuntype {
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Date"));
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return input instanceof Date;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected Date`, input);
+  compile(): Compiled {
+    return leafCompiled(
+      KIND_OBJECT,
+      (_ctx, input) => input instanceof Date,
+      () => `expected Date`,
+    );
   }
   hash(_ctx: HashContext): number {
     return dateHash;
@@ -1012,14 +1128,12 @@ export class BigIntRuntype extends BaseRuntype {
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for BigInt"));
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return typeof input === "bigint";
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected BigInt`, input);
+  compile(): Compiled {
+    return leafCompiled(
+      KIND_BIGINT,
+      (_ctx, input) => typeof input === "bigint",
+      () => `expected BigInt`,
+    );
   }
   hash(_ctx: HashContext): number {
     return bigintHash;
@@ -1038,25 +1152,22 @@ export class TypedArrayRuntype extends BaseRuntype {
     this.ctorName = ctorName;
     this.hashValue = generateHashFromString(ctorName.toLowerCase());
   }
-  private getCtor(): (new (...args: any[]) => ArrayBufferView) | undefined {
-    return (globalThis as any)[this.ctorName];
+  compile(): Compiled {
+    const ctorName = this.ctorName;
+    return leafCompiled(
+      KIND_OBJECT,
+      (_ctx, input) => {
+        const ctor = (globalThis as any)[ctorName];
+        return ctor != null && input instanceof ctor;
+      },
+      () => `expected ${ctorName}`,
+    );
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return this.ctorName;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${this.ctorName}`));
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    const ctor = this.getCtor();
-    if (ctor == null) return false;
-    return input instanceof ctor;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected ${this.ctorName}`, input);
   }
   hash(_ctx: HashContext): number {
     return this.hashValue;
@@ -1084,37 +1195,16 @@ export class StringWithFormatRuntype extends BaseRuntype {
       format: stringFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
     });
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input !== "string") {
-      return false;
-    }
-
-    for (const f of this.formats) {
-      const formatter = stringFormatters[f];
-      const validator = formatter?.validator;
-
-      if (validator == null) {
-        return false;
-      }
-
-      if (!validator(input)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(
-      ctx,
-      typeof input === "string"
-        ? (resolveFormatErrorMessage(stringFormatters, this.formats, input) ??
-            `expected string with format "${this.formats.join(" and ")}"`)
-        : `expected string with format "${this.formats.join(" and ")}"`,
-      input,
+  compile(): Compiled {
+    const formats = this.formats;
+    const expected = `expected string with format "${formats.join(" and ")}"`;
+    return leafCompiled(
+      KIND_STRING,
+      (_ctx, input) => typeof input === "string" && checkFormats(stringFormatters, formats, input),
+      (input) =>
+        typeof input === "string"
+          ? (resolveFormatErrorMessage(stringFormatters, formats, input) ?? expected)
+          : expected,
     );
   }
   hash(_ctx: HashContext): number {
@@ -1141,37 +1231,16 @@ export class NumberWithFormatRuntype extends BaseRuntype {
       format: numberFormatters[finalFormat]?.jsonSchemaFormat ?? this.formats.join(" and "),
     });
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input !== "number") {
-      return false;
-    }
-
-    for (const f of this.formats) {
-      const formatter = numberFormatters[f];
-      const validator = formatter?.validator;
-
-      if (validator == null) {
-        return false;
-      }
-
-      if (!validator(input)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(
-      ctx,
-      typeof input === "number"
-        ? (resolveFormatErrorMessage(numberFormatters, this.formats, input) ??
-            `expected number with format "${this.formats.join(" and ")}"`)
-        : `expected number with format "${this.formats.join(" and ")}"`,
-      input,
+  compile(): Compiled {
+    const formats = this.formats;
+    const expected = `expected number with format "${formats.join(" and ")}"`;
+    return leafCompiled(
+      KIND_NUMBER,
+      (_ctx, input) => typeof input === "number" && checkFormats(numberFormatters, formats, input),
+      (input) =>
+        typeof input === "number"
+          ? (resolveFormatErrorMessage(numberFormatters, formats, input) ?? expected)
+          : expected,
     );
   }
   hash(_ctx: HashContext): number {
@@ -1210,19 +1279,18 @@ export class AnyOfConstsRuntype extends BaseRuntype {
       enum: this.values,
     });
   }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    if (input == null) {
-      if (this.values.includes(null)) {
-        return true;
-      }
+  compile(): Compiled {
+    const values = new Set<unknown>(this.values);
+    const hasNull = values.has(null);
+    let kinds = 0;
+    for (const it of this.values) {
+      kinds |= kindOfValue(it);
     }
-    return this.values.includes(input as any);
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
+    return leafCompiled(
+      kinds,
+      (_ctx, input) => values.has(input) || (hasNull && input === undefined),
+      () => `expected one of ${limitedCommaJoinJson(this.values)}`,
+    );
   }
   hash(_ctx: HashContext): number {
     let acc: number[] = [anyOfConstsHash];
@@ -1284,67 +1352,61 @@ export class TupleRuntype extends BaseRuntype {
       items,
     } as any);
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (Array.isArray(input)) {
-      let idx = 0;
-      for (const prefixItem of this.prefix) {
-        if (!prefixItem.validate(ctx, input[idx])) {
+  compile(): Compiled {
+    const prefix = this.prefix.map(getCompiled);
+    const n = prefix.length;
+    const rest = this.rest == null ? null : getCompiled(this.rest);
+    return new Compiled(
+      (ctx, input) => {
+        if (!Array.isArray(input)) {
           return false;
         }
-        idx++;
-      }
-      if (this.rest != null) {
-        for (let i = idx; i < input.length; i++) {
-          if (!this.rest.validate(ctx, input[i])) {
+        for (let i = 0; i < n; i++) {
+          if (!prefix[i].validate(ctx, input[i])) {
             return false;
           }
         }
-      } else {
-        if (input.length > idx) {
-          return false;
+        if (rest == null) {
+          return input.length <= n;
         }
-      }
-      return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    let idx = 0;
-    let acc = [];
-    for (const prefixItem of this.prefix) {
-      acc.push(prefixItem.parseAfterValidation(ctx, input[idx]));
-      idx++;
-    }
-    if (this.rest != null) {
-      for (let i = idx; i < input.length; i++) {
-        acc.push(this.rest.parseAfterValidation(ctx, input[i]));
-      }
-    }
-    return acc;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!Array.isArray(input)) {
-      return buildError(ctx, "expected tuple", input);
-    }
-
-    let idx = 0;
-
-    let acc: DecodeError[] = [];
-
-    for (const prefixItem of this.prefix) {
-      reportAtPath(ctx, acc, `[${idx}]`, prefixItem, input[idx]);
-      idx++;
-    }
-
-    if (this.rest != null) {
-      for (let i = idx; i < input.length; i++) {
-        reportAtPath(ctx, acc, `[${i}]`, this.rest, input[i]);
-      }
-    } else if (input.length > idx) {
-      acc.push(...buildError(ctx, `expected tuple with ${idx} items, got ${input.length}`, input));
-    }
-
-    return acc;
+        for (let i = n; i < input.length; i++) {
+          if (!rest.validate(ctx, input[i])) {
+            return false;
+          }
+        }
+        return true;
+      },
+      (ctx, input) => {
+        const acc = [];
+        for (let i = 0; i < n; i++) {
+          acc.push(prefix[i].parse(ctx, input[i]));
+        }
+        if (rest != null) {
+          for (let i = n; i < input.length; i++) {
+            acc.push(rest.parse(ctx, input[i]));
+          }
+        }
+        return acc;
+      },
+      (ctx, input) => {
+        if (!Array.isArray(input)) {
+          return buildError(ctx, "expected tuple", input);
+        }
+        const acc: DecodeError[] = [];
+        for (let i = 0; i < n; i++) {
+          reportAtPath(ctx, acc, i, prefix[i], input[i]);
+        }
+        if (rest != null) {
+          for (let i = n; i < input.length; i++) {
+            reportAtPath(ctx, acc, i, rest, input[i]);
+          }
+        } else if (input.length > n) {
+          pushAll(acc, buildError(ctx, `expected tuple with ${n} items, got ${input.length}`, input));
+        }
+        return acc;
+      },
+      () => KIND_ARRAY,
+    );
   }
   hash(ctx: HashContext): number {
     let acc: number[] = [tupleHash];
@@ -1396,66 +1458,78 @@ export class AllOfRuntype extends BaseRuntype {
       allOf: schemas,
     });
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
-    const ok = withIntersectionInput(ctx, input, () => this.validateMembers(ctx, input));
-    return ok && !(checksExtraProperties && this.extraKeys(input as object).length > 0);
-  }
-  private validateMembers(ctx: ValidateContext, input: unknown): boolean {
-    for (const it of this.schemas) {
-      const isObj = typeof input === "object";
-      if (!isObj) {
-        return false;
+  compile(): Compiled {
+    const members = this.schemas.map(getCompiled);
+    const n = members.length;
+    const parseMembers = (ctx: ParseContext, input: any): object => {
+      let acc = {};
+      for (let i = 0; i < n; i++) {
+        const parsed = members[i].parse(ctx, input);
+        if (typeof parsed !== "object") {
+          throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
+        }
+        acc = { ...acc, ...parsed };
       }
-      if (!it.validate(ctx, input)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  // Keys of a valid input that no member of the intersection knows about.
-  private extraKeys(input: object): string[] {
-    const known = this.parseMembers(
-      { disallowExtraProperties: true, objectKeyOrder: "input", intersectionInput: input },
-      input,
+      return acc;
+    };
+    // Keys of a valid input that no member of the intersection knows about.
+    const extraKeys = (input: object): string[] => {
+      const known = parseMembers(
+        { disallowExtraProperties: true, objectKeyOrder: "input", intersectionInput: input },
+        input,
+      );
+      return Object.keys(input).filter((k) => !hasOwn.call(known, k));
+    };
+    // The members run with ctx.intersectionInput set to the input of the intersection.
+    return new Compiled(
+      (ctx, input) => {
+        const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
+        const old = ctx.intersectionInput;
+        ctx.intersectionInput = input;
+        let ok = true;
+        for (let i = 0; i < n; i++) {
+          if (typeof input !== "object" || !members[i].validate(ctx, input)) {
+            ok = false;
+            break;
+          }
+        }
+        ctx.intersectionInput = old;
+        return ok && !(checksExtraProperties && extraKeys(input).length > 0);
+      },
+      (ctx, input) => {
+        const old = ctx.intersectionInput;
+        ctx.intersectionInput = input;
+        const parsed = parseMembers(ctx, input);
+        ctx.intersectionInput = old;
+        return parsed;
+      },
+      (ctx, input) => {
+        const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
+        const old = ctx.intersectionInput;
+        ctx.intersectionInput = input;
+        const errors: DecodeError[] = [];
+        for (let i = 0; i < n; i++) {
+          pushAll(errors, members[i].report(ctx, input));
+        }
+        ctx.intersectionInput = old;
+        if (errors.length > 0) {
+          return errors;
+        }
+        if (n > 0 && typeof input !== "object") {
+          return buildError(ctx, "expected object", input);
+        }
+        if (!checksExtraProperties) {
+          return errors;
+        }
+        for (const k of extraKeys(input)) {
+          ctx.path.push(k);
+          pushAll(errors, buildError(ctx, `extra property`, input[k]));
+          ctx.path.pop();
+        }
+        return errors;
+      },
+      () => KIND_ALL,
     );
-    return Object.keys(input).filter((k) => !hasOwn.call(known, k));
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    return withIntersectionInput(ctx, input, () => this.parseMembers(ctx, input));
-  }
-  private parseMembers(ctx: ParseContext, input: any): object {
-    let acc = {};
-    for (const it of this.schemas) {
-      const parsed = it.parseAfterValidation(ctx, input);
-      if (typeof parsed !== "object") {
-        throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
-      }
-      acc = { ...acc, ...parsed };
-    }
-    return acc;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
-    const errors = withIntersectionInput(ctx, input, () => this.reportMembers(ctx, input));
-    if (errors.length > 0 || !checksExtraProperties) {
-      return errors;
-    }
-    const acc: DecodeError[] = [];
-    for (const k of this.extraKeys(input as object)) {
-      pushPath(ctx, k);
-      acc.push(...buildError(ctx, `extra property`, (input as any)[k]));
-      popPath(ctx);
-    }
-    return acc;
-  }
-  private reportMembers(ctx: ReportContext, input: unknown): DecodeError[] {
-    const acc = [];
-    for (const v of this.schemas) {
-      const errors = v.reportDecodeError(ctx, input);
-      acc.push(...errors);
-    }
-    return acc;
   }
   hash(ctx: HashContext): number {
     let acc: number[] = [allOfHash];
@@ -1556,42 +1630,78 @@ export class AnyOfRuntype extends BaseRuntype {
       anyOf: this.schemas.map((it) => it.schema(ctx)),
     });
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    for (const it of this.schemas) {
-      if (it.validate(ctx, input)) {
-        return true;
-      }
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const items = [];
-    for (const it of this.schemas) {
-      if (it.validate(ctx, input)) {
-        items.push(it.parseAfterValidation(ctx, input));
-      }
-    }
-    if (items.length === 1) {
-      return items[0];
-    }
-    return deepmerge(...items);
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    const branchErrors: DecodeError[][] = [];
-    const oldPaths = ctx.path;
-    ctx.path = [];
-    for (const v of this.schemas) {
-      branchErrors.push(v.reportDecodeError(ctx, input));
-    }
-    ctx.path = oldPaths;
+  compile(): Compiled {
+    const branches = this.schemas.map(getCompiled);
+    const n = branches.length;
+    // The accepted kinds of each branch. Refs can change with overrideNamedType, so this is
+    // computed on first use and again after an override.
+    let kinds: number[] = [];
+    let kindsGeneration = -1;
+    return new Compiled(
+      (ctx, input) => {
+        for (let i = 0; i < n; i++) {
+          if (branches[i].validate(ctx, input)) {
+            return true;
+          }
+        }
+        return false;
+      },
+      (ctx, input) => {
+        if (kindsGeneration !== refGeneration) {
+          kinds = branches.map((it) => it.kinds());
+          kindsGeneration = refGeneration;
+        }
+        // Only branches that accept the kind of the input can match.
+        const kind = kindOfValue(input);
+        let candidates = 0;
+        let lastCandidate = 0;
+        for (let i = 0; i < n; i++) {
+          if ((kinds[i] & kind) !== 0) {
+            candidates++;
+            lastCandidate = i;
+          }
+        }
+        // The input is valid, so a single candidate must be the match.
+        if (candidates === 1) {
+          return branches[lastCandidate].parse(ctx, input);
+        }
+        const items = [];
+        for (let i = 0; i < n; i++) {
+          if ((kinds[i] & kind) !== 0 && branches[i].validate(ctx, input)) {
+            items.push(branches[i].parse(ctx, input));
+          }
+        }
+        if (items.length === 1) {
+          return items[0];
+        }
+        return deepmerge(...items);
+      },
+      (ctx, input) => {
+        // Branch errors have paths relative to the union.
+        const oldPath = ctx.path;
+        ctx.path = [];
+        const branchErrors: DecodeError[][] = [];
+        let valid = false;
+        for (let i = 0; i < n && !valid; i++) {
+          const errors = branches[i].report(ctx, input);
+          valid = errors.length === 0;
+          branchErrors.push(errors);
+        }
+        ctx.path = oldPath;
+        if (valid) {
+          return NO_ERRORS;
+        }
 
-    // Filter to closest-matching branches by max error depth
-    const depths = branchErrors.map((errors) => maxErrorDepth(errors));
-    const bestDepth = Math.max(...depths);
-    const filtered =
-      bestDepth > 0 ? branchErrors.filter((_, i) => depths[i] === bestDepth).flat() : branchErrors.flat();
+        // Filter to closest-matching branches by max error depth
+        const depths = branchErrors.map((errors) => maxErrorDepth(errors));
+        const bestDepth = Math.max(...depths);
+        const filtered =
+          bestDepth > 0 ? branchErrors.filter((_, i) => depths[i] === bestDepth).flat() : branchErrors.flat();
 
-    return buildUnionError(ctx, filtered, input);
+        return buildUnionError(ctx, filtered, input, bestDepth > 0 ? bestDepth : 0);
+      },
+      () => KIND_ALL,
+    );
   }
   protected describeTypeExpr(ctx: DescribeContext): string {
     return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`;
@@ -1630,33 +1740,33 @@ export class ArrayRuntype extends BaseRuntype {
       items,
     });
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (Array.isArray(input)) {
-      for (let i = 0; i < input.length; i++) {
-        const v = input[i];
-        const ok = this.itemParser.validate(ctx, v);
-        if (!ok) {
+  compile(): Compiled {
+    const item = getCompiled(this.itemParser);
+    return new Compiled(
+      (ctx, input) => {
+        if (!Array.isArray(input)) {
           return false;
         }
-      }
-      return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    return (input as any[]).map((v) => this.itemParser.parseAfterValidation(ctx, v));
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!Array.isArray(input)) {
-      return buildError(ctx, "expected array", input);
-    }
-
-    let acc: DecodeError[] = [];
-    for (let i = 0; i < input.length; i++) {
-      reportAtPath(ctx, acc, `[${i}]`, this.itemParser, input[i]);
-    }
-
-    return acc;
+        for (let i = 0; i < input.length; i++) {
+          if (!item.validate(ctx, input[i])) {
+            return false;
+          }
+        }
+        return true;
+      },
+      (ctx, input) => (input as any[]).map((v) => item.parse(ctx, v)),
+      (ctx, input) => {
+        if (!Array.isArray(input)) {
+          return buildError(ctx, "expected array", input);
+        }
+        const acc: DecodeError[] = [];
+        for (let i = 0; i < input.length; i++) {
+          reportAtPath(ctx, acc, i, item, input[i]);
+        }
+        return acc;
+      },
+      () => KIND_ARRAY,
+    );
   }
   protected describeTypeExpr(ctx: DescribeContext): string {
     return `Array<${describeTypeExpr(ctx, this.itemParser)}>`;
@@ -1690,34 +1800,41 @@ export class MapRuntype extends BaseRuntype {
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Map"));
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (input instanceof Map) {
-      for (const [k, v] of input) {
-        if (!this.keyParser.validate(ctx, k) || !this.valueParser.validate(ctx, v)) {
+  compile(): Compiled {
+    const key = getCompiled(this.keyParser);
+    const value = getCompiled(this.valueParser);
+    return new Compiled(
+      (ctx, input) => {
+        if (!(input instanceof Map)) {
           return false;
         }
-      }
-      return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const res = new Map();
-    for (const [k, v] of input as Map<any, any>) {
-      res.set(this.keyParser.parseAfterValidation(ctx, k), this.valueParser.parseAfterValidation(ctx, v));
-    }
-    return res;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!(input instanceof Map)) {
-      return buildError(ctx, "expected Map", input);
-    }
-    const acc: DecodeError[] = [];
-    for (const [k, v] of input) {
-      reportAtPath(ctx, acc, `key(${stringifyWithBigInt(k)})`, this.keyParser, k);
-      reportAtPath(ctx, acc, `value(${stringifyWithBigInt(k)})`, this.valueParser, v);
-    }
-    return acc;
+        for (const [k, v] of input) {
+          if (!key.validate(ctx, k) || !value.validate(ctx, v)) {
+            return false;
+          }
+        }
+        return true;
+      },
+      (ctx, input) => {
+        const res = new Map();
+        for (const [k, v] of input as Map<any, any>) {
+          res.set(key.parse(ctx, k), value.parse(ctx, v));
+        }
+        return res;
+      },
+      (ctx, input) => {
+        if (!(input instanceof Map)) {
+          return buildError(ctx, "expected Map", input);
+        }
+        const acc: DecodeError[] = [];
+        for (const [k, v] of input) {
+          reportAtPath(ctx, acc, `key(${stringifyWithBigInt(k)})`, key, k);
+          reportAtPath(ctx, acc, `value(${stringifyWithBigInt(k)})`, value, v);
+        }
+        return acc;
+      },
+      () => KIND_OBJECT,
+    );
   }
   hash(_ctx: HashContext): number {
     return generateHashFromNumbers([mapHash, this.keyParser.hash(_ctx), this.valueParser.hash(_ctx)]);
@@ -1744,33 +1861,39 @@ export class SetRuntype extends BaseRuntype {
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Set"));
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (input instanceof Set) {
-      for (const v of input) {
-        if (!this.itemParser.validate(ctx, v)) {
+  compile(): Compiled {
+    const item = getCompiled(this.itemParser);
+    return new Compiled(
+      (ctx, input) => {
+        if (!(input instanceof Set)) {
           return false;
         }
-      }
-      return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const res = new Set();
-    for (const v of input as Set<any>) {
-      res.add(this.itemParser.parseAfterValidation(ctx, v));
-    }
-    return res;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!(input instanceof Set)) {
-      return buildError(ctx, "expected Set", input);
-    }
-    const acc: DecodeError[] = [];
-    for (const v of input) {
-      reportAtPath(ctx, acc, `item(${stringifyWithBigInt(v)})`, this.itemParser, v);
-    }
-    return acc;
+        for (const v of input) {
+          if (!item.validate(ctx, v)) {
+            return false;
+          }
+        }
+        return true;
+      },
+      (ctx, input) => {
+        const res = new Set();
+        for (const v of input as Set<any>) {
+          res.add(item.parse(ctx, v));
+        }
+        return res;
+      },
+      (ctx, input) => {
+        if (!(input instanceof Set)) {
+          return buildError(ctx, "expected Set", input);
+        }
+        const acc: DecodeError[] = [];
+        for (const v of input) {
+          reportAtPath(ctx, acc, `item(${stringifyWithBigInt(v)})`, item, v);
+        }
+        return acc;
+      },
+      () => KIND_OBJECT,
+    );
   }
   hash(_ctx: HashContext): number {
     return generateHashFromNumbers([setHash, this.itemParser.hash(_ctx)]);
@@ -1897,61 +2020,62 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
     this.ensureContextualDefinition(syntheticRefName, runtype, ctx);
     return printingContext.getRef(syntheticRefName);
   }
-  private getVariant(d: unknown): Runtype | undefined {
-    const key = String(d);
-    return Object.prototype.hasOwnProperty.call(this.mapping, key) ? this.mapping[key] : undefined;
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input !== "object" || input == null) {
-      return false;
+  compile(): Compiled {
+    const discriminator = this.discriminator;
+    const variants = new Map<string, Compiled>();
+    for (const k of Object.keys(this.mapping)) {
+      variants.set(k, getCompiled(this.mapping[k]));
     }
-    const d = (input as any)[this.discriminator];
-    if (d == null) {
-      return false;
-    }
-    const v = this.getVariant(d);
-    if (v == null) {
-      return false;
-    }
-
-    return v.validate(ctx, input);
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const parser = this.getVariant(input[this.discriminator]);
-    if (parser == null) {
-      throw new Error(
-        "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[this.discriminator]),
-      );
-    }
-    return {
-      ...(parser.parseAfterValidation(ctx, input) as object),
-      [this.discriminator]: input[this.discriminator],
-    };
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (input == null || typeof input !== "object") {
-      return buildError(ctx, "expected object", input);
-    }
-
-    const d = (input as any)[this.discriminator];
-    if (d == null) {
-      return buildError(ctx, "expected discriminator key " + JSON.stringify(this.discriminator), input);
-    }
-    const v = this.getVariant(d);
-    if (v == null) {
-      pushPath(ctx, this.discriminator);
-      const errs = buildError(
-        ctx,
-        "expected one of " +
-          Object.keys(this.mapping)
-            .map((it) => JSON.stringify(it))
-            .join(", "),
-        d,
-      );
-      popPath(ctx);
-      return errs;
-    }
-    return v.reportDecodeError(ctx, input);
+    return new Compiled(
+      (ctx, input) => {
+        if (typeof input !== "object" || input == null) {
+          return false;
+        }
+        const d = input[discriminator];
+        if (d == null) {
+          return false;
+        }
+        const v = variants.get(String(d));
+        return v !== undefined && v.validate(ctx, input);
+      },
+      (ctx, input) => {
+        const v = variants.get(String(input[discriminator]));
+        if (v === undefined) {
+          throw new Error(
+            "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[discriminator]),
+          );
+        }
+        return {
+          ...(v.parse(ctx, input) as object),
+          [discriminator]: input[discriminator],
+        };
+      },
+      (ctx, input) => {
+        if (input == null || typeof input !== "object") {
+          return buildError(ctx, "expected object", input);
+        }
+        const d = input[discriminator];
+        if (d == null) {
+          return buildError(ctx, "expected discriminator key " + JSON.stringify(discriminator), input);
+        }
+        const v = variants.get(String(d));
+        if (v === undefined) {
+          ctx.path.push(discriminator);
+          const errs = buildError(
+            ctx,
+            "expected one of " +
+              Object.keys(this.mapping)
+                .map((it) => JSON.stringify(it))
+                .join(", "),
+            d,
+          );
+          ctx.path.pop();
+          return errs;
+        }
+        return v.report(ctx, input);
+      },
+      () => KIND_ALL,
+    );
   }
   protected describeTypeExpr(ctx: DescribeContext): string {
     return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`;
@@ -1995,23 +2119,15 @@ export class OptionalFieldRuntype implements Runtype {
       anyOf: [inner, { type: "null" }],
     };
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (input == null) {
-      return true;
-    }
-    return this.t.validate(ctx, input);
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    if (input == null) {
-      return input;
-    }
-    return this.t.parseAfterValidation(ctx, input);
-  }
-  // validate() returns true for null/undefined, so reportDecodeError is only
-  // called when input is non-null. Reporting "expected nullish value" here
-  // would be noise — only the inner type's errors are relevant.
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return this.t.reportDecodeError(ctx, input);
+  compile(): Compiled {
+    const t = getCompiled(this.t);
+    return new Compiled(
+      (ctx, input) => input == null || t.validate(ctx, input),
+      (ctx, input) => (input == null ? input : t.parse(ctx, input)),
+      // Null and undefined are valid, so only the inner type's errors are relevant.
+      (ctx, input) => (input == null ? NO_ERRORS : t.report(ctx, input)),
+      () => KIND_ALL,
+    );
   }
   describe(ctx: DescribeContext): TypeDescription {
     return this.t.describe(ctx);
@@ -2152,164 +2268,145 @@ export class ObjectRuntype extends BaseRuntype {
       allOf: [base, ...indexSchemas],
     });
   }
-  validate(ctx: ValidateContext, input: any): boolean {
-    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-      const configKeys = Object.keys(this.properties);
-      for (const k of configKeys) {
-        const validator = this.properties[k];
-        if (!validator.validate(ctx, input[k])) {
+  compile(): Compiled {
+    const keys = Object.keys(this.properties);
+    const n = keys.length;
+    const props = keys.map((k) => getCompiled(this.properties[k]));
+    const byKey = new Map<string, Compiled>();
+    keys.forEach((k, i) => byKey.set(k, props[i]));
+    const sortedKeys = [...keys].sort();
+    const sortedProps = sortedKeys.map((k) => byKey.get(k)!);
+    const indexed = this.indexedPropertiesParser.map((p) => ({
+      key: getCompiled(p.key),
+      value: getCompiled(p.value),
+    }));
+    const m = indexed.length;
+    // In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
+    const leavesKeyToIntersection = (ctx: ValidateContext, input: object, k: string): boolean => {
+      if (ctx.intersectionInput !== input) {
+        return false;
+      }
+      for (let j = 0; j < m; j++) {
+        if (indexed[j].key.validate(ctx, k)) {
           return false;
         }
       }
-
-      if (this.indexedPropertiesParser.length > 0) {
-        const inputKeys = Object.keys(input);
-        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
-        for (const k of extraKeys) {
-          let isValid = false;
-          for (const p of this.indexedPropertiesParser) {
-            if (!p.key.validate(ctx, k)) {
-              continue;
-            }
-            const v = input[k];
-            if (!p.value.validate(ctx, v)) {
-              continue;
-            }
-            isValid = true;
-            break;
-          }
-          if (!isValid && !this.leavesKeyToIntersection(ctx, input, k)) {
-            return false;
-          }
-        }
-      } else {
-        if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
-          const inputKeys = Object.keys(input);
-          const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
-
-          if (extraKeys.length > 0) {
-            return false;
-          }
-        }
-      }
-
       return true;
-    }
-    return false;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    let acc: any = {};
-
-    const inputKeys = Object.keys(input);
-
-    if (ctx.objectKeyOrder === "input") {
-      for (const k of inputKeys) {
-        if (hasOwn.call(this.properties, k)) {
-          setOwnProperty(acc, k, this.properties[k].parseAfterValidation(ctx, input[k]));
-          continue;
+    };
+    const parseIndexed = (ctx: ParseContext, acc: any, k: string, v: unknown): void => {
+      for (let j = 0; j < m; j++) {
+        const p = indexed[j];
+        if (p.key.validate(ctx, k) && p.value.validate(ctx, v)) {
+          const itemParsed = p.value.parse(ctx, v);
+          const keyParsed = p.key.parse(ctx, k);
+          setOwnProperty(acc, keyParsed as string, itemParsed);
         }
-
-        for (const p of this.indexedPropertiesParser) {
-          const v = input[k];
-          const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
-          if (isValid) {
-            const itemParsed = p.value.parseAfterValidation(ctx, v);
-            const keyParsed = p.key.parseAfterValidation(ctx, k);
-            setOwnProperty(acc, keyParsed as string, itemParsed);
+      }
+    };
+    return new Compiled(
+      (ctx, input) => {
+        if (typeof input !== "object" || input === null || Array.isArray(input)) {
+          return false;
+        }
+        for (let i = 0; i < n; i++) {
+          if (!props[i].validate(ctx, input[keys[i]])) {
+            return false;
           }
         }
-      }
-    } else {
-      const configKeys = Object.keys(this.properties).sort();
-
-      for (const k of configKeys) {
-        if (!hasOwn.call(input, k)) {
-          continue;
-        }
-        const v = input[k];
-        const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
-        setOwnProperty(acc, k, itemParsed);
-      }
-
-      if (this.indexedPropertiesParser.length > 0) {
-        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k)).sort();
-        for (const k of extraKeys) {
-          const v = input[k];
-          for (const p of this.indexedPropertiesParser) {
-            const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
-            if (isValid) {
-              const itemParsed = p.value.parseAfterValidation(ctx, v);
-              const keyParsed = p.key.parseAfterValidation(ctx, k);
-              setOwnProperty(acc, keyParsed as string, itemParsed);
+        if (m > 0) {
+          for (const k of Object.keys(input)) {
+            if (byKey.has(k)) {
+              continue;
+            }
+            let isValid = false;
+            for (let j = 0; j < m && !isValid; j++) {
+              isValid = indexed[j].key.validate(ctx, k) && indexed[j].value.validate(ctx, input[k]);
+            }
+            if (!isValid && !leavesKeyToIntersection(ctx, input, k)) {
+              return false;
+            }
+          }
+        } else if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
+          for (const k of Object.keys(input)) {
+            if (!byKey.has(k)) {
+              return false;
             }
           }
         }
-      }
-    }
-
-    return acc;
-  }
-  reportDecodeError(ctx: ReportContext, input: any): DecodeError[] {
-    if (typeof input !== "object" || Array.isArray(input) || input === null) {
-      return buildError(ctx, "expected object", input);
-    }
-
-    let acc: DecodeError[] = [];
-
-    const configKeys = Object.keys(this.properties);
-
-    for (const k of configKeys) {
-      reportAtPath(ctx, acc, k, this.properties[k], input[k]);
-    }
-
-    if (this.indexedPropertiesParser.length > 0) {
-      const inputKeys = Object.keys(input);
-      const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
-      for (const k of extraKeys) {
-        if (this.leavesKeyToIntersection(ctx, input, k)) {
-          continue;
-        }
-        for (const p of this.indexedPropertiesParser) {
-          const keyOk = p.key.validate(ctx, k);
-          const valueOk = p.value.validate(ctx, input[k]);
-          const ok = keyOk && valueOk;
-          if (!ok) {
-            pushPath(ctx, k);
-            if (!keyOk) {
-              const keyReported = p.key.reportDecodeError(ctx, k);
-              acc.push(...keyReported);
-            }
-            if (!valueOk) {
-              const valueReported = p.value.reportDecodeError(ctx, input[k]);
-              acc.push(...valueReported);
-            }
-            popPath(ctx);
-          }
-        }
-      }
-    } else {
-      if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
+        return true;
+      },
+      (ctx, input) => {
+        const acc: any = {};
         const inputKeys = Object.keys(input);
-        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
-        if (extraKeys.length > 0) {
-          return extraKeys
-            .map((k) => {
-              pushPath(ctx, k);
-              const err = buildError(ctx, `extra property`, input[k]);
-              popPath(ctx);
-              return err;
-            })
-            .reduce((a, b) => a.concat(b), []);
+        if (ctx.objectKeyOrder === "input") {
+          for (const k of inputKeys) {
+            const prop = byKey.get(k);
+            if (prop !== undefined) {
+              setOwnProperty(acc, k, prop.parse(ctx, input[k]));
+            } else {
+              parseIndexed(ctx, acc, k, input[k]);
+            }
+          }
+          return acc;
         }
-      }
-    }
-
-    return acc;
-  }
-  // In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
-  private leavesKeyToIntersection(ctx: ValidateContext, input: object, k: string): boolean {
-    return (
-      ctx.intersectionInput === input && !this.indexedPropertiesParser.some((p) => p.key.validate(ctx, k))
+        for (let i = 0; i < n; i++) {
+          const k = sortedKeys[i];
+          if (hasOwn.call(input, k)) {
+            setOwnProperty(acc, k, sortedProps[i].parse(ctx, input[k]));
+          }
+        }
+        if (m > 0) {
+          for (const k of inputKeys.filter((k) => !byKey.has(k)).sort()) {
+            parseIndexed(ctx, acc, k, input[k]);
+          }
+        }
+        return acc;
+      },
+      (ctx, input) => {
+        if (typeof input !== "object" || Array.isArray(input) || input === null) {
+          return buildError(ctx, "expected object", input);
+        }
+        const acc: DecodeError[] = [];
+        for (let i = 0; i < n; i++) {
+          reportAtPath(ctx, acc, keys[i], props[i], input[keys[i]]);
+        }
+        if (m > 0) {
+          for (const k of Object.keys(input)) {
+            if (byKey.has(k) || leavesKeyToIntersection(ctx, input, k)) {
+              continue;
+            }
+            // The key is valid if one index signature accepts it and its value. Otherwise report
+            // the errors of every index signature.
+            ctx.path.push(k);
+            const errors: DecodeError[] = [];
+            let isValid = false;
+            for (let j = 0; j < m && !isValid; j++) {
+              const keyErrors = indexed[j].key.report(ctx, k);
+              const valueErrors = indexed[j].value.report(ctx, input[k]);
+              isValid = keyErrors.length === 0 && valueErrors.length === 0;
+              pushAll(errors, keyErrors);
+              pushAll(errors, valueErrors);
+            }
+            ctx.path.pop();
+            if (!isValid) {
+              pushAll(acc, errors);
+            }
+          }
+        } else if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
+          const extraKeys = Object.keys(input).filter((k) => !byKey.has(k));
+          if (extraKeys.length > 0) {
+            const extra: DecodeError[] = [];
+            for (const k of extraKeys) {
+              ctx.path.push(k);
+              pushAll(extra, buildError(ctx, `extra property`, input[k]));
+              ctx.path.pop();
+            }
+            return extra;
+          }
+        }
+        return acc;
+      },
+      () => KIND_OBJECT,
     );
   }
   hash(ctx: HashContext) {
@@ -2439,17 +2536,39 @@ export abstract class BaseRefRuntype extends BaseRuntype {
     to.hash256(ctx);
     ctx.active.delete(to);
   }
-  validate(ctx: ValidateContext, input: any): boolean {
-    const to = this.getNamedRuntypes()[this.refName];
-    return to.validate(ctx, input);
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): any {
-    const to = this.getNamedRuntypes()[this.refName];
-    return to.parseAfterValidation(ctx, input);
-  }
-  reportDecodeError(ctx: ReportContext, input: any): DecodeError[] {
-    const to = this.getNamedRuntypes()[this.refName];
-    return to.reportDecodeError(ctx, input);
+  // The target is looked up on first use (it may not exist yet, and recursive types would not
+  // terminate), and again after overrideNamedType.
+  compile(): Compiled {
+    let target: Compiled;
+    let validate: ValidateFn;
+    let parse: ParseFn;
+    let report: ReportFn;
+    let generation = -1;
+    const resolve = () => {
+      target = getCompiled(this.getNamedRuntypes()[this.refName]);
+      validate = target.validate;
+      parse = target.parse;
+      report = target.report;
+      generation = refGeneration;
+    };
+    return new Compiled(
+      (ctx, input) => {
+        if (generation !== refGeneration) resolve();
+        return validate(ctx, input);
+      },
+      (ctx, input) => {
+        if (generation !== refGeneration) resolve();
+        return parse(ctx, input);
+      },
+      (ctx, input) => {
+        if (generation !== refGeneration) resolve();
+        return report(ctx, input);
+      },
+      () => {
+        if (generation !== refGeneration) resolve();
+        return target.kinds();
+      },
+    );
   }
 }
 
@@ -2475,14 +2594,17 @@ export const overrideNamedType = (name: string, runtype: BeffParser<any>): void 
     throw new Error(`Named type ${name} does not exist`);
   }
   namedRuntypes[name] = (runtype as ParserFromRuntype)._runtype;
+  refGeneration++;
 };
 
 class ParserFromRuntype implements BeffParser<any> {
   _runtype: Runtype;
   name: string;
   private hideTypeNameInDescribe: boolean;
+  private compiled: Compiled;
   constructor(runtype: Runtype, name: string, hideTypeNameInDescribe: boolean) {
     this._runtype = runtype;
+    this.compiled = getCompiled(runtype);
     this.name = name;
     this.hideTypeNameInDescribe = hideTypeNameInDescribe;
   }
@@ -2503,13 +2625,13 @@ class ParserFromRuntype implements BeffParser<any> {
     const ok = this.validate(input, options);
     if (ok) {
       let ctx = { disallowExtraProperties, objectKeyOrder };
-      const parsed = this._runtype.parseAfterValidation(ctx, input);
+      const parsed = this.compiled.parse(ctx, input);
       return { success: true, data: parsed };
     }
     let ctx = { path: [], disallowExtraProperties };
     return {
       success: false,
-      errors: this._runtype.reportDecodeError(ctx, input).slice(0, 10),
+      errors: finishErrors(this.compiled.report(ctx, input).slice(0, 10)),
     };
   }
   zod(): z.ZodType<any, z.ZodTypeDef, any> {
@@ -2518,15 +2640,15 @@ class ParserFromRuntype implements BeffParser<any> {
       (data: any) => this.validate(data),
       //@ts-ignore
       (val: any) => {
-        const errors = this._runtype.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
-        return printErrors(errors, []);
+        const errors = this.compiled.report({ path: [], disallowExtraProperties: false }, val);
+        return printErrors(finishErrors(errors), []);
       },
     );
   }
   validate(input: any, options?: ParseOptions): input is any {
     const disallowExtraProperties = options?.disallowExtraProperties ?? false;
     const ctx = { disallowExtraProperties };
-    const ok = this._runtype.validate(ctx, input);
+    const ok = this.compiled.validate(ctx, input);
     if (typeof ok !== "boolean") {
       throw new Error("INTERNAL ERROR: Expected boolean");
     }
