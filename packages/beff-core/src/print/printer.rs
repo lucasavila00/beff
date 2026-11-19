@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use anyhow::{Ok, Result, anyhow};
+use anyhow::{Ok, Result};
 use swc_common::DUMMY_SP;
 use swc_common::SourceMap;
 use swc_common::SyntaxContext;
@@ -220,7 +220,6 @@ struct PrintContext {
     hoisted: BTreeMap<PrintableRuntypeKey, (usize, Expr)>,
     all_names: NameIndex,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
-    inlined: BTreeSet<RuntypeUUID>,
 }
 
 impl PrintContext {
@@ -259,24 +258,29 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
     )))
 }
 
-/// Any type with the same name must be identical
-fn validate_type_uniqueness(parser: &[NamedSchema]) -> Result<Vec<NamedSchema>> {
-    let mut acc: Vec<NamedSchema> = vec![];
-    let mut index: BTreeMap<&RuntypeUUID, usize> = BTreeMap::new();
+/// The named schemas, with maps to find them by name and by schema.
+/// The names are unique: `extend_components` reports a duplicate name as a diagnostic.
+struct NamedSchemas<'a> {
+    list: &'a [NamedSchema],
+    by_name: BTreeMap<&'a RuntypeUUID, &'a Runtype>,
+    // The first name of each schema.
+    by_schema: BTreeMap<&'a Runtype, &'a RuntypeUUID>,
+}
 
-    for d in parser {
-        if let Some(&i) = index.get(&d.name) {
-            if acc[i].schema != d.schema {
-                // TODO: emit proper diag here?
-                // or merge before?
-                return Err(anyhow!("Two different types with the same name"));
-            }
-        } else {
-            index.insert(&d.name, acc.len());
-            acc.push(d.clone());
+impl<'a> NamedSchemas<'a> {
+    fn new(list: &'a [NamedSchema]) -> Self {
+        let mut by_name = BTreeMap::new();
+        let mut by_schema = BTreeMap::new();
+        for it in list {
+            by_name.insert(&it.name, &it.schema);
+            by_schema.entry(&it.schema).or_insert(&it.name);
+        }
+        NamedSchemas {
+            list,
+            by_name,
+            by_schema,
         }
     }
-    Ok(acc)
 }
 
 fn identifier(name: &str) -> Ident {
@@ -418,7 +422,7 @@ fn formats_runtype(
 
 // Object keys are always strings. A `number` key is printed as a runtype
 // that accepts numeric strings.
-fn print_index_key(key: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
+fn print_index_key(key: &Runtype, named_schemas: &NamedSchemas, ctx: &mut PrintContext) -> Expr {
     match &key.kind {
         RuntypeKind::Number => no_args_runtype("numberKey", key),
         RuntypeKind::AnyOf(vs) if vs.iter().any(|it| matches!(it.kind, RuntypeKind::Number)) => {
@@ -435,7 +439,7 @@ fn print_index_key(key: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Print
 fn runtype_union_or_intersection(
     constructor: &str,
     vs: &BTreeSet<Runtype>,
-    named_schemas: &[NamedSchema],
+    named_schemas: &NamedSchemas,
     ctx: &mut PrintContext,
     original_runtype: &Runtype,
 ) -> Expr {
@@ -446,7 +450,7 @@ fn runtype_union_or_intersection(
     builder(constructor, vec![array_lit(exprs)], original_runtype)
 }
 
-fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
+fn extract_union(it: &Runtype, named_schemas: &NamedSchemas) -> Vec<Runtype> {
     match &it.kind {
         RuntypeKind::AnyOf(vs) => vs
             .iter()
@@ -454,27 +458,21 @@ fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
             .collect(),
         RuntypeKind::Ref(r) => {
             let v = named_schemas
-                .iter()
-                .find(|it| it.name == *r)
+                .by_name
+                .get(r)
                 .expect("everything should be resolved by now");
-            extract_union(&v.schema, named_schemas)
+            extract_union(v, named_schemas)
         }
         RuntypeKind::Never => vec![],
         _ => vec![it.clone()],
     }
 }
 
-fn maybe_named_ref(
-    schema: &Runtype,
-    named_schemas: &[NamedSchema],
-    ctx: &PrintContext,
-) -> Option<Runtype> {
+fn maybe_named_ref(schema: &Runtype, named_schemas: &NamedSchemas) -> Option<Runtype> {
     named_schemas
-        .iter()
-        .find(|named_schema| {
-            !ctx.inlined.contains(&named_schema.name) && named_schema.schema == *schema
-        })
-        .map(|named_schema| Runtype::ref_(named_schema.name.clone()))
+        .by_schema
+        .get(schema)
+        .map(|name| Runtype::ref_((*name).clone()))
 }
 
 fn runtype_any_of_discriminated(
@@ -483,7 +481,7 @@ fn runtype_any_of_discriminated(
     discriminator: String,
     discriminator_strings_set: BTreeSet<String>,
     object_vs: Vec<BTreeMap<String, Optionality<Runtype>>>,
-    named_schemas: &[NamedSchema],
+    named_schemas: &NamedSchemas,
     ctx: &mut PrintContext,
 ) -> Expr {
     let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
@@ -530,8 +528,7 @@ fn runtype_any_of_discriminated(
                     })
                     .collect::<Vec<_>>();
                 let schema = if cases.len() == 1 {
-                    maybe_named_ref(&cases[0], named_schemas, ctx)
-                        .unwrap_or_else(|| cases[0].clone())
+                    maybe_named_ref(&cases[0], named_schemas).unwrap_or_else(|| cases[0].clone())
                 } else {
                     Runtype::any_of(cases)
                 };
@@ -547,7 +544,7 @@ fn runtype_any_of_discriminated(
     let flat_values_schema = flat_values
         .iter()
         .map(|it| {
-            let schema = maybe_named_ref(it, named_schemas, ctx).unwrap_or_else(|| it.clone());
+            let schema = maybe_named_ref(it, named_schemas).unwrap_or_else(|| it.clone());
             print_runtype(&schema, named_schemas, ctx)
         })
         .collect::<Vec<_>>();
@@ -564,7 +561,7 @@ fn runtype_any_of_discriminated(
 fn maybe_runtype_any_of_discriminated(
     original_runtype: &Runtype,
     flat_values: &BTreeSet<Runtype>,
-    named_schemas: &[NamedSchema],
+    named_schemas: &NamedSchemas,
     ctx: &mut PrintContext,
 ) -> Option<Expr> {
     let object_vs = flat_values
@@ -649,7 +646,7 @@ fn maybe_runtype_any_of_discriminated(
 
 fn extract_object_shape(
     schema: &Runtype,
-    named_schemas: &[NamedSchema],
+    named_schemas: &NamedSchemas,
 ) -> Option<BTreeMap<String, Optionality<Runtype>>> {
     match &schema.kind {
         RuntypeKind::Object {
@@ -657,9 +654,9 @@ fn extract_object_shape(
             indexed_properties,
         } if indexed_properties.is_none() => Some(vs.clone()),
         RuntypeKind::Ref(r) => named_schemas
-            .iter()
-            .find(|it| it.name == *r)
-            .and_then(|it| extract_object_shape(&it.schema, named_schemas)),
+            .by_name
+            .get(r)
+            .and_then(|it| extract_object_shape(it, named_schemas)),
         RuntypeKind::AllOf(vs) => {
             let mut acc = BTreeMap::new();
 
@@ -689,7 +686,7 @@ fn extract_object_shape(
 fn merge_object_property_shapes(
     left: &Optionality<Runtype>,
     right: &Optionality<Runtype>,
-    named_schemas: &[NamedSchema],
+    named_schemas: &NamedSchemas,
 ) -> Option<Optionality<Runtype>> {
     if left == right {
         return Some(left.clone());
@@ -706,7 +703,7 @@ fn merge_object_property_shapes(
 fn narrower_schema(
     left: &Runtype,
     right: &Runtype,
-    named_schemas: &[NamedSchema],
+    named_schemas: &NamedSchemas,
 ) -> Option<Runtype> {
     let left_values = string_const_union(left, named_schemas)?;
     let right_values = string_const_union(right, named_schemas)?;
@@ -720,7 +717,7 @@ fn narrower_schema(
     }
 }
 
-fn string_const_union(schema: &Runtype, named_schemas: &[NamedSchema]) -> Option<BTreeSet<String>> {
+fn string_const_union(schema: &Runtype, named_schemas: &NamedSchemas) -> Option<BTreeSet<String>> {
     extract_union(schema, named_schemas)
         .into_iter()
         .map(|it| it.extract_single_string_const())
@@ -775,7 +772,7 @@ fn optionality_wrapper(inner: Expr) -> Expr {
     call("optional", vec![inner])
 }
 
-fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
+fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut PrintContext) -> Expr {
     let hoist_key = PrintableRuntypeKey::from_runtype(schema);
     if let Some((var_name, _)) = ctx.hoisted.get(&hoist_key) {
         return hoist_identifier(*var_name);
@@ -936,7 +933,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
 
 fn build_parsers_input(
     decs: &[BuiltDecoder],
-    named_schemas: &[NamedSchema],
+    named_schemas: &NamedSchemas,
     ctx: &mut PrintContext,
 ) -> Expr {
     let mut validator_exprs: Vec<(String, Expr)> = vec![];
@@ -948,18 +945,12 @@ fn build_parsers_input(
     object_lit(validator_exprs)
 }
 
-fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
+fn named_runtypes(named_schemas: &NamedSchemas, ctx: &mut PrintContext) -> Expr {
     let mut validator_exprs: Vec<(RuntypeUUID, Expr)> = vec![];
-    for named_schema in named_schemas {
+    for named_schema in named_schemas.list {
         let validator = print_runtype(&named_schema.schema, named_schemas, ctx);
         validator_exprs.push((named_schema.name.clone(), validator));
     }
-    // filter out the inlined ones
-    let validator_exprs: Vec<(RuntypeUUID, Expr)> = validator_exprs
-        .into_iter()
-        .filter(|(name, _)| !ctx.inlined.contains(name))
-        .collect();
-
     object_lit(
         validator_exprs
             .into_iter()
@@ -971,13 +962,12 @@ fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr
 impl ParserExtractResult {
     pub fn emit_code(self) -> Result<String> {
         let built_parsers = self.built_decoders.unwrap_or_default();
-        let named_schemas = validate_type_uniqueness(&self.validators)?;
-        let all_names = NameIndex::new(named_schemas.iter().map(|it| &it.name));
+        let named_schemas = NamedSchemas::new(&self.validators);
+        let all_names = NameIndex::new(named_schemas.list.iter().map(|it| &it.name));
         let mut hoisted = PrintContext {
             hoisted: BTreeMap::new(),
             all_names,
             type_with_args_names: BTreeMap::new(),
-            inlined: BTreeSet::new(),
         };
 
         let build_parsers_input: ModuleItem = const_decl(

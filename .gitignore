@@ -8,3 +8,8 @@ coverage/*
 target/
 .pnpm-store/
 rfc/
+# Generated parsers. Only two are kept as codegen snapshots; CI checks them with `git diff --exit-code`.
+e2e-tests/*/src/generated/
+!e2e-tests/behavior/src/generated/
+!e2e-tests/json-schema/src/generated/
+packages/beff-wasm/fixtures/codegen-snaps/**/*generated/

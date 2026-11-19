@@ -24,9 +24,6 @@ on:
         description: "Extra args for load.mjs (--scale)"
         required: false
         default: ""
-concurrency:
-  group: bench-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   bench:
     runs-on: ubuntu-22.04

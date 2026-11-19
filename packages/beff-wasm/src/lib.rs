@@ -74,12 +74,6 @@ pub fn bundle_to_string_v2(parser_entry_point: &str, settings: &str) -> JsValue 
 }
 
 #[wasm_bindgen]
-pub fn bundle_to_diagnostics(parser_entry_point: &str, settings: &str) -> JsValue {
-    let v = bundle_to_diagnostics_inner(parse_entrypoints(parser_entry_point, settings));
-    let json_str = serde_json::to_string(&v).expect("should be able to serialize diagnostics");
-    JsValue::from_str(&json_str)
-}
-#[wasm_bindgen]
 pub fn update_file_content(file_name: &str, content: &str) {
     update_file_content_inner(file_name, content)
 }
@@ -157,10 +151,6 @@ fn bundle_to_string_inner(entry: EntryPoints) -> Result<String> {
     }
     print_errors(&res.errors);
     Err(anyhow!("Failed to bundle"))
-}
-
-fn bundle_to_diagnostics_inner(entry: EntryPoints) -> WasmDiagnostic {
-    WasmDiagnostic::from_diagnostics(&run_extraction(entry).errors)
 }
 
 fn update_file_content_inner(file_name: &str, content: &str) {
