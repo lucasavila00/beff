@@ -61,6 +61,58 @@ pub(crate) struct FrontendCtx<'a, R: FileManager> {
 /// recursively, so long chains of references don't overflow the stack.
 const MAX_NESTED_NAMED_TYPES: usize = 32;
 
+/// The kind of a custom format (`StringFormat` or `NumberFormat`), with its diagnostics.
+#[derive(Clone, Copy)]
+enum FormatKind {
+    String,
+    Number,
+}
+
+impl FormatKind {
+    fn is_registered(self, settings: &BeffUserSettings, name: &str) -> bool {
+        match self {
+            FormatKind::String => settings.has_string_format(name),
+            FormatKind::Number => settings.has_number_format(name),
+        }
+    }
+    fn runtype(self, format: CustomFormat) -> Runtype {
+        match self {
+            FormatKind::String => Runtype::string_with_format(format),
+            FormatKind::Number => Runtype::number_with_format(format),
+        }
+    }
+    fn diagnostics(self) -> FormatDiagnostics {
+        match self {
+            FormatKind::String => FormatDiagnostics {
+                not_registered: DiagnosticInfoMessage::CustomStringIsNotRegistered,
+                invalid_usage: DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter,
+                invalid_usage_of_extends:
+                    DiagnosticInfoMessage::InvalidUsageOfStringFormatExtendsTypeParameter,
+                cannot_find_base: DiagnosticInfoMessage::CannotNotFindBaseOfStringFormatExtends,
+                base_is_not_format:
+                    DiagnosticInfoMessage::BaseOfStringFormatExtendsShouldBeStringFormat,
+            },
+            FormatKind::Number => FormatDiagnostics {
+                not_registered: DiagnosticInfoMessage::CustomNumberIsNotRegistered,
+                invalid_usage: DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
+                invalid_usage_of_extends:
+                    DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter,
+                cannot_find_base: DiagnosticInfoMessage::CannotNotFindBaseOfNumberFormatExtends,
+                base_is_not_format:
+                    DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat,
+            },
+        }
+    }
+}
+
+struct FormatDiagnostics {
+    not_registered: DiagnosticInfoMessage,
+    invalid_usage: DiagnosticInfoMessage,
+    invalid_usage_of_extends: DiagnosticInfoMessage,
+    cannot_find_base: DiagnosticInfoMessage,
+    base_is_not_format: DiagnosticInfoMessage,
+}
+
 struct PendingNamedType {
     uuid: RuntypeUUID,
     name: RuntypeName,
@@ -568,13 +620,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray,
                     ),
                 },
-                TsBuiltIn::StringFormat => self.get_string_with_format(&type_args, anchor),
-                TsBuiltIn::StringFormatExtends => {
-                    self.get_string_format_extends(&type_args, anchor)
+                TsBuiltIn::StringFormat => {
+                    self.get_with_format(FormatKind::String, &type_args, anchor)
                 }
-                TsBuiltIn::NumberFormat => self.get_number_with_format(&type_args, anchor),
+                TsBuiltIn::StringFormatExtends => {
+                    self.get_format_extends(FormatKind::String, &type_args, anchor)
+                }
+                TsBuiltIn::NumberFormat => {
+                    self.get_with_format(FormatKind::Number, &type_args, anchor)
+                }
                 TsBuiltIn::NumberFormatExtends => {
-                    self.get_number_format_extends(&type_args, anchor)
+                    self.get_format_extends(FormatKind::Number, &type_args, anchor)
                 }
                 TsBuiltIn::Object => Ok(Runtype::any_object()),
                 TsBuiltIn::Record => {
@@ -868,51 +924,50 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(Runtype::ref_(addr))
     }
 
-    fn get_string_with_format(&mut self, type_args: &[Runtype], anchor: &Anchor) -> Res<Runtype> {
+    fn get_with_format(
+        &mut self,
+        kind: FormatKind,
+        type_args: &[Runtype],
+        anchor: &Anchor,
+    ) -> Res<Runtype> {
         if let [head] = type_args
             && let Some(value) = head.as_string_const()
         {
             let val_str = value.to_string();
-            if self.settings.has_string_format(&val_str) {
-                return Ok(Runtype::string_with_format(CustomFormat(val_str, vec![])));
+            if kind.is_registered(self.settings, &val_str) {
+                return Ok(kind.runtype(CustomFormat(val_str, vec![])));
             } else {
-                return self.error(anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
+                return self.error(anchor, kind.diagnostics().not_registered);
             }
         }
-        self.error(
-            anchor,
-            DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter,
-        )
+        self.error(anchor, kind.diagnostics().invalid_usage)
     }
-    fn get_string_format_base_formats(
+    fn get_format_base_formats(
         &mut self,
+        kind: FormatKind,
         schema: &Runtype,
         anchor: &Anchor,
     ) -> Res<(String, Vec<String>)> {
-        match &schema.kind {
-            RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => {
+        match (kind, &schema.kind) {
+            (FormatKind::String, RuntypeKind::StringWithFormat(CustomFormat(first, rest)))
+            | (FormatKind::Number, RuntypeKind::NumberWithFormat(CustomFormat(first, rest))) => {
                 Ok((first.clone(), rest.clone()))
             }
-            RuntypeKind::Ref(r) => {
+            (_, RuntypeKind::Ref(r)) => {
                 let v = self.resolved_validator(r);
                 if let Some(v) = v {
-                    self.get_string_format_base_formats(&v, anchor)
+                    self.get_format_base_formats(kind, &v, anchor)
                 } else {
-                    self.error(
-                        anchor,
-                        DiagnosticInfoMessage::CannotNotFindBaseOfStringFormatExtends,
-                    )
+                    self.error(anchor, kind.diagnostics().cannot_find_base)
                 }
             }
-            _ => self.error(
-                anchor,
-                DiagnosticInfoMessage::BaseOfStringFormatExtendsShouldBeStringFormat,
-            ),
+            _ => self.error(anchor, kind.diagnostics().base_is_not_format),
         }
     }
 
-    fn get_string_format_extends(
+    fn get_format_extends(
         &mut self,
+        kind: FormatKind,
         type_params: &[Runtype],
         anchor: &Anchor,
     ) -> Res<Runtype> {
@@ -920,82 +975,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             && let Some(value) = next_str.as_string_const()
         {
             let next_str = value.to_string();
-            if self.settings.has_string_format(&next_str) {
-                let (first, mut rest) = self.get_string_format_base_formats(base, anchor)?;
+            if kind.is_registered(self.settings, &next_str) {
+                let (first, mut rest) = self.get_format_base_formats(kind, base, anchor)?;
                 rest.push(next_str);
-                return Ok(Runtype::string_with_format(CustomFormat(first, rest)));
+                return Ok(kind.runtype(CustomFormat(first, rest)));
             } else {
-                return self.error(anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
+                return self.error(anchor, kind.diagnostics().not_registered);
             }
         }
-        self.error(
-            anchor,
-            DiagnosticInfoMessage::InvalidUsageOfStringFormatExtendsTypeParameter,
-        )
-    }
-    fn get_number_with_format(&mut self, type_args: &[Runtype], anchor: &Anchor) -> Res<Runtype> {
-        if let [head] = type_args
-            && let Some(value) = head.as_string_const()
-        {
-            let val_str = value.to_string();
-            if self.settings.has_number_format(&val_str) {
-                return Ok(Runtype::number_with_format(CustomFormat(val_str, vec![])));
-            } else {
-                return self.error(anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
-            }
-        }
-        self.error(
-            anchor,
-            DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
-        )
-    }
-    fn get_number_format_base_formats(
-        &mut self,
-        schema: &Runtype,
-        anchor: &Anchor,
-    ) -> Res<(String, Vec<String>)> {
-        match &schema.kind {
-            RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => {
-                Ok((first.clone(), rest.clone()))
-            }
-            RuntypeKind::Ref(r) => {
-                let v = self.resolved_validator(r);
-                if let Some(v) = v {
-                    self.get_number_format_base_formats(&v, anchor)
-                } else {
-                    self.error(
-                        anchor,
-                        DiagnosticInfoMessage::CannotNotFindBaseOfNumberFormatExtends,
-                    )
-                }
-            }
-            _ => self.error(
-                anchor,
-                DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat,
-            ),
-        }
-    }
-    fn get_number_format_extends(
-        &mut self,
-        type_params: &[Runtype],
-        anchor: &Anchor,
-    ) -> Res<Runtype> {
-        if let [base, next_str] = type_params
-            && let Some(value) = next_str.as_string_const()
-        {
-            let next_str = value.to_string();
-            if self.settings.has_number_format(&next_str) {
-                let (first, mut rest) = self.get_number_format_base_formats(base, anchor)?;
-                rest.push(next_str);
-                return Ok(Runtype::number_with_format(CustomFormat(first, rest)));
-            } else {
-                return self.error(anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
-            }
-        }
-        self.error(
-            anchor,
-            DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter,
-        )
+        self.error(anchor, kind.diagnostics().invalid_usage_of_extends)
     }
 
     fn extract_type_from_ts_entity_name(
