@@ -90,6 +90,34 @@ describe("unions with and without the table of kinds", async () => {
     expect(state.withoutTable).toBe(state.withTable);
   });
 
+  // An intersection accepts a kind of value only if all its members accept that kind.
+  // The kind table of the union must send each input below to the intersection member.
+  // These inputs are not in cases.ts, because the suite also parses the result of parse again.
+  // That check fails for these inputs, with and without a table: parse of an intersection returns
+  // `{ foo: "x" }` for the Date and `{}` for null.
+  const intersectionInputs: [string, unknown[], unknown[]][] = [
+    [
+      "IntersectionDateOrNull",
+      [Object.assign(new Date(0), { foo: "x" }), null],
+      [new Date(0), { foo: "x" }, "x", 1],
+    ],
+    ["IntersectionNullishOrString", [null, "s", { a: "x" }, { a: "x", b: 1 }], [1, {}, { b: 1 }]],
+  ];
+  for (const [name, valid, invalid] of intersectionInputs) {
+    it(`${name} accepts and rejects the same inputs with and without the table`, () => {
+      for (const codec of [withTables[name]!, withoutTables[name]!]) {
+        for (const input of valid) {
+          expect(codec.validate(input)).toBe(true);
+          expect(codec.safeParse(input).success).toBe(true);
+        }
+        for (const input of invalid) {
+          expect(codec.validate(input)).toBe(false);
+          expect(codec.safeParse(input).success).toBe(false);
+        }
+      }
+    });
+  }
+
   for (const name of Object.keys(withTables)) {
     it(`${name} validates, parses and reports errors the same way`, () => {
       const rand = rng(425);

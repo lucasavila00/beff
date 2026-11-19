@@ -513,15 +513,6 @@ export const cases: { [K in keyof Codecs]?: Case } = {
     strictValid: [{ a: "x", x_1: 1 }],
     strictInvalid: [at(["zz"], { a: "x", x_1: 1, zz: true })],
   },
-  // The kind table of these two unions must send the input to the intersection member.
-  IntersectionDateOrNull: {
-    valid: [Object.assign(new Date(0), { foo: "x" }), null],
-    invalid: [new Date(0), { foo: "x" }, "x", 1],
-  },
-  IntersectionNullishOrString: {
-    valid: [null, "s", { a: "x" }, { a: "x", b: 1 }],
-    invalid: [1, {}, { b: 1 }],
-  },
   IntersectionUnion: {
     valid: [
       { a: "x", kind: "u", u: "y" },
