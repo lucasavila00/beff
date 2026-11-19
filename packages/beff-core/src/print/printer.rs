@@ -7,9 +7,10 @@ use swc_common::SyntaxContext;
 use swc_common::{FilePathMapping, sync::Lrc};
 use swc_ecma_ast::Module;
 use swc_ecma_ast::{
-    ArrayLit, BindingIdent, ComputedPropName, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit,
-    ModuleItem, NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str,
-    VarDecl, VarDeclKind, VarDeclarator,
+    ArrayLit, BindingIdent, CallExpr, Callee, ComputedPropName, Decl, Expr, ExprOrSpread, ExprStmt,
+    Ident, IdentName, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null,
+    ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str, VarDecl, VarDeclKind,
+    VarDeclarator,
 };
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
@@ -396,6 +397,7 @@ fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext, original_runtype: &Runt
         vec![
             //
             string_lit(&ctx.print_rt_name(to)),
+            Expr::Ident(identifier("namedRuntypes")),
         ],
         original_runtype,
     )
@@ -413,6 +415,7 @@ fn no_args_runtype(class_name: &str, original_runtype: &Runtype) -> Expr {
 
 fn formats_runtype(
     constructor: &str,
+    formatters: &str,
     first: &String,
     rest: &[String],
     original_runtype: &Runtype,
@@ -423,7 +426,11 @@ fn formats_runtype(
             .map(|it| string_lit(it))
             .collect(),
     );
-    new_runtype_class(constructor, vec![vs_arr], original_runtype)
+    new_runtype_class(
+        constructor,
+        vec![vs_arr, Expr::Ident(identifier(formatters))],
+        original_runtype,
+    )
 }
 
 // Object keys are always strings. A `number` key is printed as a runtype
@@ -803,12 +810,20 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
         RuntypeKind::Const(c) => {
             new_runtype_class("ConstRuntype", vec![c.clone().into_json().into_expr()], schema)
         }
-        RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => {
-            formats_runtype("StringWithFormatRuntype", first, rest, schema)
-        }
-        RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => {
-            formats_runtype("NumberWithFormatRuntype", first, rest, schema)
-        }
+        RuntypeKind::StringWithFormat(CustomFormat(first, rest)) => formats_runtype(
+            "StringWithFormatRuntype",
+            "stringFormatters",
+            first,
+            rest,
+            schema,
+        ),
+        RuntypeKind::NumberWithFormat(CustomFormat(first, rest)) => formats_runtype(
+            "NumberWithFormatRuntype",
+            "numberFormatters",
+            first,
+            rest,
+            schema,
+        ),
         RuntypeKind::Date => no_args_runtype("DateRuntype", schema),
         RuntypeKind::BigInt => no_args_runtype("BigIntRuntype", schema),
         RuntypeKind::TypedArray(kind) => new_runtype_class(
@@ -996,10 +1011,36 @@ impl ParserExtractResult {
             build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
         );
 
-        let build_named_parsers_input = const_decl(
-            "namedRuntypes",
-            named_runtypes(&named_schemas, &mut hoisted),
-        );
+        // The runtypes get these objects when they are created, so they are declared first.
+        // namedRuntypes is filled after the runtypes. buildParsers fills the format tables.
+        let declare_tables = vec![
+            const_decl("namedRuntypes", object_lit(vec![])),
+            const_decl("stringFormatters", object_lit(vec![])),
+            const_decl("numberFormatters", object_lit(vec![])),
+        ];
+        let fill_named_runtypes = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                ctxt: SyntaxContext::empty(),
+                callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+                    span: DUMMY_SP,
+                    obj: Box::new(Expr::Ident(identifier("Object"))),
+                    prop: MemberProp::Ident(IdentName::new("assign".into(), DUMMY_SP)),
+                }))),
+                args: vec![
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::Ident(identifier("namedRuntypes"))),
+                    },
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(named_runtypes(&named_schemas, &mut hoisted)),
+                    },
+                ],
+                type_args: None,
+            })),
+        }));
 
         let mut sorted_direct_hoisted_values = hoisted.hoisted.into_values().collect::<Vec<_>>();
         sorted_direct_hoisted_values.sort_by_key(|it| it.0);
@@ -1009,11 +1050,12 @@ impl ParserExtractResult {
             .map(|(id, expr)| const_decl(&hoist_name(id), expr))
             .collect();
 
-        let module_items = hoisted_direct_decls
+        let module_items = declare_tables
             .into_iter()
+            .chain(hoisted_direct_decls)
             .chain(vec![
                 //
-                build_named_parsers_input,
+                fill_named_runtypes,
                 build_parsers_input,
             ])
             .collect();

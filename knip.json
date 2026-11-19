@@ -13,8 +13,8 @@
       "ignoreDependencies": ["@beff/cli"]
     },
     "packages/beff-wasm": {
-      "entry": ["ts-node/commandeer.ts", "script/*.js", "bundled-code/codegen-v2.js"],
-      "project": ["ts-node/**/*.ts", "script/**/*.js", "bundled-code/**/*.js"],
+      "entry": ["ts-node/commandeer.ts", "script/*.js"],
+      "project": ["ts-node/**/*.ts", "script/**/*.js"],
       "ignore": ["ts-node/tsc-slim/**"],
       "ignoreDependencies": ["esbuild"]
     },

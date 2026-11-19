@@ -616,7 +616,7 @@ function renderObjectMember(member: { docText?: string; member: string }): strin
 }
 
 function collectDescribeRefs(runtype: Runtype, ctx: DescribeContext): void {
-  if (runtype instanceof BaseRefRuntype) {
+  if (runtype instanceof RefRuntype) {
     runtype.collectDescribeRefs(ctx);
     return;
   }
@@ -884,17 +884,25 @@ export class TypedArrayRuntype extends BaseRuntype {
   }
 }
 
-export abstract class BaseStringWithFormatRuntype extends BaseRuntype {
+export class StringWithFormatRuntype extends BaseRuntype {
   private formats: string[];
+  private stringFormatters: Record<string, RegisteredStringFormat>;
 
-  constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
+  constructor(
+    metadata: RuntypeMetadata | undefined,
+    formats: string[],
+    stringFormatters: Record<string, RegisteredStringFormat>,
+  ) {
     super(metadata);
     this.formats = formats;
+    this.stringFormatters = stringFormatters;
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return describeFormats("String", this.formats);
   }
-  abstract getStringFormatters(): Record<string, RegisteredStringFormat>;
+  getStringFormatters(): Record<string, RegisteredStringFormat> {
+    return this.stringFormatters;
+  }
   schema(_ctx: SchemaContext): JSONSchema7 {
     const finalFormat = this.formats[this.formats.length - 1];
     return annotateSchema(this.metadata, {
@@ -937,16 +945,24 @@ export abstract class BaseStringWithFormatRuntype extends BaseRuntype {
   }
 }
 
-export abstract class BaseNumberWithFormatRuntype extends BaseRuntype {
+export class NumberWithFormatRuntype extends BaseRuntype {
   private formats: string[];
-  constructor(metadata: RuntypeMetadata | undefined, formats: string[]) {
+  private numberFormatters: Record<string, RegisteredNumberFormat>;
+  constructor(
+    metadata: RuntypeMetadata | undefined,
+    formats: string[],
+    numberFormatters: Record<string, RegisteredNumberFormat>,
+  ) {
     super(metadata);
     this.formats = formats;
+    this.numberFormatters = numberFormatters;
   }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return describeFormats("Number", this.formats);
   }
-  abstract getNumberFormatters(): Record<string, RegisteredNumberFormat>;
+  getNumberFormatters(): Record<string, RegisteredNumberFormat> {
+    return this.numberFormatters;
+  }
   schema(_ctx: SchemaContext): JSONSchema7 {
     const finalFormat = this.formats[this.formats.length - 1];
     return annotateSchema(this.metadata, {
@@ -1553,7 +1569,7 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
   }
 
   private getRefTarget(runtype: Runtype): { name: string; target: Runtype } | null {
-    if (!(runtype instanceof BaseRefRuntype)) {
+    if (!(runtype instanceof RefRuntype)) {
       return null;
     }
 
@@ -1999,13 +2015,21 @@ export class ObjectRuntype extends BaseRuntype {
     );
   }
 }
-export abstract class BaseRefRuntype extends BaseRuntype {
+export class RefRuntype extends BaseRuntype {
   refName: string;
-  constructor(metadata: RuntypeMetadata | undefined, refName: string) {
+  private namedRuntypes: Record<string, Runtype>;
+  constructor(
+    metadata: RuntypeMetadata | undefined,
+    refName: string,
+    namedRuntypes: Record<string, Runtype>,
+  ) {
     super(metadata);
     this.refName = refName;
+    this.namedRuntypes = namedRuntypes;
   }
-  abstract getNamedRuntypes(): Record<string, Runtype>;
+  getNamedRuntypes(): Record<string, Runtype> {
+    return this.namedRuntypes;
+  }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return this.refName;
   }
@@ -2084,17 +2108,12 @@ export abstract class BaseRefRuntype extends BaseRuntype {
 
 const namedRuntypes: Record<string, Runtype> = {};
 
-class RuntimeRefRuntype extends BaseRefRuntype {
-  getNamedRuntypes(): Record<string, Runtype> {
-    return namedRuntypes;
-  }
-}
 const createNamedTypeImpl = (name: string, runtype: Runtype) => {
   if (name in namedRuntypes) {
     throw new Error(`Named type ${name} already exists`);
   }
   namedRuntypes[name] = runtype;
-  return buildParserFromRuntype(new RuntimeRefRuntype(undefined, name), name, false);
+  return buildParserFromRuntype(new RefRuntype(undefined, name, namedRuntypes), name, false);
 };
 export const createNamedType = <T>(name: string, p: BeffParser<T>): BeffParser<T> => {
   return createNamedTypeImpl(name, (p as ParserFromRuntype)._runtype);
@@ -2195,3 +2214,45 @@ export const buildParserFromRuntype = (
   name: string,
   hideTypeNameInDescribe: boolean,
 ): BeffParser<any> => new ParserFromRuntype(runtype, name, hideTypeNameInDescribe);
+
+// The generated parser.js calls this with its own runtypes, format tables and required format names.
+export const buildParsers = (
+  generated: {
+    parsers: Record<string, Runtype>;
+    stringFormatters: Record<string, RegisteredStringFormat>;
+    numberFormatters: Record<string, RegisteredNumberFormat>;
+    requiredStringFormats: string[];
+    requiredNumberFormats: string[];
+  },
+  args?: {
+    stringFormats?: Record<string, UserProvidedStringFormat>;
+    numberFormats?: Record<string, UserProvidedNumberFormat>;
+  },
+): Record<string, BeffParser<any>> => {
+  const stringFormats = args?.stringFormats ?? {};
+  for (const k of generated.requiredStringFormats) {
+    if (stringFormats[k] == null) {
+      throw new Error(`Missing custom format ${k}`);
+    }
+  }
+  Object.keys(stringFormats).forEach((k) => {
+    const v = stringFormats[k];
+    registerStringFormatter(generated.stringFormatters, k, v);
+  });
+  const numberFormats = args?.numberFormats ?? {};
+  for (const k of generated.requiredNumberFormats) {
+    if (numberFormats[k] == null) {
+      throw new Error(`Missing custom format ${k}`);
+    }
+  }
+  Object.keys(numberFormats).forEach((k) => {
+    const v = numberFormats[k];
+    registerNumberFormatter(generated.numberFormatters, k, v);
+  });
+  let acc: Record<string, BeffParser<any>> = {};
+  for (const k of Object.keys(generated.parsers)) {
+    const it = buildParserFromRuntype(generated.parsers[k], k, false);
+    acc[k] = it;
+  }
+  return acc;
+};
