@@ -110,7 +110,7 @@ user instanceof Person;
 
 The same rule applies to other objects that are not plain objects, for example a `Date` object or a `Map` object. Arrays are the exception: an array is not valid for an object type.
 
-CAUTION: `validate` also reads the properties that an object gets from its prototype, for example a getter of a class. `parse` copies only the own enumerable properties. Thus, the result of `parse` does not have a property that comes from the prototype, although the type shows that property. Change such instances to plain objects before you parse them.
+CAUTION: `validate` also reads the properties that an object gets from its prototype, for example a getter of a class. `parse` copies only the own enumerable properties. Thus, the result of `parse` does not have a property that comes from the prototype, although the type shows that property.
 
 ## `zod`
 
