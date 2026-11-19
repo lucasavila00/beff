@@ -1293,14 +1293,13 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
 }
 
 export function union(members: Runtype[]): Runtype {
-  const count = members.length;
   const vs = members.map((it) => it.v);
   const ps = members.map((it) => it.p);
   const rs = members.map((it) => it.r);
   return node(
     0,
     (c, i) => {
-      for (let k = 0; k < count; k++) {
+      for (let k = 0; k < vs.length; k++) {
         if (vs[k](c, i)) {
           return true;
         }
@@ -1309,7 +1308,7 @@ export function union(members: Runtype[]): Runtype {
     },
     (c, i) => {
       const items = [];
-      for (let k = 0; k < count; k++) {
+      for (let k = 0; k < vs.length; k++) {
         if (vs[k](c, i)) {
           items.push(ps[k](c, i));
         }
@@ -1323,7 +1322,7 @@ export function union(members: Runtype[]): Runtype {
       const branchErrors: DecodeError[][] = [];
       const oldPaths = c.path;
       c.path = [];
-      for (let k = 0; k < count; k++) {
+      for (let k = 0; k < vs.length; k++) {
         branchErrors.push(rs[k](c, i));
       }
       c.path = oldPaths;
@@ -1687,6 +1686,34 @@ function parseIndexed(indexed: Indexed, c: Ctx, acc: Record<string, unknown>, k:
   }
 }
 
+// Parse with `objectKeyOrder: "sorted"`.
+function parseSorted(
+  fields: any[],
+  index: Record<string, number | undefined>,
+  indexed: Indexed,
+  c: Ctx,
+  i: any,
+): unknown {
+  const acc: any = {};
+  for (const k of Object.keys(index).sort()) {
+    if (!hasOwn.call(i, k)) {
+      continue;
+    }
+    const x = i[k];
+    const j = index[k]!;
+    setOwnProperty(acc, k, x == null && fields[j + 1] ? x : fields[j + 3](c, x));
+  }
+
+  if (indexed.length > 0) {
+    for (const k of Object.keys(i)
+      .filter((k) => index[k] === undefined)
+      .sort()) {
+      parseIndexed(indexed, c, acc, k, i[k]);
+    }
+  }
+  return acc;
+}
+
 function hasExtraKeys(index: Record<string, number | undefined>, i: object): boolean {
   for (const k of Object.keys(i)) {
     if (index[k] === undefined) {
@@ -1697,30 +1724,29 @@ function hasExtraKeys(index: Record<string, number | undefined>, i: object): boo
 }
 
 export function obj(properties: Record<string, Runtype>, indexed: Indexed = []): Runtype {
-  // The properties as parallel arrays. An optional property keeps the functions of its inner type, and
-  // `optional` says that it also accepts null and undefined.
   const keys = Object.keys(properties);
-  const count = keys.length;
-  const optional = keys.map((k) => properties[k].t === T_OPT);
-  const inner = keys.map((k, j) => (optional[j] ? properties[k].kids()[0] : properties[k]));
-  const vs = inner.map((it) => it.v);
-  const ps = inner.map((it) => it.p);
-  // The position of each property. It has no prototype, so only the keys of `properties` are in it.
+  // Four items for each property: the key, whether it is optional, and the validate and parse functions.
+  // An optional property has the functions of its inner type. The hot functions read only this array,
+  // so they keep few values on the stack: validation of deep inputs must not overflow the stack.
+  const fields: any[] = [];
+  // The position of each property in `fields`. It has no prototype, so only the keys of `properties` are in it.
   const index: Record<string, number | undefined> = Object.create(null);
-  keys.forEach((k, j) => {
-    index[k] = j;
-  });
+  for (const k of keys) {
+    const optional = properties[k].t === T_OPT;
+    const inner = optional ? properties[k].kids()[0] : properties[k];
+    index[k] = fields.length;
+    fields.push(k, optional, inner.v, inner.p);
+  }
   const hasIndexed = indexed.length > 0;
-  // There is one validate function for objects with an index signature and one for objects without. Each is
-  // small, so that it needs little stack: validation of deep inputs must not overflow the stack.
+  // There is one validate function for objects with an index signature and one for objects without.
   const v: Validate = hasIndexed
     ? (c, i) => {
         if (typeof i !== "object" || i === null || Array.isArray(i)) {
           return false;
         }
-        for (let j = 0; j < count; j++) {
-          const x = i[keys[j]];
-          if (!(x == null && optional[j]) && !vs[j](c, x)) {
+        for (let j = 0; j < fields.length; j += 4) {
+          const x = i[fields[j]];
+          if (!(x == null && fields[j + 1]) && !fields[j + 2](c, x)) {
             return false;
           }
         }
@@ -1745,9 +1771,9 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
         if (typeof i !== "object" || i === null || Array.isArray(i)) {
           return false;
         }
-        for (let j = 0; j < count; j++) {
-          const x = i[keys[j]];
-          if (!(x == null && optional[j]) && !vs[j](c, x)) {
+        for (let j = 0; j < fields.length; j += 4) {
+          const x = i[fields[j]];
+          if (!(x == null && fields[j + 1]) && !fields[j + 2](c, x)) {
             return false;
           }
         }
@@ -1757,36 +1783,21 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
     0,
     v,
     (c, i) => {
+      if (c.objectKeyOrder !== "input") {
+        return parseSorted(fields, index, indexed, c, i);
+      }
       const acc: any = {};
       const inputKeys = Object.keys(i);
-
-      if (c.objectKeyOrder === "input") {
-        for (const k of inputKeys) {
-          const x = i[k];
-          const j = index[k];
-          if (j !== undefined) {
-            setOwnProperty(acc, k, x == null && optional[j] ? x : ps[j](c, x));
-          } else if (hasIndexed) {
-            parseIndexed(indexed, c, acc, k, x);
-          }
-        }
-      } else {
-        for (const k of [...keys].sort()) {
-          if (!hasOwn.call(i, k)) {
-            continue;
-          }
-          const x = i[k];
-          const j = index[k]!;
-          setOwnProperty(acc, k, x == null && optional[j] ? x : ps[j](c, x));
-        }
-
-        if (hasIndexed) {
-          for (const k of inputKeys.filter((k) => index[k] === undefined).sort()) {
-            parseIndexed(indexed, c, acc, k, i[k]);
-          }
+      for (let n = 0; n < inputKeys.length; n++) {
+        const k = inputKeys[n];
+        const x = i[k];
+        const j = index[k];
+        if (j !== undefined) {
+          setOwnProperty(acc, k, x == null && fields[j + 1] ? x : fields[j + 3](c, x));
+        } else if (hasIndexed) {
+          parseIndexed(indexed, c, acc, k, x);
         }
       }
-
       return acc;
     },
     (c, i) => {
@@ -1796,10 +1807,10 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
 
       const acc: DecodeError[] = [];
 
-      for (let j = 0; j < count; j++) {
-        const x = i[keys[j]];
-        if (!(x == null && optional[j])) {
-          reportAtPath(c, acc, keys[j], vs[j], properties[keys[j]].r, x);
+      for (let j = 0; j < fields.length; j += 4) {
+        const x = i[fields[j]];
+        if (!(x == null && fields[j + 1])) {
+          reportAtPath(c, acc, fields[j], fields[j + 2], properties[fields[j]].r, x);
         }
       }
 
@@ -1900,7 +1911,7 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
       }
 
       // special case for Record<string, T> with no named properties
-      if (count === 0 && indexSchemas.length === 1) {
+      if (keys.length === 0 && indexSchemas.length === 1) {
         const valueRuntype = indexed[0].value;
 
         // Record<string, never> -> empty closed object (keys don't matter)
@@ -1934,7 +1945,7 @@ export function obj(properties: Record<string, Runtype>, indexed: Indexed = []):
     },
     (ctx) => {
       ctx.writer.updateTag("object");
-      ctx.writer.updateNumber(count);
+      ctx.writer.updateNumber(keys.length);
       for (const key of [...keys].sort()) {
         const parser = properties[key];
         ctx.writer.updateString(key);
