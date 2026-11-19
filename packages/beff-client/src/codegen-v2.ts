@@ -1694,13 +1694,16 @@ function setOwnProperty(target: Record<string, unknown>, key: string, value: unk
 
 type Indexed = Array<{ key: Runtype; value: Runtype }>;
 
-// `object` keeps its properties in one flat array, a PropertyList. Each property uses PROPERTY_SIZE items of
-// the array, at these offsets.
-const PROPERTY_KEY = 0;
-const PROPERTY_OPTIONAL = 1;
-const PROPERTY_VALIDATE = 2;
-const PROPERTY_PARSE = 3;
-const PROPERTY_SIZE = 4;
+// `object` keeps its properties in one flat array, a PropertyList. Each property uses PropertyOffset.Size items
+// of the array, at these offsets. It is a const enum, so the compiler writes the numbers into the code: the hot
+// loops do not read a variable for them.
+const enum PropertyOffset {
+  Key = 0,
+  Optional = 1,
+  Validate = 2,
+  Parse = 3,
+  Size = 4,
+}
 type PropertyList = Array<string | boolean | Validate | Parse>;
 // The position of each property in a PropertyList.
 type PropertyPositions = Record<string, number | undefined>;
@@ -1743,9 +1746,9 @@ function parseSorted(
     setOwnProperty(
       acc,
       key,
-      value == null && propertyList[position + PROPERTY_OPTIONAL]
+      value == null && propertyList[position + PropertyOffset.Optional]
         ? value
-        : (propertyList[position + PROPERTY_PARSE] as Parse)(ctx, value),
+        : (propertyList[position + PropertyOffset.Parse] as Parse)(ctx, value),
     );
   }
 
@@ -1791,11 +1794,11 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
         if (typeof input !== "object" || input === null || Array.isArray(input)) {
           return false;
         }
-        for (let position = 0; position < propertyList.length; position += PROPERTY_SIZE) {
-          const value = input[propertyList[position + PROPERTY_KEY] as string];
+        for (let position = 0; position < propertyList.length; position += PropertyOffset.Size) {
+          const value = input[propertyList[position + PropertyOffset.Key] as string];
           if (
-            !(value == null && propertyList[position + PROPERTY_OPTIONAL]) &&
-            !(propertyList[position + PROPERTY_VALIDATE] as Validate)(ctx, value)
+            !(value == null && propertyList[position + PropertyOffset.Optional]) &&
+            !(propertyList[position + PropertyOffset.Validate] as Validate)(ctx, value)
           ) {
             return false;
           }
@@ -1821,11 +1824,11 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
         if (typeof input !== "object" || input === null || Array.isArray(input)) {
           return false;
         }
-        for (let position = 0; position < propertyList.length; position += PROPERTY_SIZE) {
-          const value = input[propertyList[position + PROPERTY_KEY] as string];
+        for (let position = 0; position < propertyList.length; position += PropertyOffset.Size) {
+          const value = input[propertyList[position + PropertyOffset.Key] as string];
           if (
-            !(value == null && propertyList[position + PROPERTY_OPTIONAL]) &&
-            !(propertyList[position + PROPERTY_VALIDATE] as Validate)(ctx, value)
+            !(value == null && propertyList[position + PropertyOffset.Optional]) &&
+            !(propertyList[position + PropertyOffset.Validate] as Validate)(ctx, value)
           ) {
             return false;
           }
@@ -1853,9 +1856,9 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
           setOwnProperty(
             acc,
             key,
-            value == null && propertyList[position + PROPERTY_OPTIONAL]
+            value == null && propertyList[position + PropertyOffset.Optional]
               ? value
-              : (propertyList[position + PROPERTY_PARSE] as Parse)(ctx, value),
+              : (propertyList[position + PropertyOffset.Parse] as Parse)(ctx, value),
           );
         } else if (hasIndexed) {
           parseIndexed(indexed, ctx, acc, key, value);
@@ -1870,15 +1873,15 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
 
       const acc: DecodeError[] = [];
 
-      for (let position = 0; position < propertyList.length; position += PROPERTY_SIZE) {
-        const key = propertyList[position + PROPERTY_KEY] as string;
+      for (let position = 0; position < propertyList.length; position += PropertyOffset.Size) {
+        const key = propertyList[position + PropertyOffset.Key] as string;
         const value = input[key];
-        if (!(value == null && propertyList[position + PROPERTY_OPTIONAL])) {
+        if (!(value == null && propertyList[position + PropertyOffset.Optional])) {
           reportAtPath(
             ctx,
             acc,
             key,
-            propertyList[position + PROPERTY_VALIDATE] as Validate,
+            propertyList[position + PropertyOffset.Validate] as Validate,
             properties[key].reportErrors,
             value,
           );
