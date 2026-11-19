@@ -1516,8 +1516,11 @@ export class AnyOfRuntype extends BaseRuntype {
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
     const items = [];
-    for (const it of this.schemas) {
-      if (it.validate(ctx, input)) {
+    const last = this.schemas.length - 1;
+    for (let i = 0; i <= last; i++) {
+      const it = this.schemas[i];
+      // The input passed validate, so if no earlier branch matched, the last one does.
+      if ((i === last && items.length === 0) || it.validate(ctx, input)) {
         items.push(it.parseAfterValidation(ctx, input));
       }
     }
