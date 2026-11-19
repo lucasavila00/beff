@@ -128,7 +128,7 @@ type User = TypeOf<typeof Parsers.User>;
 
 ## Input that is not supported
 
-Beff is for plain data, for example the result of `JSON.parse`. Beff does not find the inputs below, and it does not support them. Change such a value to plain data before you give it to a validator.
+Beff is for plain data, for example the result of `JSON.parse`. Beff does not find the inputs below, and it does not support them.
 
 - **Cyclic values.** Beff does not find cycles. If a recursive type follows the cycle, `validate`, `parse`, and `safeParse` throw an error, for example a `RangeError` (stack overflow).
 - **Getters with side effects and proxies.** For a valid input, `parse` and `safeParse` read each property of the type two times or more: one time to validate it, and one time to make the result. If a getter or a proxy gives a different value each time, the result can contain a value that is not valid. If a getter throws an error, `validate`, `parse`, and `safeParse` throw the same error.
