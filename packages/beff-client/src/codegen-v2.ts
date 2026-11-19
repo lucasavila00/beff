@@ -1540,6 +1540,15 @@ function parseSorted(
   return acc;
 }
 
+// Makes the position table of a property list. It has no prototype, so only the keys of the list are in it.
+function positionsOf(propertyList: PropertyList): PropertyPositions {
+  const positions: PropertyPositions = Object.create(null);
+  for (let position = 0; position < propertyList.length; position += PropertyOffset.Size) {
+    positions[propertyList[position + PropertyOffset.Key] as string] = position;
+  }
+  return positions;
+}
+
 function hasExtraKeys(positions: PropertyPositions, input: object): boolean {
   for (const key of Object.keys(input)) {
     if (positions[key] === undefined) {
@@ -1557,12 +1566,12 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
   // the properties. Then each level of a deep input puts fewer values and calls on the stack, and validation
   // can go deeper before the stack overflows.
   const propertyList: PropertyList = [];
-  // It has no prototype, so only the keys of `properties` are in it.
-  const positions: PropertyPositions = Object.create(null);
+  // The position table is made by the first call that reads it: `validate` of an object without an index
+  // signature reads it only to find extra properties. An object that is never used does not get one.
+  let positions: PropertyPositions | undefined;
   for (const key of keys) {
     const optional = properties[key].tag === TAG_OPTIONAL;
     const inner = optional ? properties[key].children()[0] : properties[key];
-    positions[key] = propertyList.length;
     propertyList.push(key, optional, inner.validate, inner.parse);
   }
   const hasIndexed = indexed.length > 0;
@@ -1581,8 +1590,9 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
             return false;
           }
         }
+        const known = (positions ??= positionsOf(propertyList));
         for (const key of Object.keys(input)) {
-          if (positions[key] !== undefined) {
+          if (known[key] !== undefined) {
             continue;
           }
           let isValid = false;
@@ -1614,7 +1624,7 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
         return !(
           ctx.disallowExtraProperties &&
           ctx.intersectionInput !== input &&
-          hasExtraKeys(positions, input)
+          hasExtraKeys((positions ??= positionsOf(propertyList)), input)
         );
       };
   return node({
@@ -1622,14 +1632,15 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
     validate: validateObject,
     parse: (ctx, input) => {
       if (ctx.objectKeyOrder !== "input") {
-        return parseSorted(propertyList, positions, indexed, ctx, input);
+        return parseSorted(propertyList, (positions ??= positionsOf(propertyList)), indexed, ctx, input);
       }
+      const known = (positions ??= positionsOf(propertyList));
       const acc: any = {};
       const inputKeys = Object.keys(input);
       for (let keyIndex = 0; keyIndex < inputKeys.length; keyIndex++) {
         const key = inputKeys[keyIndex];
         const value = input[key];
-        const position = positions[key];
+        const position = known[key];
         if (position !== undefined) {
           setOwnProperty(
             acc,
@@ -1649,6 +1660,7 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
         return buildError(ctx, "expected object", input);
       }
 
+      const known = (positions ??= positionsOf(propertyList));
       const acc: DecodeError[] = [];
 
       for (let position = 0; position < propertyList.length; position += PropertyOffset.Size) {
@@ -1668,7 +1680,7 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
 
       if (hasIndexed) {
         for (const key of Object.keys(input)) {
-          if (positions[key] !== undefined || leavesKeyToIntersection(indexed, ctx, input, key)) {
+          if (known[key] !== undefined || leavesKeyToIntersection(indexed, ctx, input, key)) {
             continue;
           }
           for (const signature of indexed) {
@@ -1687,7 +1699,7 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
           }
         }
       } else if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
-        const extraKeys = Object.keys(input).filter((key) => positions[key] === undefined);
+        const extraKeys = Object.keys(input).filter((key) => known[key] === undefined);
         if (extraKeys.length > 0) {
           return extraKeys.flatMap((key) => {
             pushPath(ctx, key);
