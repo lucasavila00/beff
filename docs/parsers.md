@@ -1,6 +1,6 @@
 # Parsers
 
-`buildParsers` returns an object of validators. Each validator has the type `BeffParser<T>`. This page describes the methods of `BeffParser<T>`.
+`buildParsers` returns an object of validators. Each validator has the type `BeffParser<T>`. This page describes the methods of `BeffParser<T>`. The validators are for data such as the result of `JSON.parse`, and for values of the types that Beff supports, such as `Date`, `Map` and `Set`.
 
 | Method                                       | Return value                                                 |
 | -------------------------------------------- | ------------------------------------------------------------ |
