@@ -15,8 +15,8 @@ const {
   RegexRuntype,
   DateRuntype,
   BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
+  BaseStringWithFormatRuntype,
+  BaseNumberWithFormatRuntype,
   AnyOfConstsRuntype,
   TupleRuntype,
   AllOfRuntype,
@@ -41,6 +41,21 @@ class RefRuntype extends BaseRefRuntype  {
   }
 }
 
+const stringFormatters = {};
+const numberFormatters = {};
+
+class StringWithFormatRuntype extends BaseStringWithFormatRuntype {
+  getStringFormatters() {
+    return stringFormatters;
+  }
+}
+
+class NumberWithFormatRuntype extends BaseNumberWithFormatRuntype {
+  getNumberFormatters() {
+    return numberFormatters;
+  }
+}
+
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -50,7 +65,7 @@ const buildParsers = (args) => {
   }
   Object.keys(stringFormats).forEach((k) => {
     const v = stringFormats[k];
-    registerStringFormatter(k, v);
+    registerStringFormatter(stringFormatters, k, v);
   });
   const numberFormats = args?.numberFormats ?? {};
   for (const k of RequiredNumberFormats) {
@@ -60,7 +75,7 @@ const buildParsers = (args) => {
   }
   Object.keys(numberFormats).forEach((k) => {
     const v = numberFormats[k];
-    registerNumberFormatter(k, v);
+    registerNumberFormatter(numberFormatters, k, v);
   });
   let acc = {};
   for (const k of Object.keys(buildParsersInput)) {
