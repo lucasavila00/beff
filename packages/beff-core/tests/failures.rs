@@ -1609,4 +1609,74 @@ mod tests {
         ───╯
         ");
     }
+
+    #[test]
+    fn intersection_of_date_with_object() {
+        let from = r#"
+    type T = Date & { foo: string };
+    parse.buildParsers<{ T: T }>();
+  "#;
+        insta::assert_snapshot!(failure(from), @"
+        Error: `Date & { foo: string }`: Beff does not support an intersection of Date with an object type. A Date value cannot also be a plain object, so Beff cannot validate or parse it.
+           ╭─[entry.ts:2:15]
+           │
+         2 │     type T = Date & { foo: string };
+           │              ───────────┬──────────  
+           │                         ╰──────────── `Date & { foo: string }`: Beff does not support an intersection of Date with an object type. A Date value cannot also be a plain object, so Beff cannot validate or parse it.
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn intersection_of_date_alias_with_object_alias() {
+        let from = r#"
+    type D = Date;
+    type O = { foo: string };
+    type T = D & O;
+    parse.buildParsers<{ T: T }>();
+  "#;
+        insta::assert_snapshot!(failure(from), @"
+        Error: `D & O`: Beff does not support an intersection of Date with an object type. A Date value cannot also be a plain object, so Beff cannot validate or parse it.
+           ╭─[entry.ts:4:15]
+           │
+         4 │     type T = D & O;
+           │              ──┬──  
+           │                ╰──── `D & O`: Beff does not support an intersection of Date with an object type. A Date value cannot also be a plain object, so Beff cannot validate or parse it.
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn intersection_of_map_with_string() {
+        let from = r#"
+    type T = Map<string, number> & string;
+    parse.buildParsers<{ T: T }>();
+  "#;
+        insta::assert_snapshot!(failure(from), @"
+        Error: `Map<string, number> & string`: Beff does not support an intersection of Map with a different type. A Map value cannot also be a value of a different type, so Beff cannot validate or parse it.
+           ╭─[entry.ts:2:15]
+           │
+         2 │     type T = Map<string, number> & string;
+           │              ──────────────┬─────────────  
+           │                            ╰─────────────── `Map<string, number> & string`: Beff does not support an intersection of Map with a different type. A Map value cannot also be a value of a different type, so Beff cannot validate or parse it.
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn intersection_of_typed_array_with_set() {
+        let from = r#"
+    type T = Uint8Array & Set<string>;
+    parse.buildParsers<{ T: T }>();
+  "#;
+        insta::assert_snapshot!(failure(from), @"
+        Error: `Uint8Array & Set<string>`: Beff does not support an intersection of Uint8Array with a different type. A Uint8Array value cannot also be a value of a different type, so Beff cannot validate or parse it.
+           ╭─[entry.ts:2:15]
+           │
+         2 │     type T = Uint8Array & Set<string>;
+           │              ────────────┬───────────  
+           │                          ╰───────────── `Uint8Array & Set<string>`: Beff does not support an intersection of Uint8Array with a different type. A Uint8Array value cannot also be a value of a different type, so Beff cannot validate or parse it.
+        ───╯
+        ");
+    }
 }

@@ -1713,13 +1713,77 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(Runtype::any_of(vs))
     }
 
-    fn intersection(&mut self, types: &[Box<TsType>], file: BffFileName) -> Res<Runtype> {
-        let vs: Vec<Runtype> = types
+    fn intersection(&mut self, it: &TsIntersectionType, file: BffFileName) -> Res<Runtype> {
+        let vs: Vec<Runtype> = it
+            .types
             .iter()
             .map(|it| self.extract_type(it, file.clone()))
             .collect::<Res<_>>()?;
 
+        self.check_built_in_intersection(&vs, it.span, &file)?;
+
         Ok(Runtype::all_of(vs))
+    }
+
+    /// The runtime checks Date, Map, Set and typed arrays with `instanceof`.
+    /// A value of one of these classes cannot also be a value of a different type.
+    /// Thus, an intersection of such a type with a different type is an error.
+    /// An intersection of the type with the same type (for example `Date & Date`) is correct.
+    fn check_built_in_intersection(
+        &mut self,
+        vs: &[Runtype],
+        span: Span,
+        file: &BffFileName,
+    ) -> Res<()> {
+        let resolved: Vec<RuntypeKind> = vs.iter().map(|it| self.resolve_refs(it)).collect();
+        let Some(built_in) = resolved.iter().find(|it| is_instanceof_built_in(it)) else {
+            return Ok(());
+        };
+        let Some(other) = resolved.iter().find(|it| *it != built_in) else {
+            return Ok(());
+        };
+        let built_in_name = match built_in {
+            RuntypeKind::Date => "Date",
+            RuntypeKind::Map(_, _) => "Map",
+            RuntypeKind::Set(_) => "Set",
+            RuntypeKind::TypedArray(kind) => kind.js_name(),
+            _ => unreachable!("is_instanceof_built_in accepts only these kinds"),
+        };
+        let msg = DiagnosticInfoMessage::IntersectionWithBuiltInType {
+            intersection: self.source_text(file, span),
+            built_in: built_in_name.to_string(),
+            other_is_object: matches!(other, RuntypeKind::Object { .. }),
+        };
+        self.error(&Anchor::new(file.clone(), span), msg)
+    }
+
+    /// Follows references to named types until the type is not a reference.
+    /// If a named type is not available yet (for example in a recursive type), it stops.
+    fn resolve_refs(&mut self, rt: &Runtype) -> RuntypeKind {
+        let mut current = rt.kind.clone();
+        let mut seen = BTreeSet::new();
+        while let RuntypeKind::Ref(uuid) = &current {
+            if !seen.insert(uuid.clone()) {
+                break;
+            }
+            match self.resolved_validator(uuid) {
+                Some(next) => current = next.kind,
+                None => break,
+            }
+        }
+        current
+    }
+
+    /// The source code of a span, on one line.
+    fn source_text(&self, file: &BffFileName, span: Span) -> String {
+        let Some(parsed) = self.files.get_existing_file(file) else {
+            return String::new();
+        };
+        let start = parsed.module.fm.start_pos.0;
+        let lo = span.lo.0.saturating_sub(start) as usize;
+        let hi = span.hi.0.saturating_sub(start) as usize;
+        let text = parsed.module.fm.src.get(lo..hi).unwrap_or_default();
+        text.split_whitespace().collect::<Vec<_>>().join(" ")
     }
     fn extract_ts_type_lit_members(
         &mut self,
@@ -2290,9 +2354,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsUnionOrIntersectionType::TsUnionType(TsUnionType { types, .. }) => {
                     self.union(types, file)
                 }
-                TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
-                    types, ..
-                }) => self.intersection(types, file),
+                TsUnionOrIntersectionType::TsIntersectionType(it) => self.intersection(it, file),
             },
             TsType::TsParenthesizedType(TsParenthesizedType { type_ann, .. }) => {
                 self.extract_type(type_ann, file)
@@ -2452,4 +2514,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             None => self.anyhow_error(&anchor, DiagnosticInfoMessage::TooFewTypeParamsOnDecoder),
         }
     }
+}
+
+/// True for the built-in class types that the runtime checks with `instanceof`.
+fn is_instanceof_built_in(kind: &RuntypeKind) -> bool {
+    matches!(
+        kind,
+        RuntypeKind::Date
+            | RuntypeKind::Map(_, _)
+            | RuntypeKind::Set(_)
+            | RuntypeKind::TypedArray(_)
+    )
 }
