@@ -25,7 +25,6 @@ import {
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
   TypedArrayRuntype,
   MapRuntype,
   SetRuntype,

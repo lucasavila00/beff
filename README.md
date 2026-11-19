@@ -71,7 +71,6 @@ For more information, read [Getting started](./docs/getting-started.md).
 | [JSON Schema](./docs/json-schema.md)               | `schema`, `schemaWithContext`, and `SchemaPrintingContext`.                       |
 | [Custom formats](./docs/custom-formats.md)         | `StringFormat`, `NumberFormat`, `StringFormatExtends`, and `NumberFormatExtends`. |
 | [Describe](./docs/describe.md)                     | `describe`: print a validator as a TypeScript type.                               |
-| [Hashes](./docs/hashes.md)                         | `hash` and `hash256`: compare the structure of two validators.                    |
 | [Runtime validators](./docs/runtime-validators.md) | The `b` API, `createNamedType`, and `overrideNamedType`.                          |
 | [Examples](./docs/examples.md)                     | Complete examples.                                                                |
 

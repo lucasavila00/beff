@@ -44,8 +44,6 @@ export type BeffParser<T> = {
   schema: () => JSONSchema7;
   schemaWithContext: (ctx: SchemaPrintingContext) => JSONSchema7;
   describe: () => string;
-  hash: () => number;
-  hash256: () => string;
 };
 type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;

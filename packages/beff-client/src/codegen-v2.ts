@@ -1,33 +1,8 @@
 import { type BeffParser, type DecodeError, type ParseOptions, type RegularDecodeError } from "./types.js";
 import { z } from "zod";
-import {
-  generateHashFromString,
-  generateHashFromNumbers,
-  Hash256Writer,
-  unknownHash,
-  stringHash,
-  numberHash,
-  booleanHash,
-  nullishHash,
-  undefinedHash,
-  arrayHash,
-  objectHash,
-  dateHash,
-  bigintHash,
-  stringWithFormatHash,
-  numberWithFormatHash,
-  anyOfConstsHash,
-  tupleHash,
-  allOfHash,
-  anyOfHash,
-  optionalFieldHash,
-  mapHash,
-  setHash,
-} from "./hash.js";
 import { JSONSchema7, JSONSchema7Definition } from "./json-schema.js";
 import { removeNullUnionBranch } from "./openapi-pp.js";
 import { printErrors } from "./err.js";
-export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
 
 const JSON_PROTO = Object.getPrototypeOf({});
 
@@ -398,23 +373,6 @@ function describeFormats(typeName: "String" | "Number", formats: string[]): stri
   return acc;
 }
 
-function hashFormats(seed: number, formats: string[]): number {
-  let acc: number[] = [seed];
-  for (const f of [...formats].sort()) {
-    acc.push(generateHashFromString(f));
-  }
-  return generateHashFromNumbers(acc);
-}
-
-function hash256Formats(ctx: Hash256Context, tag: string, formats: string[]): void {
-  ctx.writer.updateTag(tag);
-  const sorted = [...formats].sort();
-  ctx.writer.updateNumber(sorted.length);
-  for (const f of sorted) {
-    ctx.writer.updateString(f);
-  }
-}
-
 type TypeDescription = {
   typeExpr: string;
   docText?: string;
@@ -538,22 +496,10 @@ function withIntersectionInput<T>(ctx: ValidateContext, input: unknown, f: () =>
   return result;
 }
 
-type HashContext = {
-  seen: Record<string, boolean>;
-};
-
-type Hash256Context = {
-  writer: Hash256Writer;
-  active: Map<Runtype, number>;
-  nextCycleId: number;
-};
-
 export interface Runtype {
   describe(ctx: DescribeContext): TypeDescription;
   describeChildren(): Runtype[];
   schema(ctx: SchemaContext): JSONSchema7;
-  hash(ctx: HashContext): number;
-  hash256(ctx: Hash256Context): void;
   validate(ctx: ValidateContext, input: unknown): boolean;
   parseAfterValidation(ctx: ParseContext, input: any): unknown;
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
@@ -607,8 +553,6 @@ abstract class BaseRuntype implements Runtype {
   protected abstract describeTypeExpr(ctx: DescribeContext): string;
 
   abstract schema(ctx: SchemaContext): JSONSchema7;
-  abstract hash(ctx: HashContext): number;
-  abstract hash256(ctx: Hash256Context): void;
   abstract validate(ctx: ValidateContext, input: unknown): boolean;
   abstract parseAfterValidation(ctx: ParseContext, input: any): unknown;
   abstract reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
@@ -701,20 +645,6 @@ export class TypeofRuntype extends BaseRuntype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected " + this.typeName, input);
   }
-  hash(_ctx: HashContext): number {
-    switch (this.typeName) {
-      case "string":
-        return stringHash;
-      case "number":
-        return numberHash;
-      case "boolean":
-        return booleanHash;
-    }
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("typeof");
-    ctx.writer.updateString(this.typeName);
-  }
 }
 
 // The key of a number index signature, such as Record<number, T>.
@@ -737,14 +667,6 @@ export class NumberKeyRuntype extends BaseRuntype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected number key", input);
   }
-  // Hash as `number`, so the hash of Record<number, T> does not change.
-  hash(_ctx: HashContext): number {
-    return numberHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("typeof");
-    ctx.writer.updateString("number");
-  }
 }
 
 export class AnyRuntype extends BaseRuntype {
@@ -766,12 +688,6 @@ export class AnyRuntype extends BaseRuntype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected any", input);
-  }
-  hash(_ctx: HashContext): number {
-    return unknownHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("any");
   }
 }
 
@@ -797,12 +713,6 @@ export class NullishRuntype extends BaseRuntype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected nullish value", input);
   }
-  hash(_ctx: HashContext): number {
-    return nullishHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("nullish");
-  }
 }
 
 export class NeverRuntype extends BaseRuntype {
@@ -825,45 +735,9 @@ export class NeverRuntype extends BaseRuntype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected never", input);
   }
-  hash(_ctx: HashContext): number {
-    return undefinedHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("never");
-  }
 }
 
 type Const = string | number | boolean | null;
-
-function constSortKey(value: Const): string {
-  if (value == null) return "null:";
-  return `${typeof value}:${String(value)}`;
-}
-
-function compareConst(a: Const, b: Const): number {
-  return constSortKey(a).localeCompare(constSortKey(b));
-}
-
-function hash256Const(ctx: Hash256Context, value: Const): void {
-  if (value == null) {
-    ctx.writer.updateNull();
-    return;
-  }
-  switch (typeof value) {
-    case "string":
-      ctx.writer.updateTag("string");
-      ctx.writer.updateString(value);
-      return;
-    case "number":
-      ctx.writer.updateTag("number");
-      ctx.writer.updateNumber(value);
-      return;
-    case "boolean":
-      ctx.writer.updateTag("boolean");
-      ctx.writer.updateBoolean(value);
-      return;
-  }
-}
 
 export class ConstRuntype extends BaseRuntype {
   private value: Const;
@@ -900,40 +774,6 @@ export class ConstRuntype extends BaseRuntype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
   }
-  hash(_ctx: HashContext): number {
-    if (this.value == null) {
-      return nullishHash;
-    }
-    switch (typeof this.value) {
-      case "string":
-        return generateHashFromString(this.value);
-      case "number":
-        return generateHashFromNumbers([this.value]);
-      case "boolean":
-        return generateHashFromString(this.value ? "true" : "false");
-    }
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("const");
-    if (this.value == null) {
-      ctx.writer.updateNull();
-      return;
-    }
-    switch (typeof this.value) {
-      case "string":
-        ctx.writer.updateTag("string");
-        ctx.writer.updateString(this.value);
-        return;
-      case "number":
-        ctx.writer.updateTag("number");
-        ctx.writer.updateNumber(this.value);
-        return;
-      case "boolean":
-        ctx.writer.updateTag("boolean");
-        ctx.writer.updateBoolean(this.value);
-        return;
-    }
-  }
 }
 
 export class RegexRuntype extends BaseRuntype {
@@ -964,13 +804,6 @@ export class RegexRuntype extends BaseRuntype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
-  hash(_ctx: HashContext): number {
-    return generateHashFromString(this.description);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("regex");
-    ctx.writer.updateString(this.description);
-  }
 }
 
 export class DateRuntype extends BaseRuntype {
@@ -992,12 +825,6 @@ export class DateRuntype extends BaseRuntype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected Date`, input);
-  }
-  hash(_ctx: HashContext): number {
-    return dateHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("date");
   }
 }
 
@@ -1021,22 +848,14 @@ export class BigIntRuntype extends BaseRuntype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected BigInt`, input);
   }
-  hash(_ctx: HashContext): number {
-    return bigintHash;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("bigint");
-  }
 }
 
 export class TypedArrayRuntype extends BaseRuntype {
   private ctorName: string;
-  private hashValue: number;
 
   constructor(metadata: RuntypeMetadata | undefined, ctorName: string) {
     super(metadata);
     this.ctorName = ctorName;
-    this.hashValue = generateHashFromString(ctorName.toLowerCase());
   }
   private getCtor(): (new (...args: any[]) => ArrayBufferView) | undefined {
     return (globalThis as any)[this.ctorName];
@@ -1057,13 +876,6 @@ export class TypedArrayRuntype extends BaseRuntype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected ${this.ctorName}`, input);
-  }
-  hash(_ctx: HashContext): number {
-    return this.hashValue;
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("typedArray");
-    ctx.writer.updateString(this.ctorName);
   }
 }
 
@@ -1117,12 +929,6 @@ export class StringWithFormatRuntype extends BaseRuntype {
       input,
     );
   }
-  hash(_ctx: HashContext): number {
-    return hashFormats(stringWithFormatHash, this.formats);
-  }
-  hash256(ctx: Hash256Context): void {
-    hash256Formats(ctx, "stringWithFormat", this.formats);
-  }
 }
 
 export class NumberWithFormatRuntype extends BaseRuntype {
@@ -1174,12 +980,6 @@ export class NumberWithFormatRuntype extends BaseRuntype {
       input,
     );
   }
-  hash(_ctx: HashContext): number {
-    return hashFormats(numberWithFormatHash, this.formats);
-  }
-  hash256(ctx: Hash256Context): void {
-    hash256Formats(ctx, "numberWithFormat", this.formats);
-  }
 }
 
 export class AnyOfConstsRuntype extends BaseRuntype {
@@ -1223,35 +1023,6 @@ export class AnyOfConstsRuntype extends BaseRuntype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
-  }
-  hash(_ctx: HashContext): number {
-    let acc: number[] = [anyOfConstsHash];
-    for (const v of [...this.values].sort()) {
-      if (v == null) {
-        acc.push(nullishHash);
-      } else {
-        switch (typeof v) {
-          case "string":
-            acc.push(generateHashFromString(v));
-            break;
-          case "number":
-            acc.push(generateHashFromNumbers([v]));
-            break;
-          case "boolean":
-            acc.push(generateHashFromString(v ? "true" : "false"));
-            break;
-        }
-      }
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("anyOfConsts");
-    const values = [...this.values].sort((a, b) => compareConst(a, b));
-    ctx.writer.updateNumber(values.length);
-    for (const v of values) {
-      hash256Const(ctx, v);
-    }
   }
 }
 
@@ -1346,31 +1117,6 @@ export class TupleRuntype extends BaseRuntype {
 
     return acc;
   }
-  hash(ctx: HashContext): number {
-    let acc: number[] = [tupleHash];
-    for (const p of this.prefix) {
-      acc.push(p.hash(ctx));
-    }
-    if (this.rest != null) {
-      acc.push(this.rest.hash(ctx));
-    } else {
-      acc.push(0);
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("tuple");
-    ctx.writer.updateNumber(this.prefix.length);
-    for (const p of this.prefix) {
-      p.hash256(ctx);
-    }
-    if (this.rest == null) {
-      ctx.writer.updateTag("noRest");
-    } else {
-      ctx.writer.updateTag("rest");
-      this.rest.hash256(ctx);
-    }
-  }
 }
 
 export class AllOfRuntype extends BaseRuntype {
@@ -1456,20 +1202,6 @@ export class AllOfRuntype extends BaseRuntype {
       acc.push(...errors);
     }
     return acc;
-  }
-  hash(ctx: HashContext): number {
-    let acc: number[] = [allOfHash];
-    for (const s of this.schemas) {
-      acc.push(s.hash(ctx));
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("allOf");
-    ctx.writer.updateNumber(this.schemas.length);
-    for (const s of this.schemas) {
-      s.hash256(ctx);
-    }
   }
 }
 
@@ -1670,20 +1402,6 @@ export class AnyOfRuntype extends BaseRuntype {
   override describeChildren(): Runtype[] {
     return this.schemas;
   }
-  hash(ctx: HashContext): number {
-    let acc: number[] = [anyOfHash];
-    for (const s of this.schemas) {
-      acc.push(s.hash(ctx));
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("anyOf");
-    ctx.writer.updateNumber(this.schemas.length);
-    for (const s of this.schemas) {
-      s.hash256(ctx);
-    }
-  }
 }
 
 export class ArrayRuntype extends BaseRuntype {
@@ -1735,13 +1453,6 @@ export class ArrayRuntype extends BaseRuntype {
   override describeChildren(): Runtype[] {
     return [this.itemParser];
   }
-  hash(_ctx: HashContext): number {
-    return generateHashFromNumbers([arrayHash, this.itemParser.hash(_ctx)]);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("array");
-    this.itemParser.hash256(ctx);
-  }
 }
 
 export class MapRuntype extends BaseRuntype {
@@ -1790,14 +1501,6 @@ export class MapRuntype extends BaseRuntype {
     }
     return acc;
   }
-  hash(_ctx: HashContext): number {
-    return generateHashFromNumbers([mapHash, this.keyParser.hash(_ctx), this.valueParser.hash(_ctx)]);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("map");
-    this.keyParser.hash256(ctx);
-    this.valueParser.hash256(ctx);
-  }
 }
 
 export class SetRuntype extends BaseRuntype {
@@ -1843,13 +1546,15 @@ export class SetRuntype extends BaseRuntype {
     }
     return acc;
   }
-  hash(_ctx: HashContext): number {
-    return generateHashFromNumbers([setHash, this.itemParser.hash(_ctx)]);
+}
+
+// Make a 32-bit number from a string. The same string always gives the same number.
+function stringToNumber(value: string): number {
+  let result = 0;
+  for (let i = 0; i < value.length; i++) {
+    result = (result * 31 + value.charCodeAt(i)) | 0;
   }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("set");
-    this.itemParser.hash256(ctx);
-  }
+  return result;
 }
 
 export class AnyOfDiscriminatedRuntype extends BaseRuntype {
@@ -1893,7 +1598,10 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
     });
   }
   private getSchemaVariantRefs(ctx: SchemaContext): Array<{ key: string; ref: string }> {
-    const unionHash = this.hash({ seen: {} });
+    // The flat schema of the union gives the number in the names of its variants.
+    // Two unions with the same schema get the same names.
+    const flatSchema = this.schema({ path: ctx.path, seen: {}, mode: "flat" });
+    const unionHash = stringToNumber(JSON.stringify(flatSchema));
     return Object.entries(this.schemaMapping).map(([key, schema]) => ({
       key,
       ref: this.ensureSchemaVariantRef(schema, key, unionHash, ctx),
@@ -2030,27 +1738,6 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
   override describeChildren(): Runtype[] {
     return this.schemas;
   }
-  hash(ctx: HashContext): number {
-    let acc: number[] = [anyOfHash];
-    for (const s of this.schemas) {
-      acc.push(s.hash(ctx));
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("anyOfDiscriminated");
-    ctx.writer.updateString(this.discriminator);
-    ctx.writer.updateNumber(this.schemas.length);
-    for (const s of this.schemas) {
-      s.hash256(ctx);
-    }
-    const mappingKeys = Object.keys(this.mapping).sort();
-    ctx.writer.updateNumber(mappingKeys.length);
-    for (const key of mappingKeys) {
-      ctx.writer.updateString(key);
-      this.mapping[key].hash256(ctx);
-    }
-  }
 }
 
 export class OptionalFieldRuntype implements Runtype {
@@ -2089,14 +1776,6 @@ export class OptionalFieldRuntype implements Runtype {
   }
   describeChildren(): Runtype[] {
     return [this.t];
-  }
-  hash(ctx: HashContext): number {
-    let acc = [optionalFieldHash, this.t.hash(ctx)];
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("optionalField");
-    this.t.hash256(ctx);
   }
 }
 
@@ -2383,37 +2062,6 @@ export class ObjectRuntype extends BaseRuntype {
       ctx.intersectionInput === input && !this.indexedPropertiesParser.some((p) => p.key.validate(ctx, k))
     );
   }
-  hash(ctx: HashContext) {
-    let acc: number[] = [objectHash];
-    for (const key of Object.keys(this.properties).sort()) {
-      acc.push(generateHashFromString(key));
-      const parser = this.properties[key];
-      acc.push(parser.hash(ctx));
-    }
-    if (this.indexedPropertiesParser.length > 0) {
-      for (const p of this.indexedPropertiesParser) {
-        acc.push(p.key.hash(ctx));
-        acc.push(p.value.hash(ctx));
-      }
-    }
-    return generateHashFromNumbers(acc);
-  }
-  hash256(ctx: Hash256Context): void {
-    ctx.writer.updateTag("object");
-    const keys = Object.keys(this.properties).sort();
-    ctx.writer.updateNumber(keys.length);
-    for (const key of keys) {
-      const parser = this.properties[key];
-      ctx.writer.updateString(key);
-      ctx.writer.updateBoolean(parser instanceof OptionalFieldRuntype);
-      parser.hash256(ctx);
-    }
-    ctx.writer.updateNumber(this.indexedPropertiesParser.length);
-    for (const p of this.indexedPropertiesParser) {
-      p.key.hash256(ctx);
-      p.value.hash256(ctx);
-    }
-  }
 }
 export abstract class BaseRefRuntype extends BaseRuntype {
   refName: string;
@@ -2483,32 +2131,6 @@ export abstract class BaseRefRuntype extends BaseRuntype {
     var tmp = to.schema(ctx);
     delete ctx.seen[name];
     return annotateSchema(this.metadata, tmp);
-  }
-  hash(ctx: HashContext): number {
-    const name = this.refName;
-    const to = this.getNamedRuntypes()[this.refName];
-    if (ctx.seen[name]) {
-      return generateHashFromString(name);
-    }
-    ctx.seen[name] = true;
-    var tmp = to.hash(ctx);
-    delete ctx.seen[name];
-    return tmp;
-  }
-  hash256(ctx: Hash256Context): void {
-    const to = this.getNamedRuntypes()[this.refName];
-    const activeId = ctx.active.get(to);
-    if (activeId != null) {
-      ctx.writer.updateTag("cycleRef");
-      ctx.writer.updateNumber(activeId);
-      return;
-    }
-
-    const id = ctx.nextCycleId;
-    ctx.nextCycleId++;
-    ctx.active.set(to, id);
-    to.hash256(ctx);
-    ctx.active.delete(to);
   }
   validate(ctx: ValidateContext, input: any): boolean {
     const to = this.getNamedRuntypes()[this.refName];
@@ -2640,22 +2262,6 @@ class ParserFromRuntype implements BeffParser<any> {
     }
     const outPart = renderTypeAlias(`Codec${this.name}`, out);
     return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
-  }
-  hash(): number {
-    const ctx = {
-      seen: {},
-    };
-    return this._runtype.hash(ctx);
-  }
-  hash256(): string {
-    const ctx: Hash256Context = {
-      writer: new Hash256Writer(),
-      active: new Map(),
-      nextCycleId: 0,
-    };
-    ctx.writer.updateTag("beff-hash256-v1");
-    this._runtype.hash256(ctx);
-    return ctx.writer.digestHex();
   }
 }
 
