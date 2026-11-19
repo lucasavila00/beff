@@ -2579,4 +2579,60 @@ mod tests {
         }
         "#);
     }
+    #[test]
+    fn ok_proto_keys_are_computed() {
+        let from = r#"
+    type ProtoDiscriminated =
+      | { kind: "toString"; a: string }
+      | { kind: "__proto__"; c: boolean };
+    type ProtoKeyObject = { __proto__: string; toString: number };
+    type __proto__ = { a: string };
+    parse.buildParsers<{ ProtoDiscriminated: ProtoDiscriminated, ProtoKeyObject: ProtoKeyObject, __proto__: __proto__ }>();
+  "#;
+        insta::assert_snapshot!(print_cgen(from), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "ProtoDiscriminated");
+        const direct_hoist_1 = new RefRuntype(undefined, "ProtoKeyObject");
+        const direct_hoist_2 = new RefRuntype(undefined, "__proto__");
+        const direct_hoist_3 = new TypeofRuntype(undefined, "boolean");
+        const direct_hoist_4 = new ConstRuntype(undefined, "__proto__");
+        const direct_hoist_5 = new ObjectRuntype(undefined, {
+            "c": direct_hoist_3,
+            "kind": direct_hoist_4
+        }, []);
+        const direct_hoist_6 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_7 = new ConstRuntype(undefined, "toString");
+        const direct_hoist_8 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_6,
+            "kind": direct_hoist_7
+        }, []);
+        const direct_hoist_9 = new AnyOfDiscriminatedRuntype(undefined, [
+            direct_hoist_8,
+            direct_hoist_5
+        ], "kind", {
+            ["__proto__"]: direct_hoist_5,
+            "toString": direct_hoist_8
+        }, {
+            ["__proto__"]: direct_hoist_5,
+            "toString": direct_hoist_8
+        });
+        const direct_hoist_10 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_11 = new ObjectRuntype(undefined, {
+            ["__proto__"]: direct_hoist_6,
+            "toString": direct_hoist_10
+        }, []);
+        const direct_hoist_12 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_6
+        }, []);
+        const namedRuntypes = {
+            "ProtoDiscriminated": direct_hoist_9,
+            "ProtoKeyObject": direct_hoist_11,
+            ["__proto__"]: direct_hoist_12
+        };
+        const buildParsersInput = {
+            "ProtoDiscriminated": direct_hoist_0,
+            "ProtoKeyObject": direct_hoist_1,
+            ["__proto__"]: direct_hoist_2
+        };
+        "#);
+    }
 }
