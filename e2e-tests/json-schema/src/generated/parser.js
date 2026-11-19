@@ -34,6 +34,9 @@ const {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
+  GeneratedRuntype,
+  isObj,
+  discKey,
 } = require("@beff/client/codegen-v2");
 
 class RefRuntype extends BaseRefRuntype  {
@@ -248,22 +251,38 @@ const buildParsersInput = {
     "null": direct_hoist_3,
     "undefined": direct_hoist_4,
     "object": direct_hoist_6,
-    "anyArray": direct_hoist_7,
+    "anyArray": new GeneratedRuntype(direct_hoist_7, v7),
     "any": direct_hoist_5,
-    "T1": direct_hoist_8,
-    "DocumentedPayload": direct_hoist_9,
-    "T2": direct_hoist_10,
-    "T3": direct_hoist_11,
-    "InvalidSchemaWithDate": direct_hoist_12,
-    "InvalidSchemaWithBigInt": direct_hoist_13,
-    "DiscriminatedUnion": direct_hoist_14,
-    "RecursiveTree": direct_hoist_15,
+    "T1": new GeneratedRuntype(direct_hoist_8, v47),
+    "DocumentedPayload": new GeneratedRuntype(direct_hoist_9, v33),
+    "T2": new GeneratedRuntype(direct_hoist_10, v48),
+    "T3": new GeneratedRuntype(direct_hoist_11, v50),
+    "InvalidSchemaWithDate": new GeneratedRuntype(direct_hoist_12, v39),
+    "InvalidSchemaWithBigInt": new GeneratedRuntype(direct_hoist_13, v37),
+    "DiscriminatedUnion": new GeneratedRuntype(direct_hoist_14, v30),
+    "RecursiveTree": new GeneratedRuntype(direct_hoist_15, v45),
     "SemVer": direct_hoist_16,
     "NonEmptyString": direct_hoist_17,
     "ValidCurrency": direct_hoist_18,
     "EmptyClosedRecord": direct_hoist_19,
-    "OptionalNullishInput": direct_hoist_20,
+    "OptionalNullishInput": new GeneratedRuntype(direct_hoist_20, v43),
     "ToolInput": direct_hoist_21
 };
+function v7(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(true))return false;return true}
+function v24(c,i){return isObj(i)&&typeof i.a1=="string"&&(i.a11==null||typeof i.a11=="string")&&i.subType==="a1"&&i.type==="a"&&direct_hoist_24.noExtraKeys(c,i)}
+function v26(c,i){return isObj(i)&&typeof i.a2=="string"&&i.subType==="a2"&&i.type==="a"&&direct_hoist_26.noExtraKeys(c,i)}
+function v27(c,i){switch(discKey(i,"subType")){case "a1":return v24(c,i);case "a2":return v26(c,i)}return false}
+function v29(c,i){return isObj(i)&&i.type==="b"&&typeof i.value=="number"&&direct_hoist_29.noExtraKeys(c,i)}
+function v30(c,i){switch(discKey(i,"type")){case "a":return v27(c,i);case "b":return v29(c,i)}return false}
+function v33(c,i){return isObj(i)&&typeof i.id=="string"&&(i.retries==null||typeof i.retries=="number")&&direct_hoist_33.noExtraKeys(c,i)}
+function v37(c,i){return isObj(i)&&direct_hoist_36.validate(c,i.x)&&direct_hoist_37.noExtraKeys(c,i)}
+function v39(c,i){return isObj(i)&&direct_hoist_38.validate(c,i.x)&&direct_hoist_39.noExtraKeys(c,i)}
+function v43(c,i){return isObj(i)&&(i.limit==null||(i.limit==null||i.limit==null||typeof i.limit=="number"))&&(i.value==null||(i.value==null||i.value==null||typeof i.value=="string"))&&direct_hoist_43.noExtraKeys(c,i)}
+function v44(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v45(c,i[k])))return false;return true}
+function v45(c,i){return isObj(i)&&v44(c,i.children)&&typeof i.value=="number"&&direct_hoist_45.noExtraKeys(c,i)}
+function v47(c,i){return isObj(i)&&typeof i.a=="string"&&typeof i.b=="number"&&direct_hoist_47.noExtraKeys(c,i)}
+function v48(c,i){return isObj(i)&&v47(c,i.t1)&&direct_hoist_48.noExtraKeys(c,i)}
+function v49(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v48(c,i[k])))return false;return true}
+function v50(c,i){return isObj(i)&&v49(c,i.t2Array)&&direct_hoist_50.noExtraKeys(c,i)}
 
 exports.default = { buildParsers };

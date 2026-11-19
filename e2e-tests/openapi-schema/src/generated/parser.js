@@ -34,6 +34,9 @@ const {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
+  GeneratedRuntype,
+  isObj,
+  discKey,
 } = require("@beff/client/codegen-v2");
 
 class RefRuntype extends BaseRefRuntype  {
@@ -362,27 +365,54 @@ const namedRuntypes = {
     "WorkflowSourceBase": direct_hoist_83
 };
 const buildParsersInput = {
-    "Address": direct_hoist_0,
-    "User": direct_hoist_1,
-    "DocumentedPayload": direct_hoist_2,
-    "CreateUserRequest": direct_hoist_3,
-    "CreateUserResponse": direct_hoist_4,
-    "UpdateUserRequest": direct_hoist_5,
-    "SearchUsersResponse": direct_hoist_6,
-    "RecursiveTree": direct_hoist_7,
-    "RecursiveEnvelope": direct_hoist_8,
-    "OpenApiCompatConstPayload": direct_hoist_9,
-    "OpenApiCompatEnumPayload": direct_hoist_10,
-    "OpenApiCompatRecordPayload": direct_hoist_11,
-    "OpenApiCompatEmptyRecordPayload": direct_hoist_12,
-    "OpenApiCompatOptionalizedPayload": direct_hoist_13,
-    "OpenApiCompatOptinal": direct_hoist_14,
-    "OpenApiCompatOptionalNullishPayload": direct_hoist_15,
-    "OpenApiCompatDiscUnion": direct_hoist_16,
-    "OpenApiCompatDiscUnionCron": direct_hoist_17,
-    "OpenApiCompatDiscUnionEvent": direct_hoist_18,
-    "OpenApiCompatDiscUnionAndNamedTypes": direct_hoist_19,
-    "WorkflowSource": direct_hoist_20
+    "Address": new GeneratedRuntype(direct_hoist_0, v22),
+    "User": new GeneratedRuntype(direct_hoist_1, v76),
+    "DocumentedPayload": new GeneratedRuntype(direct_hoist_2, v34),
+    "CreateUserRequest": new GeneratedRuntype(direct_hoist_3, v24),
+    "CreateUserResponse": new GeneratedRuntype(direct_hoist_4, v25),
+    "UpdateUserRequest": new GeneratedRuntype(direct_hoist_5, v74),
+    "SearchUsersResponse": new GeneratedRuntype(direct_hoist_6, v73),
+    "RecursiveTree": new GeneratedRuntype(direct_hoist_7, v71),
+    "RecursiveEnvelope": new GeneratedRuntype(direct_hoist_8, v69),
+    "OpenApiCompatConstPayload": new GeneratedRuntype(direct_hoist_9, v42),
+    "OpenApiCompatEnumPayload": new GeneratedRuntype(direct_hoist_10, v56),
+    "OpenApiCompatRecordPayload": new GeneratedRuntype(direct_hoist_11, v68),
+    "OpenApiCompatEmptyRecordPayload": new GeneratedRuntype(direct_hoist_12, v49),
+    "OpenApiCompatOptionalizedPayload": new GeneratedRuntype(direct_hoist_13, v65),
+    "OpenApiCompatOptinal": new GeneratedRuntype(direct_hoist_14, v57),
+    "OpenApiCompatOptionalNullishPayload": new GeneratedRuntype(direct_hoist_15, v61),
+    "OpenApiCompatDiscUnion": new GeneratedRuntype(direct_hoist_16, v43),
+    "OpenApiCompatDiscUnionCron": new GeneratedRuntype(direct_hoist_17, v45),
+    "OpenApiCompatDiscUnionEvent": new GeneratedRuntype(direct_hoist_18, v46),
+    "OpenApiCompatDiscUnionAndNamedTypes": new GeneratedRuntype(direct_hoist_19, v44),
+    "WorkflowSource": new GeneratedRuntype(direct_hoist_20, v81)
 };
+function v22(c,i){return isObj(i)&&typeof i.city=="string"&&typeof i.street=="string"&&direct_hoist_22.noExtraKeys(c,i)}
+function v23(c,i){return isObj(i)&&typeof i.source=="string"&&direct_hoist_23.noExtraKeys(c,i)}
+function v24(c,i){return isObj(i)&&v23(c,i.metadata)&&v76(c,i.user)&&direct_hoist_24.noExtraKeys(c,i)}
+function v25(c,i){return isObj(i)&&v76(c,i.user)&&direct_hoist_25.noExtraKeys(c,i)}
+function v34(c,i){return isObj(i)&&typeof i.id=="string"&&(i.retries==null||typeof i.retries=="number")&&direct_hoist_34.noExtraKeys(c,i)}
+function v42(c,i){return isObj(i)&&i.enabled===true&&i.nullable==null&&i.retries===3&&i.status==="ok"&&direct_hoist_42.noExtraKeys(c,i)}
+function v43(c,i){switch(discKey(i,"type")){case "CRON":return v45(c,i);case "EVENT":return v46(c,i)}return false}
+function v44(c,i){switch(discKey(i,"type")){case "CRON":return v45(c,i);case "EVENT":return v46(c,i)}return false}
+function v45(c,i){return isObj(i)&&typeof i.schedule=="string"&&i.type==="CRON"&&direct_hoist_45.noExtraKeys(c,i)}
+function v46(c,i){return isObj(i)&&typeof i.eventName=="string"&&i.type==="EVENT"&&direct_hoist_46.noExtraKeys(c,i)}
+function v49(c,i){return isObj(i)&&direct_hoist_48.validate(c,i.payload)&&direct_hoist_49.noExtraKeys(c,i)}
+function v56(c,i){return isObj(i)&&direct_hoist_50.validate(c,i.code)&&direct_hoist_51.validate(c,i.enabled)&&(i.mixed==null||i.mixed==="fallback"||i.mixed===0)&&direct_hoist_55.validate(c,i.role)&&direct_hoist_56.noExtraKeys(c,i)}
+function v57(c,i){return isObj(i)&&(i.it==null||typeof i.it=="string")&&direct_hoist_57.noExtraKeys(c,i)}
+function v61(c,i){return isObj(i)&&(i.limit==null||(i.limit==null||i.limit==null||typeof i.limit=="number"))&&(i.value==null||(i.value==null||i.value==null||typeof i.value=="string"))&&direct_hoist_61.noExtraKeys(c,i)}
+function v65(c,i){return isObj(i)&&(i.maybeEnum==null||i.maybeEnum==="fallback"||i.maybeEnum==="primary")&&(i.maybeText==null||typeof i.maybeText=="string")&&i.onlyNull==null&&(i.optional==null||typeof i.optional=="string")&&(i.orUndefined==null||typeof i.orUndefined=="string")&&direct_hoist_65.noExtraKeys(c,i)}
+function v68(c,i){return isObj(i)&&direct_hoist_67.validate(c,i.payload)&&direct_hoist_68.noExtraKeys(c,i)}
+function v69(c,i){return isObj(i)&&(i.previous==null||v69(c,i.previous))&&v71(c,i.root)&&direct_hoist_69.noExtraKeys(c,i)}
+function v70(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v71(c,i[k])))return false;return true}
+function v71(c,i){return isObj(i)&&v70(c,i.children)&&typeof i.value=="string"&&direct_hoist_71.noExtraKeys(c,i)}
+function v72(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v76(c,i[k])))return false;return true}
+function v73(c,i){return isObj(i)&&v72(c,i.items)&&v22(c,i.primaryAddress)&&direct_hoist_73.noExtraKeys(c,i)}
+function v74(c,i){return isObj(i)&&v22(c,i.address)&&typeof i.id=="string"&&direct_hoist_74.noExtraKeys(c,i)}
+function v75(c,i){return isObj(i)&&typeof i.displayName=="string"&&direct_hoist_75.noExtraKeys(c,i)}
+function v76(c,i){return isObj(i)&&v22(c,i.address)&&typeof i.id=="string"&&v75(c,i.profile)&&direct_hoist_76.noExtraKeys(c,i)}
+function v77(c,i){return isObj(i)&&typeof i.createdAt=="string"&&typeof i.cronExpression=="string"&&(i.eventName==null||typeof i.eventName=="string")&&typeof i.id=="string"&&direct_hoist_67.validate(c,i.metadata)&&i.type==="CRON"&&typeof i.updatedAt=="string"&&typeof i.workflowID=="string"&&direct_hoist_77.noExtraKeys(c,i)}
+function v78(c,i){return isObj(i)&&typeof i.createdAt=="string"&&(i.cronExpression==null||typeof i.cronExpression=="string")&&typeof i.eventName=="string"&&typeof i.id=="string"&&direct_hoist_67.validate(c,i.metadata)&&i.type==="EVENT"&&typeof i.updatedAt=="string"&&typeof i.workflowID=="string"&&direct_hoist_78.noExtraKeys(c,i)}
+function v81(c,i){switch(discKey(i,"type")){case "CRON":return v77(c,i);case "EVENT":return v78(c,i)}return false}
 
 exports.default = { buildParsers };

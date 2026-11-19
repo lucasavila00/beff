@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "beff": "beff -p beff.json",
-    "test": "vitest --run --update"
+    "test": "BEFF_CHECK_GENERATED_VALIDATE=1 vitest --run --update"
   },
   "keywords": [],
   "author": "",

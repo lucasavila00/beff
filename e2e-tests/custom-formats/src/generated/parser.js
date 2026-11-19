@@ -30,6 +30,9 @@ import {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
+  GeneratedRuntype,
+  isObj,
+  discKey,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {

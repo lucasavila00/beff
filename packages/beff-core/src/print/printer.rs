@@ -14,6 +14,7 @@ use swc_ecma_ast::{
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
 
+use super::validate::{ValidateNode, generate};
 use crate::NameIndex;
 use crate::RuntypeUUID;
 use crate::ast::json::Json;
@@ -221,6 +222,8 @@ struct PrintContext {
     all_names: NameIndex,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
     inlined: BTreeSet<RuntypeUUID>,
+    // The validate node of each hoisted runtype, by id.
+    validate_nodes: Vec<ValidateNode>,
 }
 
 impl PrintContext {
@@ -766,7 +769,7 @@ fn maybe_runtype_any_of_consts(
     None
 }
 
-fn hoist_name(name: usize) -> String {
+pub(super) fn hoist_name(name: usize) -> String {
     format!("direct_hoist_{}", name)
 }
 fn hoist_identifier(name: usize) -> Expr {
@@ -778,9 +781,18 @@ fn optionality_wrapper(inner: Expr) -> Expr {
 }
 
 fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
+    hoist_identifier(print_runtype_id(schema, named_schemas, ctx))
+}
+
+// Prints a runtype and returns the id of its hoisted variable.
+fn print_runtype_id(
+    schema: &Runtype,
+    named_schemas: &[NamedSchema],
+    ctx: &mut PrintContext,
+) -> usize {
     let hoist_key = PrintableRuntypeKey::from_runtype(schema);
     if let Some((var_name, _)) = ctx.hoisted.get(&hoist_key) {
-        return hoist_identifier(*var_name);
+        return *var_name;
     }
 
     let out = match &schema.kind {
@@ -939,42 +951,43 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
     };
 
     let new_id = ctx.hoisted.len();
-    ctx.hoisted.insert(hoist_key, (new_id, out.clone()));
-    hoist_identifier(new_id)
+    ctx.validate_nodes.push(ValidateNode::from_expr(&out));
+    ctx.hoisted.insert(hoist_key, (new_id, out));
+    new_id
 }
 
+// The exported name and hoisted id of each decoder.
 fn build_parsers_input(
     decs: &[BuiltDecoder],
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
-) -> Expr {
-    let mut validator_exprs: Vec<(String, Expr)> = vec![];
+) -> Vec<(String, usize)> {
+    let mut validator_ids: Vec<(String, usize)> = vec![];
     for decoder in decs {
-        let validator = print_runtype(&decoder.schema, named_schemas, ctx);
-        validator_exprs.push((decoder.exported_name.clone(), validator));
+        let validator = print_runtype_id(&decoder.schema, named_schemas, ctx);
+        validator_ids.push((decoder.exported_name.clone(), validator));
     }
 
-    object_lit(validator_exprs)
+    validator_ids
 }
 
-fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
-    let mut validator_exprs: Vec<(RuntypeUUID, Expr)> = vec![];
+// The printed name and hoisted id of each named runtype.
+fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Vec<(String, usize)> {
+    let mut validator_ids: Vec<(RuntypeUUID, usize)> = vec![];
     for named_schema in named_schemas {
-        let validator = print_runtype(&named_schema.schema, named_schemas, ctx);
-        validator_exprs.push((named_schema.name.clone(), validator));
+        let validator = print_runtype_id(&named_schema.schema, named_schemas, ctx);
+        validator_ids.push((named_schema.name.clone(), validator));
     }
     // filter out the inlined ones
-    let validator_exprs: Vec<(RuntypeUUID, Expr)> = validator_exprs
+    let validator_ids: Vec<(RuntypeUUID, usize)> = validator_ids
         .into_iter()
         .filter(|(name, _)| !ctx.inlined.contains(name))
         .collect();
 
-    object_lit(
-        validator_exprs
-            .into_iter()
-            .map(|(key, value)| (ctx.print_rt_name(&key), value))
-            .collect(),
-    )
+    validator_ids
+        .into_iter()
+        .map(|(key, value)| (ctx.print_rt_name(&key), value))
+        .collect()
 }
 
 impl ParserExtractResult {
@@ -987,16 +1000,49 @@ impl ParserExtractResult {
             all_names,
             type_with_args_names: BTreeMap::new(),
             inlined: BTreeSet::new(),
+            validate_nodes: vec![],
         };
 
+        let parsers_input = build_parsers_input(&built_parsers, &named_schemas, &mut hoisted);
+        let named = named_runtypes(&named_schemas, &mut hoisted);
+
+        let export_ids = parsers_input.iter().map(|it| it.1).collect::<Vec<_>>();
+        let (export_fns, validate_fns) = generate(
+            &hoisted.validate_nodes,
+            &named.iter().cloned().collect(),
+            &export_ids,
+        );
+
+        // An export with a generated validate function wraps its runtype in a GeneratedRuntype.
         let build_parsers_input: ModuleItem = const_decl(
             "buildParsersInput",
-            build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
+            object_lit(
+                parsers_input
+                    .into_iter()
+                    .zip(export_fns)
+                    .map(|((name, id), validate_fn)| {
+                        let runtype = hoist_identifier(id);
+                        let value = match validate_fn {
+                            Some(f) => new_runtime_class(
+                                "GeneratedRuntype",
+                                vec![runtype, Expr::Ident(identifier(&f))],
+                            ),
+                            None => runtype,
+                        };
+                        (name, value)
+                    })
+                    .collect(),
+            ),
         );
 
         let build_named_parsers_input = const_decl(
             "namedRuntypes",
-            named_runtypes(&named_schemas, &mut hoisted),
+            object_lit(
+                named
+                    .into_iter()
+                    .map(|(name, id)| (name, hoist_identifier(id)))
+                    .collect(),
+            ),
         );
 
         let mut sorted_direct_hoisted_values = hoisted.hoisted.into_values().collect::<Vec<_>>();
@@ -1016,6 +1062,9 @@ impl ParserExtractResult {
             ])
             .collect();
 
-        Ok(emit_module_items(module_items)?)
+        Ok(format!(
+            "{}{validate_fns}",
+            emit_module_items(module_items)?
+        ))
     }
 }

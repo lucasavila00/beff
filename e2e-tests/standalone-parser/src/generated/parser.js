@@ -30,6 +30,9 @@ import {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
+  GeneratedRuntype,
+  isObj,
+  discKey,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {
@@ -785,20 +788,20 @@ const buildParsersInput = {
     "IntersectionTplIndex": direct_hoist_6,
     "IntersectionTwoTplIndexes": direct_hoist_7,
     "TplRecord": direct_hoist_8,
-    "Repro5": direct_hoist_9,
-    "Repro6": direct_hoist_10,
+    "Repro5": new GeneratedRuntype(direct_hoist_9, v173),
+    "Repro6": new GeneratedRuntype(direct_hoist_10, v175),
     "M1": direct_hoist_11,
     "S1": direct_hoist_12,
-    "PartialRepro": direct_hoist_13,
-    "TransportedValue": direct_hoist_14,
-    "OnlyAKey": direct_hoist_15,
-    "ObjectWithArr": direct_hoist_18,
+    "PartialRepro": new GeneratedRuntype(direct_hoist_13, v165),
+    "TransportedValue": new GeneratedRuntype(direct_hoist_14, v192),
+    "OnlyAKey": new GeneratedRuntype(direct_hoist_15, v164),
+    "ObjectWithArr": new GeneratedRuntype(direct_hoist_18, v18),
     "BigIntCodec": direct_hoist_19,
     "TupleCodec": direct_hoist_21,
     "TupleCodecRest": direct_hoist_22,
-    "StringArrCodec": direct_hoist_17,
+    "StringArrCodec": new GeneratedRuntype(direct_hoist_17, v17),
     "AllTs": direct_hoist_23,
-    "AObject": direct_hoist_24,
+    "AObject": new GeneratedRuntype(direct_hoist_24, v87),
     "Version": direct_hoist_25,
     "Version2": direct_hoist_26,
     "PrefixedString": direct_hoist_27,
@@ -807,34 +810,34 @@ const buildParsersInput = {
     "AccessLevelTpl2": direct_hoist_30,
     "AccessLevelTpl": direct_hoist_31,
     "Arr3": direct_hoist_32,
-    "OmitSettings": direct_hoist_33,
-    "RequiredPartialObject": direct_hoist_34,
-    "LevelAndDSettings": direct_hoist_35,
-    "PartialSettings": direct_hoist_36,
+    "OmitSettings": new GeneratedRuntype(direct_hoist_33, v158),
+    "RequiredPartialObject": new GeneratedRuntype(direct_hoist_34, v177),
+    "LevelAndDSettings": new GeneratedRuntype(direct_hoist_35, v158),
+    "PartialSettings": new GeneratedRuntype(direct_hoist_36, v166),
     "Extra": direct_hoist_37,
-    "User": direct_hoist_38,
-    "PublicUser": direct_hoist_39,
-    "Req": direct_hoist_40,
-    "Repro1": direct_hoist_41,
-    "SettingsUpdate": direct_hoist_42,
-    "Mapped": direct_hoist_43,
-    "MappedOptional": direct_hoist_44,
-    "PartialObject": direct_hoist_45,
-    "DiscriminatedUnion": direct_hoist_46,
-    "DiscriminatedUnion2": direct_hoist_47,
-    "DiscriminatedUnion3": direct_hoist_48,
-    "DiscriminatedUnion4": direct_hoist_49,
+    "User": new GeneratedRuntype(direct_hoist_38, v202),
+    "PublicUser": new GeneratedRuntype(direct_hoist_39, v168),
+    "Req": new GeneratedRuntype(direct_hoist_40, v176),
+    "Repro1": new GeneratedRuntype(direct_hoist_41, v170),
+    "SettingsUpdate": new GeneratedRuntype(direct_hoist_42, v180),
+    "Mapped": new GeneratedRuntype(direct_hoist_43, v162),
+    "MappedOptional": new GeneratedRuntype(direct_hoist_44, v163),
+    "PartialObject": new GeneratedRuntype(direct_hoist_45, v136),
+    "DiscriminatedUnion": new GeneratedRuntype(direct_hoist_46, v104),
+    "DiscriminatedUnion2": new GeneratedRuntype(direct_hoist_47, v107),
+    "DiscriminatedUnion3": new GeneratedRuntype(direct_hoist_48, v110),
+    "DiscriminatedUnion4": new GeneratedRuntype(direct_hoist_49, v115),
     "AllTypes": direct_hoist_50,
     "AccessLevel": direct_hoist_51,
     "OtherEnum": direct_hoist_52,
     "Arr2C": direct_hoist_53,
     "ValidCurrency": direct_hoist_54,
-    "UnionWithEnumAccess": direct_hoist_55,
-    "T3": direct_hoist_56,
+    "UnionWithEnumAccess": new GeneratedRuntype(direct_hoist_55, v200),
+    "T3": new GeneratedRuntype(direct_hoist_56, v188),
     "AccessLevelCodec": direct_hoist_51,
     "AvatarSize": direct_hoist_57,
-    "BObject": direct_hoist_58,
-    "ImportEnumTypeof": direct_hoist_60,
+    "BObject": new GeneratedRuntype(direct_hoist_58, v95),
+    "ImportEnumTypeof": new GeneratedRuntype(direct_hoist_60, v60),
     "KDEF": direct_hoist_61,
     "KABC": direct_hoist_62,
     "K": direct_hoist_63,
@@ -849,10 +852,63 @@ const buildParsersInput = {
     "Int32ArrayCodec": direct_hoist_72,
     "Float64ArrayCodec": direct_hoist_73,
     "BigInt64ArrayCodec": direct_hoist_74,
-    "TsxTask": direct_hoist_75,
-    "Query": direct_hoist_76,
-    "DtsConfig": direct_hoist_77,
+    "TsxTask": new GeneratedRuntype(direct_hoist_75, v211),
+    "Query": new GeneratedRuntype(direct_hoist_76, v85),
+    "DtsConfig": new GeneratedRuntype(direct_hoist_77, v207),
     "DeploymentState": direct_hoist_78
 };
+function v17(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(typeof i[k]=="string"))return false;return true}
+function v18(c,i){return isObj(i)&&v17(c,i.a)&&direct_hoist_18.noExtraKeys(c,i)}
+function v60(c,i){return isObj(i)&&i.A==="a"&&direct_hoist_60.noExtraKeys(c,i)}
+function v83(c,i){return isObj(i)&&direct_hoist_81.validate(c,i.direction)&&direct_hoist_82.validate(c,i.field)&&direct_hoist_83.noExtraKeys(c,i)}
+function v84(c,i){return i==null||v83(c,i)}
+function v85(c,i){return isObj(i)&&v84(c,i.orderBy)&&direct_hoist_85.noExtraKeys(c,i)}
+function v87(c,i){return isObj(i)&&i.tag==="a"&&direct_hoist_87.noExtraKeys(c,i)}
+function v95(c,i){return isObj(i)&&i.tag==="b"&&direct_hoist_95.noExtraKeys(c,i)}
+function v99(c,i){return isObj(i)&&typeof i.a1=="string"&&(i.a11==null||typeof i.a11=="string")&&i.subType==="a1"&&i.type==="a"&&direct_hoist_99.noExtraKeys(c,i)}
+function v101(c,i){return isObj(i)&&typeof i.a2=="string"&&i.subType==="a2"&&i.type==="a"&&direct_hoist_101.noExtraKeys(c,i)}
+function v102(c,i){switch(discKey(i,"subType")){case "a1":return v99(c,i);case "a2":return v101(c,i)}return false}
+function v103(c,i){return isObj(i)&&i.type==="b"&&typeof i.value=="number"&&direct_hoist_103.noExtraKeys(c,i)}
+function v104(c,i){switch(discKey(i,"type")){case "a":return v102(c,i);case "b":return v103(c,i)}return false}
+function v106(c,i){return isObj(i)&&(i.type==null||i.type==="d")&&typeof i.valueD=="number"&&direct_hoist_106.noExtraKeys(c,i)}
+function v107(c,i){return v99(c,i)||v101(c,i)||v106(c,i)||v103(c,i)}
+function v109(c,i){return isObj(i)&&typeof i.a1=="string"&&direct_hoist_108.validate(c,i.type)&&direct_hoist_109.noExtraKeys(c,i)}
+function v110(c,i){switch(discKey(i,"type")){case "a":return v109(c,i);case "b":return v103(c,i);case "c":return v109(c,i)}return false}
+function v111(c,i){return isObj(i)&&typeof i.a1=="string"&&i.subType==="a1"&&direct_hoist_111.noExtraKeys(c,i)}
+function v112(c,i){return isObj(i)&&v111(c,i.a)&&i.type==="a"&&direct_hoist_112.noExtraKeys(c,i)}
+function v113(c,i){return isObj(i)&&typeof i.a2=="string"&&i.subType==="a2"&&direct_hoist_113.noExtraKeys(c,i)}
+function v114(c,i){return isObj(i)&&v113(c,i.a)&&i.type==="a"&&direct_hoist_114.noExtraKeys(c,i)}
+function v115(c,i){return v112(c,i)||v114(c,i)}
+function v136(c,i){return isObj(i)&&(i.a==null||typeof i.a=="string")&&(i.b==null||typeof i.b=="number")&&direct_hoist_136.noExtraKeys(c,i)}
+function v156(c,i){return isObj(i)&&i.tag==="d"&&direct_hoist_156.noExtraKeys(c,i)}
+function v158(c,i){return isObj(i)&&v156(c,i.d)&&direct_hoist_157.validate(c,i.level)&&direct_hoist_158.noExtraKeys(c,i)}
+function v160(c,i){return isObj(i)&&i.value==="a"&&direct_hoist_160.noExtraKeys(c,i)}
+function v161(c,i){return isObj(i)&&i.value==="b"&&direct_hoist_161.noExtraKeys(c,i)}
+function v162(c,i){return isObj(i)&&v160(c,i.a)&&v161(c,i.b)&&direct_hoist_162.noExtraKeys(c,i)}
+function v163(c,i){return isObj(i)&&(i.a==null||v160(c,i.a))&&(i.b==null||v161(c,i.b))&&direct_hoist_163.noExtraKeys(c,i)}
+function v164(c,i){return isObj(i)&&typeof i.A=="string"&&direct_hoist_164.noExtraKeys(c,i)}
+function v165(c,i){return isObj(i)&&(i.a==null||typeof i.a=="string")&&(i.b==null||typeof i.b=="string")&&direct_hoist_165.noExtraKeys(c,i)}
+function v166(c,i){return isObj(i)&&(i.a==null||typeof i.a=="string")&&(i.d==null||v156(c,i.d))&&(i.level==null||direct_hoist_157.validate(c,i.level))&&direct_hoist_166.noExtraKeys(c,i)}
+function v168(c,i){return isObj(i)&&direct_hoist_88.validate(c,i.accessLevel)&&direct_hoist_93.validate(c,i.avatarSize)&&direct_hoist_116.validate(c,i.extra)&&typeof i.name=="string"&&direct_hoist_168.noExtraKeys(c,i)}
+function v170(c,i){return isObj(i)&&(i.sizes==null||v171(c,i.sizes))&&direct_hoist_170.noExtraKeys(c,i)}
+function v171(c,i){return isObj(i)&&typeof i.useSmallerSizes=="boolean"&&direct_hoist_171.noExtraKeys(c,i)}
+function v173(c,i){return isObj(i)&&direct_hoist_172.validate(c,i.accountEndpoints)&&direct_hoist_173.noExtraKeys(c,i)}
+function v175(c,i){return isObj(i)&&direct_hoist_174.validate(c,i.accountEndpoints)&&direct_hoist_175.noExtraKeys(c,i)}
+function v176(c,i){return isObj(i)&&typeof i.optional=="string"&&direct_hoist_176.noExtraKeys(c,i)}
+function v177(c,i){return isObj(i)&&typeof i.a=="string"&&typeof i.b=="number"&&direct_hoist_177.noExtraKeys(c,i)}
+function v180(c,i){return typeof i=="string"||i==="a"||i==="b"||v156(c,i)}
+function v184(c,i){return isObj(i)&&i.kind==="square"&&typeof i.x=="number"&&direct_hoist_184.noExtraKeys(c,i)}
+function v186(c,i){return isObj(i)&&i.kind==="triangle"&&typeof i.x=="number"&&typeof i.y=="number"&&direct_hoist_186.noExtraKeys(c,i)}
+function v188(c,i){switch(discKey(i,"kind")){case "square":return v184(c,i);case "triangle":return v186(c,i)}return false}
+function v191(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!((i[k]==null||i[k]==null||typeof i[k]=="string"||typeof i[k]=="number")))return false;return true}
+function v192(c,i){return i==null||i==null||typeof i=="string"||v191(c,i)}
+function v195(c,i){return isObj(i)&&i.tag==="a"&&typeof i.value=="string"&&direct_hoist_195.noExtraKeys(c,i)}
+function v197(c,i){return isObj(i)&&i.tag==="b"&&typeof i.value=="number"&&direct_hoist_197.noExtraKeys(c,i)}
+function v199(c,i){return isObj(i)&&i.tag==="c"&&typeof i.value=="boolean"&&direct_hoist_199.noExtraKeys(c,i)}
+function v200(c,i){switch(discKey(i,"tag")){case "a":return v195(c,i);case "b":return v197(c,i);case "c":return v199(c,i)}return false}
+function v201(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v202(c,i[k])))return false;return true}
+function v202(c,i){return isObj(i)&&direct_hoist_88.validate(c,i.accessLevel)&&direct_hoist_93.validate(c,i.avatarSize)&&direct_hoist_116.validate(c,i.extra)&&v201(c,i.friends)&&typeof i.name=="string"&&direct_hoist_202.noExtraKeys(c,i)}
+function v207(c,i){return isObj(i)&&typeof i.enabled=="boolean"&&direct_hoist_208.validate(c,i.status)&&direct_hoist_207.noExtraKeys(c,i)}
+function v211(c,i){return isObj(i)&&typeof i.id=="string"&&direct_hoist_209.validate(c,i.label)&&direct_hoist_211.noExtraKeys(c,i)}
 
 export default { buildParsers };

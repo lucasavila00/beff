@@ -867,8 +867,13 @@ mod tests {
             "DiscriminatedUnion4": direct_hoist_9
         };
         const buildParsersInput = {
-            "DiscriminatedUnion4": direct_hoist_0
+            "DiscriminatedUnion4": new GeneratedRuntype(direct_hoist_0, v9)
         };
+        function v3(c,i){return isObj(i)&&typeof i.a1=="string"&&i.subType==="a1"&&direct_hoist_3.noExtraKeys(c,i)}
+        function v5(c,i){return isObj(i)&&v3(c,i.a)&&i.type==="a"&&direct_hoist_5.noExtraKeys(c,i)}
+        function v7(c,i){return isObj(i)&&typeof i.a2=="string"&&i.subType==="a2"&&direct_hoist_7.noExtraKeys(c,i)}
+        function v8(c,i){return isObj(i)&&v7(c,i.a)&&i.type==="a"&&direct_hoist_8.noExtraKeys(c,i)}
+        function v9(c,i){return v5(c,i)||v8(c,i)}
         "#);
     }
     #[test]
@@ -987,8 +992,11 @@ mod tests {
             "WorkflowSourceBase": direct_hoist_19
         };
         const buildParsersInput = {
-            "WorkflowSource": direct_hoist_0
+            "WorkflowSource": new GeneratedRuntype(direct_hoist_0, v17)
         };
+        function v13(c,i){return isObj(i)&&typeof i.createdAt=="string"&&typeof i.cronExpression=="string"&&(i.eventName==null||typeof i.eventName=="string")&&typeof i.id=="string"&&direct_hoist_12.validate(c,i.metadata)&&i.type==="CRON"&&typeof i.updatedAt=="string"&&typeof i.workflowID=="string"&&direct_hoist_13.noExtraKeys(c,i)}
+        function v14(c,i){return isObj(i)&&typeof i.createdAt=="string"&&(i.cronExpression==null||typeof i.cronExpression=="string")&&typeof i.eventName=="string"&&typeof i.id=="string"&&direct_hoist_12.validate(c,i.metadata)&&i.type==="EVENT"&&typeof i.updatedAt=="string"&&typeof i.workflowID=="string"&&direct_hoist_14.noExtraKeys(c,i)}
+        function v17(c,i){switch(discKey(i,"type")){case "CRON":return v13(c,i);case "EVENT":return v14(c,i)}return false}
         "#);
     }
     #[test]
@@ -1489,8 +1497,9 @@ mod tests {
             "Alias": direct_hoist_2
         };
         const buildParsersInput = {
-            "Dec": direct_hoist_0
+            "Dec": new GeneratedRuntype(direct_hoist_0, v2)
         };
+        function v2(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(typeof i[k]=="string"))return false;return true}
         "#);
     }
 
@@ -1532,8 +1541,10 @@ mod tests {
             "KnownConstants": direct_hoist_4
         };
         const buildParsersInput = {
-            "KnownConstants": direct_hoist_0
+            "KnownConstants": new GeneratedRuntype(direct_hoist_0, v4)
         };
+        function v3(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(typeof i[k]=="string"))return false;return true}
+        function v4(c,i){return isObj(i)&&direct_hoist_1.validate(c,i.BAR_OPTION)&&v3(c,i.BAZ_VALUES)&&typeof i.FOO_VALUE=="string"&&direct_hoist_4.noExtraKeys(c,i)}
         "#);
     }
 
@@ -1841,8 +1852,9 @@ mod tests {
             "Alias": direct_hoist_2
         };
         const buildParsersInput = {
-            "Dec": direct_hoist_0
+            "Dec": new GeneratedRuntype(direct_hoist_0, v2)
         };
+        function v2(c,i){return isObj(i)&&typeof i.a=="string"&&direct_hoist_2.noExtraKeys(c,i)}
         "#);
     }
     #[test]
@@ -1870,8 +1882,9 @@ mod tests {
             "Alias": direct_hoist_2
         };
         const buildParsersInput = {
-            "Dec": direct_hoist_0
+            "Dec": new GeneratedRuntype(direct_hoist_0, v2)
         };
+        function v2(c,i){return isObj(i)&&typeof i.id=="string"&&direct_hoist_2.noExtraKeys(c,i)}
         "#);
     }
     #[test]
@@ -1966,8 +1979,9 @@ mod tests {
             "Wrapper": direct_hoist_3
         };
         const buildParsersInput = {
-            "Dec": direct_hoist_0
+            "Dec": new GeneratedRuntype(direct_hoist_0, v3)
         };
+        function v3(c,i){return isObj(i)&&typeof i.value=="string"&&direct_hoist_3.noExtraKeys(c,i)}
         "#);
     }
     #[test]
@@ -1992,8 +2006,9 @@ mod tests {
             "Alias": direct_hoist_2
         };
         const buildParsersInput = {
-            "Dec": direct_hoist_0
+            "Dec": new GeneratedRuntype(direct_hoist_0, v2)
         };
+        function v2(c,i){return isObj(i)&&typeof i["quoted-key"]=="string"&&direct_hoist_2.noExtraKeys(c,i)}
         "#);
     }
     #[test]
@@ -2038,8 +2053,9 @@ mod tests {
             "Alias": direct_hoist_3
         };
         const buildParsersInput = {
-            "Dec": direct_hoist_0
+            "Dec": new GeneratedRuntype(direct_hoist_0, v3)
         };
+        function v3(c,i){return isObj(i)&&typeof i.a=="string"&&typeof i.b=="number"&&direct_hoist_3.noExtraKeys(c,i)}
         "#);
     }
     #[test]
@@ -2338,8 +2354,13 @@ mod tests {
             "UsesGenericWrapper": direct_hoist_13
         };
         const buildParsersInput = {
-            "UsesGenericWrapper": direct_hoist_0
+            "UsesGenericWrapper": new GeneratedRuntype(direct_hoist_0, v13)
         };
+        function v3(c,i){return i==null||v7(c,i)}
+        function v7(c,i){return isObj(i)&&v3(c,i.other)&&typeof i.value=="string"&&(typeof i.value2=="boolean"||typeof i.value2=="string")&&direct_hoist_7.noExtraKeys(c,i)}
+        function v9(c,i){return i==null||v12(c,i)}
+        function v12(c,i){return isObj(i)&&v9(c,i.other)&&typeof i.value=="number"&&(typeof i.value2=="boolean"||typeof i.value2=="number")&&direct_hoist_12.noExtraKeys(c,i)}
+        function v13(c,i){return isObj(i)&&v12(c,i.wrappedNumber)&&v7(c,i.wrappedString)&&direct_hoist_13.noExtraKeys(c,i)}
         "#);
     }
 
@@ -2396,8 +2417,11 @@ mod tests {
             "UsesGenericWrapper": direct_hoist_10
         };
         const buildParsersInput = {
-            "UsesGenericWrapper": direct_hoist_0
+            "UsesGenericWrapper": new GeneratedRuntype(direct_hoist_0, v10)
         };
+        function v5(c,i){return isObj(i)&&v5(c,i.other)&&typeof i.value=="string"&&(typeof i.value2=="boolean"||typeof i.value2=="string")&&direct_hoist_5.noExtraKeys(c,i)}
+        function v9(c,i){return isObj(i)&&v9(c,i.other)&&typeof i.value=="number"&&(typeof i.value2=="boolean"||typeof i.value2=="number")&&direct_hoist_9.noExtraKeys(c,i)}
+        function v10(c,i){return isObj(i)&&v9(c,i.wrappedNumber)&&v5(c,i.wrappedString)&&direct_hoist_10.noExtraKeys(c,i)}
         "#);
     }
 
@@ -2439,8 +2463,11 @@ mod tests {
             "UsesGenericWrapper": direct_hoist_7
         };
         const buildParsersInput = {
-            "UsesGenericWrapper": direct_hoist_0
+            "UsesGenericWrapper": new GeneratedRuntype(direct_hoist_0, v7)
         };
+        function v2(c,i){return isObj(i)&&typeof i.value=="string"&&direct_hoist_2.noExtraKeys(c,i)}
+        function v4(c,i){return isObj(i)&&typeof i.value=="number"&&direct_hoist_4.noExtraKeys(c,i)}
+        function v7(c,i){return isObj(i)&&v4(c,i.wrappedNumber)&&v2(c,i.wrappedString)&&direct_hoist_7.noExtraKeys(c,i)}
         "#);
     }
 
@@ -2530,8 +2557,14 @@ mod tests {
             "X": direct_hoist_16
         };
         const buildParsersInput = {
-            "X": direct_hoist_0
+            "X": new GeneratedRuntype(direct_hoist_0, v4)
         };
+        function v3(c,i){return isObj(i)&&i._tag==="none"&&direct_hoist_3.noExtraKeys(c,i)}
+        function v4(c,i){switch(discKey(i,"_tag")){case "logical":return v12(c,i);case "none":return v3(c,i)}return false}
+        function v7(c,i){return isObj(i)&&i._tag==="custom"&&typeof i.data=="string"&&direct_hoist_7.noExtraKeys(c,i)}
+        function v10(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v14(c,i[k])))return false;return true}
+        function v12(c,i){return isObj(i)&&i._tag==="logical"&&v10(c,i.nodes)&&direct_hoist_15.validate(c,i.op)&&direct_hoist_12.noExtraKeys(c,i)}
+        function v14(c,i){switch(discKey(i,"_tag")){case "custom":return v7(c,i);case "logical":return v12(c,i);case "none":return v3(c,i)}return false}
         "#);
     }
     #[test]

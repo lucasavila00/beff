@@ -30,6 +30,9 @@ import {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
+  GeneratedRuntype,
+  isObj,
+  discKey,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {
@@ -435,37 +438,77 @@ const buildParsersInput = {
     "null": direct_hoist_3,
     "undefined": direct_hoist_4,
     "object": direct_hoist_6,
-    "anyArray": direct_hoist_7,
+    "anyArray": new GeneratedRuntype(direct_hoist_7, v7),
     "any": direct_hoist_5,
-    "T1": direct_hoist_8,
-    "DocumentedPayload": direct_hoist_9,
-    "DocumentedResult": direct_hoist_10,
+    "T1": new GeneratedRuntype(direct_hoist_8, v105),
+    "DocumentedPayload": new GeneratedRuntype(direct_hoist_9, v56),
+    "DocumentedResult": new GeneratedRuntype(direct_hoist_10, v59),
     "JsdocSingleLineAlias": direct_hoist_11,
-    "JsdocMultilineObject": direct_hoist_12,
-    "JsdocMemberOnlyObject": direct_hoist_13,
-    "JsdocNestedObject": direct_hoist_14,
-    "JsdocReferencesDocumentedAlias": direct_hoist_15,
-    "JsdocUnionVariant": direct_hoist_16,
-    "JsdocIgnoredCommentObject": direct_hoist_17,
+    "JsdocMultilineObject": new GeneratedRuntype(direct_hoist_12, v83),
+    "JsdocMemberOnlyObject": new GeneratedRuntype(direct_hoist_13, v80),
+    "JsdocNestedObject": new GeneratedRuntype(direct_hoist_14, v86),
+    "JsdocReferencesDocumentedAlias": new GeneratedRuntype(direct_hoist_15, v88),
+    "JsdocUnionVariant": new GeneratedRuntype(direct_hoist_16, v97),
+    "JsdocIgnoredCommentObject": new GeneratedRuntype(direct_hoist_17, v76),
     "JsdocAfterUnrelatedValue": direct_hoist_18,
-    "T2": direct_hoist_19,
-    "T3": direct_hoist_20,
-    "InvalidSchemaWithDate": direct_hoist_21,
-    "InvalidSchemaWithBigInt": direct_hoist_22,
-    "DiscriminatedUnion": direct_hoist_23,
-    "RecursiveTree": direct_hoist_24,
+    "T2": new GeneratedRuntype(direct_hoist_19, v106),
+    "T3": new GeneratedRuntype(direct_hoist_20, v108),
+    "InvalidSchemaWithDate": new GeneratedRuntype(direct_hoist_21, v75),
+    "InvalidSchemaWithBigInt": new GeneratedRuntype(direct_hoist_22, v73),
+    "DiscriminatedUnion": new GeneratedRuntype(direct_hoist_23, v53),
+    "RecursiveTree": new GeneratedRuntype(direct_hoist_24, v101),
     "SemVer": direct_hoist_25,
     "NonEmptyString": direct_hoist_26,
     "ValidCurrency": direct_hoist_27,
-    "DocumentedSearchInput": direct_hoist_28,
-    "HierarchySelection": direct_hoist_29,
-    "ReusesRef": direct_hoist_30,
-    "UsesGenericWrapper": direct_hoist_31,
-    "StringWrapped": direct_hoist_32,
-    "NumberWrapped": direct_hoist_33,
-    "UsesWrappeds": direct_hoist_34,
-    "UsesWrappedsComplex": direct_hoist_35,
-    "UsesWrappedsComplexRef": direct_hoist_36
+    "DocumentedSearchInput": new GeneratedRuntype(direct_hoist_28, v62),
+    "HierarchySelection": new GeneratedRuntype(direct_hoist_29, v71),
+    "ReusesRef": new GeneratedRuntype(direct_hoist_30, v102),
+    "UsesGenericWrapper": new GeneratedRuntype(direct_hoist_31, v109),
+    "StringWrapped": new GeneratedRuntype(direct_hoist_32, v40),
+    "NumberWrapped": new GeneratedRuntype(direct_hoist_33, v41),
+    "UsesWrappeds": new GeneratedRuntype(direct_hoist_34, v111),
+    "UsesWrappedsComplex": new GeneratedRuntype(direct_hoist_35, v113),
+    "UsesWrappedsComplexRef": new GeneratedRuntype(direct_hoist_36, v115)
 };
+function v7(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(true))return false;return true}
+function v37(c,i){return isObj(i)&&typeof i.a=="boolean"&&direct_hoist_37.noExtraKeys(c,i)}
+function v39(c,i){return isObj(i)&&typeof i.value=="boolean"&&direct_hoist_39.noExtraKeys(c,i)}
+function v40(c,i){return isObj(i)&&typeof i.value=="string"&&direct_hoist_40.noExtraKeys(c,i)}
+function v41(c,i){return isObj(i)&&typeof i.value=="number"&&direct_hoist_41.noExtraKeys(c,i)}
+function v42(c,i){return isObj(i)&&v37(c,i.value)&&direct_hoist_42.noExtraKeys(c,i)}
+function v44(c,i){return isObj(i)&&v37(c,i.value)&&direct_hoist_44.noExtraKeys(c,i)}
+function v47(c,i){return isObj(i)&&typeof i.a1=="string"&&(i.a11==null||typeof i.a11=="string")&&i.subType==="a1"&&i.type==="a"&&direct_hoist_47.noExtraKeys(c,i)}
+function v49(c,i){return isObj(i)&&typeof i.a2=="string"&&i.subType==="a2"&&i.type==="a"&&direct_hoist_49.noExtraKeys(c,i)}
+function v50(c,i){switch(discKey(i,"subType")){case "a1":return v47(c,i);case "a2":return v49(c,i)}return false}
+function v52(c,i){return isObj(i)&&i.type==="b"&&typeof i.value=="number"&&direct_hoist_52.noExtraKeys(c,i)}
+function v53(c,i){switch(discKey(i,"type")){case "a":return v50(c,i);case "b":return v52(c,i)}return false}
+function v56(c,i){return isObj(i)&&typeof i.id=="string"&&(i.retries==null||typeof i.retries=="number")&&direct_hoist_56.noExtraKeys(c,i)}
+function v59(c,i){return isObj(i)&&(i.alpha==null||typeof i.alpha=="string")&&typeof i.beta=="string"&&direct_hoist_59.noExtraKeys(c,i)}
+function v62(c,i){return isObj(i)&&(i.cursor==null||typeof i.cursor=="number")&&direct_hoist_38.validate(c,i.item)&&direct_hoist_62.noExtraKeys(c,i)}
+function v65(c,i){return isObj(i)&&v65(c,i.other)&&typeof i.value=="string"&&(typeof i.value2=="boolean"||typeof i.value2=="string")&&direct_hoist_65.noExtraKeys(c,i)}
+function v68(c,i){return isObj(i)&&v68(c,i.other)&&typeof i.value=="number"&&(typeof i.value2=="boolean"||typeof i.value2=="number")&&direct_hoist_68.noExtraKeys(c,i)}
+function v71(c,i){return isObj(i)&&i._tag==="entityId"&&typeof i.entityId=="string"&&direct_hoist_71.noExtraKeys(c,i)}
+function v73(c,i){return isObj(i)&&direct_hoist_72.validate(c,i.x)&&direct_hoist_73.noExtraKeys(c,i)}
+function v75(c,i){return isObj(i)&&direct_hoist_74.validate(c,i.x)&&direct_hoist_75.noExtraKeys(c,i)}
+function v76(c,i){return isObj(i)&&typeof i.line=="number"&&typeof i.plain=="string"&&direct_hoist_76.noExtraKeys(c,i)}
+function v80(c,i){return isObj(i)&&(i.alpha==null||typeof i.alpha=="string")&&typeof i.beta=="string"&&(i.gamma==null||typeof i.gamma=="number")&&direct_hoist_80.noExtraKeys(c,i)}
+function v83(c,i){return isObj(i)&&typeof i.first=="string"&&typeof i.second=="number"&&direct_hoist_83.noExtraKeys(c,i)}
+function v85(c,i){return isObj(i)&&typeof i.enabled=="boolean"&&direct_hoist_85.noExtraKeys(c,i)}
+function v86(c,i){return isObj(i)&&v85(c,i.nested)&&direct_hoist_86.noExtraKeys(c,i)}
+function v88(c,i){return isObj(i)&&direct_hoist_89.validate(c,i.token)&&direct_hoist_88.noExtraKeys(c,i)}
+function v93(c,i){return isObj(i)&&i.kind==="left"&&typeof i.value=="string"&&direct_hoist_93.noExtraKeys(c,i)}
+function v96(c,i){return isObj(i)&&typeof i.count=="number"&&i.kind==="right"&&direct_hoist_96.noExtraKeys(c,i)}
+function v97(c,i){switch(discKey(i,"kind")){case "left":return v93(c,i);case "right":return v96(c,i)}return false}
+function v100(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v101(c,i[k])))return false;return true}
+function v101(c,i){return isObj(i)&&v100(c,i.children)&&typeof i.value=="number"&&direct_hoist_101.noExtraKeys(c,i)}
+function v102(c,i){return isObj(i)&&v108(c,i.a)&&v108(c,i.b)&&direct_hoist_102.noExtraKeys(c,i)}
+function v105(c,i){return isObj(i)&&typeof i.a=="string"&&typeof i.b=="number"&&direct_hoist_105.noExtraKeys(c,i)}
+function v106(c,i){return isObj(i)&&v105(c,i.t1)&&direct_hoist_106.noExtraKeys(c,i)}
+function v107(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v106(c,i[k])))return false;return true}
+function v108(c,i){return isObj(i)&&v107(c,i.t2Array)&&direct_hoist_108.noExtraKeys(c,i)}
+function v109(c,i){return isObj(i)&&v68(c,i.wrappedNumber)&&v65(c,i.wrappedString)&&direct_hoist_109.noExtraKeys(c,i)}
+function v111(c,i){return isObj(i)&&v40(c,i.x1)&&v41(c,i.x2)&&v39(c,i.x3)&&v40(c,i.x4)&&v41(c,i.x5)&&v39(c,i.x6)&&direct_hoist_111.noExtraKeys(c,i)}
+function v113(c,i){return isObj(i)&&v42(c,i.x3)&&v42(c,i.x6)&&direct_hoist_113.noExtraKeys(c,i)}
+function v115(c,i){return isObj(i)&&v44(c,i.x3)&&v44(c,i.x6)&&direct_hoist_115.noExtraKeys(c,i)}
 
 export default { buildParsers };

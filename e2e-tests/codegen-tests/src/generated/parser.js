@@ -30,6 +30,9 @@ import {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
+  GeneratedRuntype,
+  isObj,
+  discKey,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {
@@ -314,25 +317,44 @@ const buildParsersInput = {
     "AliasToNull": direct_hoist_4,
     "AliasToAny": direct_hoist_5,
     "AliasToConst": direct_hoist_6,
-    "TestHoist": direct_hoist_7,
-    "NestedOrder": direct_hoist_8,
-    "BeforeRequired": direct_hoist_9,
-    "AfterRequired": direct_hoist_10,
+    "TestHoist": new GeneratedRuntype(direct_hoist_7, v75),
+    "NestedOrder": new GeneratedRuntype(direct_hoist_8, v64),
+    "BeforeRequired": new GeneratedRuntype(direct_hoist_9, v37),
+    "AfterRequired": new GeneratedRuntype(direct_hoist_10, v32),
     "R": direct_hoist_11,
-    "R2": direct_hoist_12,
-    "R3": direct_hoist_13,
+    "R2": new GeneratedRuntype(direct_hoist_12, v63),
+    "R3": new GeneratedRuntype(direct_hoist_13, v72),
     "R4": direct_hoist_14,
     "R5": direct_hoist_15,
     "Meta": direct_hoist_16,
     "Meta2": direct_hoist_17,
-    "KnownConstants": direct_hoist_18,
+    "KnownConstants": new GeneratedRuntype(direct_hoist_18, v53),
     "NumberKeys": direct_hoist_19,
     "NumberIndex": direct_hoist_20,
     "NumberOrTemplateKeys": direct_hoist_21,
-    "DefaultTypeParams": direct_hoist_22,
-    "NumberLiteralKeys": direct_hoist_23,
-    "PartialNumberLiteralKeys": direct_hoist_24,
-    "MixedLiteralKeys": direct_hoist_25
+    "DefaultTypeParams": new GeneratedRuntype(direct_hoist_22, v50),
+    "NumberLiteralKeys": new GeneratedRuntype(direct_hoist_23, v67),
+    "PartialNumberLiteralKeys": new GeneratedRuntype(direct_hoist_24, v70),
+    "MixedLiteralKeys": new GeneratedRuntype(direct_hoist_25, v62)
 };
+function v32(c,i){return isObj(i)&&typeof i.a=="string"&&(i.b==null||typeof i.b=="string")&&(i.c==null||typeof i.c=="string")&&(i.d==null||typeof i.d=="string")&&typeof i.e=="string"&&direct_hoist_32.noExtraKeys(c,i)}
+function v37(c,i){return isObj(i)&&typeof i.a=="string"&&(i.b==null||typeof i.b=="string")&&(i.c==null||typeof i.c=="string")&&(i.d==null||typeof i.d=="string")&&(i.e==null||typeof i.e=="string")&&direct_hoist_37.noExtraKeys(c,i)}
+function v38(c,i){return isObj(i)&&typeof i.v=="string"&&direct_hoist_38.noExtraKeys(c,i)}
+function v39(c,i){return isObj(i)&&typeof i.v=="number"&&direct_hoist_39.noExtraKeys(c,i)}
+function v40(c,i){return isObj(i)&&typeof i.a=="number"&&typeof i.b=="string"&&direct_hoist_40.noExtraKeys(c,i)}
+function v41(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(typeof i[k]=="boolean"))return false;return true}
+function v42(c,i){return isObj(i)&&typeof i.a=="boolean"&&v41(c,i.b)&&direct_hoist_42.noExtraKeys(c,i)}
+function v43(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(typeof i[k]=="number"))return false;return true}
+function v44(c,i){return isObj(i)&&typeof i.a=="number"&&v43(c,i.b)&&direct_hoist_44.noExtraKeys(c,i)}
+function v50(c,i){return isObj(i)&&v38(c,i.g)&&v39(c,i.gn)&&v40(c,i.h)&&v42(c,i.i)&&v44(c,i.p)&&direct_hoist_50.noExtraKeys(c,i)}
+function v52(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(typeof i[k]=="string"))return false;return true}
+function v53(c,i){return isObj(i)&&direct_hoist_51.validate(c,i.BAR_OPTION)&&v52(c,i.BAZ_VALUES)&&typeof i.FOO_VALUE=="string"&&direct_hoist_53.noExtraKeys(c,i)}
+function v62(c,i){return isObj(i)&&typeof i["1"]=="string"&&typeof i.a=="string"&&direct_hoist_62.noExtraKeys(c,i)}
+function v63(c,i){return isObj(i)&&typeof i.a=="number"&&typeof i.b=="number"&&direct_hoist_63.noExtraKeys(c,i)}
+function v64(c,i){return isObj(i)&&typeof i.label=="string"&&v63(c,i.outer)&&direct_hoist_64.noExtraKeys(c,i)}
+function v67(c,i){return isObj(i)&&typeof i["1"]=="string"&&typeof i["2"]=="string"&&direct_hoist_67.noExtraKeys(c,i)}
+function v70(c,i){return isObj(i)&&(i["1"]==null||typeof i["1"]=="string")&&(i["2"]==null||typeof i["2"]=="string")&&direct_hoist_70.noExtraKeys(c,i)}
+function v72(c,i){return isObj(i)&&(i.a==null||typeof i.a=="number")&&(i.b==null||typeof i.b=="number")&&direct_hoist_72.noExtraKeys(c,i)}
+function v75(c,i){return isObj(i)&&v52(c,i.a)&&v52(c,i.b)&&direct_hoist_75.noExtraKeys(c,i)}
 
 export default { buildParsers };

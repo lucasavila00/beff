@@ -30,6 +30,9 @@ import {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
+  GeneratedRuntype,
+  isObj,
+  discKey,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {
@@ -92,8 +95,12 @@ const namedRuntypes = {
     "UserList": direct_hoist_9
 };
 const buildParsersInput = {
-    "UserObj": direct_hoist_0,
-    "UserList": direct_hoist_1
+    "UserObj": new GeneratedRuntype(direct_hoist_0, v5),
+    "UserList": new GeneratedRuntype(direct_hoist_1, v9)
 };
+function v3(c,i){return isObj(i)&&typeof i.a=="string"&&direct_hoist_3.noExtraKeys(c,i)}
+function v5(c,i){return isObj(i)&&v3(c,i.x)&&direct_hoist_5.noExtraKeys(c,i)}
+function v7(c,i){return isObj(i)&&typeof i.b=="number"&&direct_hoist_7.noExtraKeys(c,i)}
+function v9(c,i){if(!Array.isArray(i))return false;for(let k=0;k<i.length;k++)if(!(v7(c,i[k])))return false;return true}
 
 export default { buildParsers };

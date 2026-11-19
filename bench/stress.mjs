@@ -5,6 +5,7 @@
 // For every input, with and without disallowExtraProperties: safeParse and validate do not throw, validate(x) === safeParse(x).success,
 // a failed safeParse has errors, and parse throws only the "Failed to parse" error.
 // For generated valid inputs: parse(x) deep-equals x.
+// Generated validate functions are checked against the runtype tree on every input (BEFF_CHECK_GENERATED_VALIDATE).
 // Then it checks how deep a recursive input can be before a stack overflow.
 import { parseArgs, isDeepStrictEqual } from "node:util";
 import { shapes, build, corrupt } from "./gen.mjs";
@@ -119,6 +120,7 @@ function check(Root, x, mustBeValid, opts) {
 }
 
 let failed = 0;
+process.env.BEFF_CHECK_GENERATED_VALIDATE = "1";
 for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
   const Root = (await build(shape, N)).Root;
   const value = (n) => shapes[shape].value(N, n);
@@ -142,7 +144,8 @@ for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
   failed += failures.length;
 }
 
-// The deepest recursive input that each call handles without a stack overflow.
+// The deepest recursive input that each call handles without a stack overflow, without the tree check.
+delete process.env.BEFF_CHECK_GENERATED_VALIDATE;
 const Rec = (await build("recursive", 4)).Root;
 const deepest = {};
 for (let depth = 250; depth <= 64000; depth *= 2) {
