@@ -99,6 +99,14 @@ Use Prettier for JS/TS/JSON/Markdown formatting; the repo enforces `printWidth: 
 
 Run `pnpm run all` or to debug `DEBUG=true pnpm run all` where it will not optimize the Rust code but makes it easier to debug it.
 
+## Bugs and Edge Cases
+
+- Fix only problems that real code or real data can cause. Before you write a fix, find the real input or the real type that causes the problem.
+- Real input is data that comes from outside the program (for example `JSON.parse` output) and normal values of the supported JavaScript types.
+- Do not fix problems that need values that only JavaScript code can make, for example an object with a changed prototype, a `Proxy`, or a cyclic value.
+- Do not fix problems that need types that nobody writes, for example `Date & { foo: string }`. If such a type gives wrong results, make the compiler reject it with a short error.
+- If a reported problem does not occur with real code or real data, close the issue and say why.
+
 ## Benchmarks
 
 - The benchmarks in `bench/` are manual. Do not run them as part of `pnpm test`, and do not add them to the Tests workflow or to any automatic trigger (push or pull request).
