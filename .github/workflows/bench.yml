@@ -20,12 +20,27 @@ on:
         description: "Extra args for stress.mjs (--scale, --runs, --seed)"
         required: false
         default: ""
+      load_args:
+        description: "Extra args for load.mjs (--scale)"
+        required: false
+        default: ""
+      baseline_ref:
+        description: "Branch, tag or commit to compare with in the same job (empty = no comparison)"
+        required: false
+        default: "main"
+      compare_args:
+        description: "Extra args for compare.mjs (--rounds, --scale, --load-scale)"
+        required: false
+        default: ""
 jobs:
   bench:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
+        with:
+          # The baseline can be any commit of the repository.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v2
         with:
           version: 10
@@ -47,10 +62,11 @@ jobs:
           COMPILE_ARGS: ${{ inputs.compile_args }}
           RUNTIME_ARGS: ${{ inputs.runtime_args }}
           STRESS_ARGS: ${{ inputs.stress_args }}
+          LOAD_ARGS: ${{ inputs.load_args }}
         run: |
           shape=${SHAPE:+--shape $SHAPE}
           status=0
-          for s in "compile $COMPILE_ARGS" "runtime $RUNTIME_ARGS" "stress $STRESS_ARGS"; do
+          for s in "compile $COMPILE_ARGS" "runtime $RUNTIME_ARGS" "stress $STRESS_ARGS" "load $LOAD_ARGS"; do
             set -- $s
             name=$1
             shift
@@ -59,7 +75,7 @@ jobs:
             node "$name.mjs" $shape "$@" 2>&1 | tee "$name.txt"
             code=${PIPESTATUS[0]}
             set -e
-            # compile and runtime print markdown tables; stress prints plain text.
+            # compile, runtime and load print markdown tables; stress prints plain text.
             if [ "$name" = stress ]; then
               printf '\n```\n%s\n```\n' "$(cat "$name.txt")" >> "$GITHUB_STEP_SUMMARY"
             else
@@ -72,6 +88,28 @@ jobs:
             echo >> "$GITHUB_STEP_SUMMARY"
           done
           exit $status
+      - name: Build the baseline (release)
+        if: ${{ !cancelled() && inputs.baseline_ref != '' }}
+        env:
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+        run: |
+          commit=$(git rev-parse --verify --quiet "origin/$BASELINE_REF^{commit}" || git rev-parse --verify "$BASELINE_REF^{commit}")
+          git worktree add --detach "$RUNNER_TEMP/baseline" "$commit"
+          cd "$RUNNER_TEMP/baseline"
+          pnpm install
+          pnpm build
+      - name: Compare with the baseline
+        if: ${{ !cancelled() && inputs.baseline_ref != '' }}
+        working-directory: bench
+        env:
+          SHAPE: ${{ inputs.shape }}
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+          COMPARE_ARGS: ${{ inputs.compare_args }}
+        run: |
+          shape=${SHAPE:+--shape $SHAPE}
+          echo "## node compare.mjs $shape $COMPARE_ARGS (baseline: $BASELINE_REF, candidate: $GITHUB_REF_NAME)" >> "$GITHUB_STEP_SUMMARY"
+          node compare.mjs --baseline "$RUNNER_TEMP/baseline" $shape $COMPARE_ARGS | tee compare.txt
+          cat compare.txt >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

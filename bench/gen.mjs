@@ -183,7 +183,7 @@ export function corrupt(value) {
 }
 
 // Format validators passed to buildParsers.
-function formatArgs(shape, N) {
+export function formatArgs(shape, N) {
   const f = shapes[shape].formats?.(N) ?? { stringFormats: [], numberFormats: [] };
   return {
     stringFormats: Object.fromEntries(f.stringFormats.map((k) => [k, (s) => s.length > 0])),
@@ -224,10 +224,11 @@ const cli = require.resolve("@beff/cli/bin/index.js");
 // Prints the peak RSS of the CLI process when it exits.
 const printRss = `data:text/javascript,process.on("exit",()=>process.stderr.write("MAXRSS "+process.resourceUsage().maxRSS+"\\n"))`;
 
-// Runs `beff -p beff.json` in `dir`. Returns wall time in ms and peak RSS in MB.
-export function compile(dir) {
+// Runs `beff -p beff.json` in `dir`, with the CLI of this repository or the CLI at `cliPath`.
+// Returns wall time in ms and peak RSS in MB.
+export function compile(dir, cliPath = cli) {
   const start = performance.now();
-  const res = spawnSync(process.execPath, ["--import", printRss, cli, "-p", "beff.json"], {
+  const res = spawnSync(process.execPath, ["--import", printRss, cliPath, "-p", "beff.json"], {
     cwd: dir,
     encoding: "utf-8",
   });

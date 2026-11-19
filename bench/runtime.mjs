@@ -9,6 +9,7 @@
 import { parseArgs } from "node:util";
 import { spawnSync } from "node:child_process";
 import { shapes, build, corrupt } from "./gen.mjs";
+import { measure, operations } from "./measure.mjs";
 
 const { values } = parseArgs({
   options: {
@@ -35,24 +36,6 @@ if (values.ab) {
   process.exit(0);
 }
 
-// Milliseconds per call, measured for at least 200 ms after one warm-up call.
-function measure(f) {
-  try {
-    f();
-  } catch (e) {
-    return `${e.constructor.name}`;
-  }
-  let calls = 0;
-  const start = performance.now();
-  let elapsed = 0;
-  while (elapsed < 200) {
-    f();
-    calls++;
-    elapsed = performance.now() - start;
-  }
-  return elapsed / calls;
-}
-
 const fmt = (ms, prev) => {
   if (typeof ms === "string") return ms;
   const t = ms >= 1 ? `${ms.toFixed(1)} ms` : `${(ms * 1000).toFixed(0)} µs`;
@@ -61,22 +44,7 @@ const fmt = (ms, prev) => {
 
 for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
   const Root = (await build(shape, N, { tables })).Root;
-  const ops = {
-    validate: (v) => Root.validate(v),
-    safeParse: (v) => Root.safeParse(v),
-    parse: (v) => Root.parse(v),
-    "validate (invalid)": (_, bad) => Root.validate(bad),
-    "safeParse (invalid)": (_, bad) => Root.safeParse(bad),
-    "parse (invalid)": (_, bad) => {
-      try {
-        Root.parse(bad);
-      } catch (e) {
-        if (e.message.startsWith("Failed to parse")) return;
-        throw e;
-      }
-      throw new Error("parse accepted an invalid value");
-    },
-  };
+  const ops = operations(Root);
   const title = tables ? shape : `${shape}, union tables removed`;
   console.log(`\n### ${title} (scale ${N}; time per call, growth per 2x in parentheses)\n`);
   console.log(`| n | ${Object.keys(ops).join(" | ")} |`);
