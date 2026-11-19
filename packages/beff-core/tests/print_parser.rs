@@ -841,24 +841,32 @@ mod tests {
         const direct_hoist_0 = reference(registry, "DiscriminatedUnion4");
         const direct_hoist_1 = string();
         const direct_hoist_2 = literal("a1");
-        const direct_hoist_3 = object({
-            a1: direct_hoist_1,
-            subType: direct_hoist_2
-        });
+        const direct_hoist_3 = object([
+            "a1",
+            direct_hoist_1,
+            "subType",
+            direct_hoist_2
+        ]);
         const direct_hoist_4 = literal("a");
-        const direct_hoist_5 = object({
-            a: direct_hoist_3,
-            type: direct_hoist_4
-        });
+        const direct_hoist_5 = object([
+            "a",
+            direct_hoist_3,
+            "type",
+            direct_hoist_4
+        ]);
         const direct_hoist_6 = literal("a2");
-        const direct_hoist_7 = object({
-            a2: direct_hoist_1,
-            subType: direct_hoist_6
-        });
-        const direct_hoist_8 = object({
-            a: direct_hoist_7,
-            type: direct_hoist_4
-        });
+        const direct_hoist_7 = object([
+            "a2",
+            direct_hoist_1,
+            "subType",
+            direct_hoist_6
+        ]);
+        const direct_hoist_8 = object([
+            "a",
+            direct_hoist_7,
+            "type",
+            direct_hoist_4
+        ]);
         const direct_hoist_9 = union([
             direct_hoist_5,
             direct_hoist_8
@@ -909,53 +917,75 @@ mod tests {
             direct_hoist_1
         ]);
         const direct_hoist_4 = literal("CRON");
-        const direct_hoist_5 = object({
-            cronExpression: direct_hoist_1,
-            eventName: direct_hoist_3,
-            type: direct_hoist_4
-        });
+        const direct_hoist_5 = object([
+            "cronExpression",
+            direct_hoist_1,
+            "eventName",
+            direct_hoist_3,
+            "type",
+            direct_hoist_4
+        ]);
         const direct_hoist_6 = reference(registry, "WorkflowSourceBase");
         const direct_hoist_7 = intersection([
             direct_hoist_5,
             direct_hoist_6
         ]);
         const direct_hoist_8 = literal("EVENT");
-        const direct_hoist_9 = object({
-            cronExpression: direct_hoist_3,
-            eventName: direct_hoist_1,
-            type: direct_hoist_8
-        });
+        const direct_hoist_9 = object([
+            "cronExpression",
+            direct_hoist_3,
+            "eventName",
+            direct_hoist_1,
+            "type",
+            direct_hoist_8
+        ]);
         const direct_hoist_10 = intersection([
             direct_hoist_9,
             direct_hoist_6
         ]);
         const direct_hoist_11 = any();
-        const direct_hoist_12 = object({}, [
+        const direct_hoist_12 = object([], [
             {
                 key: direct_hoist_1,
                 value: direct_hoist_11
             }
         ]);
-        const direct_hoist_13 = object({
-            createdAt: direct_hoist_1,
-            cronExpression: direct_hoist_1,
-            eventName: direct_hoist_3,
-            id: direct_hoist_1,
-            metadata: direct_hoist_12,
-            type: direct_hoist_4,
-            updatedAt: direct_hoist_1,
-            workflowID: direct_hoist_1
-        });
-        const direct_hoist_14 = object({
-            createdAt: direct_hoist_1,
-            cronExpression: direct_hoist_3,
-            eventName: direct_hoist_1,
-            id: direct_hoist_1,
-            metadata: direct_hoist_12,
-            type: direct_hoist_8,
-            updatedAt: direct_hoist_1,
-            workflowID: direct_hoist_1
-        });
+        const direct_hoist_13 = object([
+            "createdAt",
+            direct_hoist_1,
+            "cronExpression",
+            direct_hoist_1,
+            "eventName",
+            direct_hoist_3,
+            "id",
+            direct_hoist_1,
+            "metadata",
+            direct_hoist_12,
+            "type",
+            direct_hoist_4,
+            "updatedAt",
+            direct_hoist_1,
+            "workflowID",
+            direct_hoist_1
+        ]);
+        const direct_hoist_14 = object([
+            "createdAt",
+            direct_hoist_1,
+            "cronExpression",
+            direct_hoist_3,
+            "eventName",
+            direct_hoist_1,
+            "id",
+            direct_hoist_1,
+            "metadata",
+            direct_hoist_12,
+            "type",
+            direct_hoist_8,
+            "updatedAt",
+            direct_hoist_1,
+            "workflowID",
+            direct_hoist_1
+        ]);
         const direct_hoist_15 = reference(registry, "EventWorkflowSource");
         const direct_hoist_16 = reference(registry, "CronWorkflowSource");
         const direct_hoist_17 = discriminatedUnion("type", {
@@ -969,14 +999,20 @@ mod tests {
             "CRON",
             "EVENT"
         ]);
-        const direct_hoist_19 = object({
-            createdAt: direct_hoist_1,
-            id: direct_hoist_1,
-            metadata: direct_hoist_12,
-            type: direct_hoist_18,
-            updatedAt: direct_hoist_1,
-            workflowID: direct_hoist_1
-        });
+        const direct_hoist_19 = object([
+            "createdAt",
+            direct_hoist_1,
+            "id",
+            direct_hoist_1,
+            "metadata",
+            direct_hoist_12,
+            "type",
+            direct_hoist_18,
+            "updatedAt",
+            direct_hoist_1,
+            "workflowID",
+            direct_hoist_1
+        ]);
         define(registry, {
             CronWorkflowSource: direct_hoist_7,
             EventWorkflowSource: direct_hoist_10,
@@ -1520,11 +1556,14 @@ mod tests {
         ]);
         const direct_hoist_2 = string();
         const direct_hoist_3 = array(direct_hoist_2);
-        const direct_hoist_4 = object({
-            BAR_OPTION: direct_hoist_1,
-            BAZ_VALUES: direct_hoist_3,
-            FOO_VALUE: direct_hoist_2
-        });
+        const direct_hoist_4 = object([
+            "BAR_OPTION",
+            direct_hoist_1,
+            "BAZ_VALUES",
+            direct_hoist_3,
+            "FOO_VALUE",
+            direct_hoist_2
+        ]);
         define(registry, {
             KnownConstants: direct_hoist_4
         });
@@ -1569,7 +1608,7 @@ mod tests {
         const direct_hoist_2 = stringWithFormat([
             "password"
         ]);
-        const direct_hoist_3 = object({}, [
+        const direct_hoist_3 = object([], [
             {
                 key: direct_hoist_2,
                 value: direct_hoist_1
@@ -1600,7 +1639,7 @@ mod tests {
         const direct_hoist_2 = stringWithFormat([
             "password"
         ]);
-        const direct_hoist_3 = object({}, [
+        const direct_hoist_3 = object([], [
             {
                 key: direct_hoist_2,
                 value: direct_hoist_1
@@ -1628,7 +1667,7 @@ mod tests {
         ), @r#"
         const direct_hoist_0 = reference(registry, "NumberRecGet");
         const direct_hoist_1 = string();
-        const direct_hoist_2 = object({}, [
+        const direct_hoist_2 = object([], [
             {
                 key: numberKey(),
                 value: direct_hoist_1
@@ -1831,9 +1870,10 @@ mod tests {
         ), @r#"
         const direct_hoist_0 = reference(registry, "Alias");
         const direct_hoist_1 = string();
-        const direct_hoist_2 = object({
-            a: direct_hoist_1
-        });
+        const direct_hoist_2 = object([
+            "a",
+            direct_hoist_1
+        ]);
         define(registry, {
             Alias: direct_hoist_2
         });
@@ -1856,9 +1896,10 @@ mod tests {
         ), @r#"
         const direct_hoist_0 = reference(registry, "Alias");
         const direct_hoist_1 = withDescription(string(), "Stable user id.");
-        const direct_hoist_2 = withDescription(object({
-            id: direct_hoist_1
-        }), "User payload.");
+        const direct_hoist_2 = withDescription(object([
+            "id",
+            direct_hoist_1
+        ]), "User payload.");
         define(registry, {
             Alias: direct_hoist_2
         });
@@ -1945,9 +1986,10 @@ mod tests {
         const direct_hoist_0 = reference(registry, "Wrapper");
         const direct_hoist_1 = withDescription(string(), "Declared alias.");
         const direct_hoist_2 = reference(registry, "Alias");
-        const direct_hoist_3 = withDescription(object({
-            value: direct_hoist_2
-        }), "Declared interface.");
+        const direct_hoist_3 = withDescription(object([
+            "value",
+            direct_hoist_2
+        ]), "Declared interface.");
         define(registry, {
             Alias: direct_hoist_1,
             Wrapper: direct_hoist_3
@@ -1970,9 +2012,10 @@ mod tests {
         ), @r#"
         const direct_hoist_0 = reference(registry, "Alias");
         const direct_hoist_1 = withDescription(string(), "Quoted property.");
-        const direct_hoist_2 = object({
-            "quoted-key": direct_hoist_1
-        });
+        const direct_hoist_2 = object([
+            "quoted-key",
+            direct_hoist_1
+        ]);
         define(registry, {
             Alias: direct_hoist_2
         });
@@ -2015,10 +2058,12 @@ mod tests {
         const direct_hoist_0 = reference(registry, "Alias");
         const direct_hoist_1 = string();
         const direct_hoist_2 = number();
-        const direct_hoist_3 = object({
-            a: direct_hoist_1,
-            b: direct_hoist_2
-        });
+        const direct_hoist_3 = object([
+            "a",
+            direct_hoist_1,
+            "b",
+            direct_hoist_2
+        ]);
         define(registry, {
             Alias: direct_hoist_3
         });
@@ -2293,11 +2338,14 @@ mod tests {
             direct_hoist_5,
             direct_hoist_4
         ]);
-        const direct_hoist_7 = object({
-            other: direct_hoist_3,
-            value: direct_hoist_4,
-            value2: direct_hoist_6
-        });
+        const direct_hoist_7 = object([
+            "other",
+            direct_hoist_3,
+            "value",
+            direct_hoist_4,
+            "value2",
+            direct_hoist_6
+        ]);
         const direct_hoist_8 = reference(registry, "GenericWrapper_number");
         const direct_hoist_9 = union([
             direct_hoist_1,
@@ -2308,15 +2356,20 @@ mod tests {
             direct_hoist_5,
             direct_hoist_10
         ]);
-        const direct_hoist_12 = object({
-            other: direct_hoist_9,
-            value: direct_hoist_10,
-            value2: direct_hoist_11
-        });
-        const direct_hoist_13 = object({
-            wrappedNumber: direct_hoist_8,
-            wrappedString: direct_hoist_2
-        });
+        const direct_hoist_12 = object([
+            "other",
+            direct_hoist_9,
+            "value",
+            direct_hoist_10,
+            "value2",
+            direct_hoist_11
+        ]);
+        const direct_hoist_13 = object([
+            "wrappedNumber",
+            direct_hoist_8,
+            "wrappedString",
+            direct_hoist_2
+        ]);
         define(registry, {
             GenericWrapper_string: direct_hoist_7,
             GenericWrapper_number: direct_hoist_12,
@@ -2355,26 +2408,34 @@ mod tests {
             direct_hoist_3,
             direct_hoist_2
         ]);
-        const direct_hoist_5 = object({
-            other: direct_hoist_1,
-            value: direct_hoist_2,
-            value2: direct_hoist_4
-        });
+        const direct_hoist_5 = object([
+            "other",
+            direct_hoist_1,
+            "value",
+            direct_hoist_2,
+            "value2",
+            direct_hoist_4
+        ]);
         const direct_hoist_6 = reference(registry, "GenericWrapper_number");
         const direct_hoist_7 = number();
         const direct_hoist_8 = union([
             direct_hoist_3,
             direct_hoist_7
         ]);
-        const direct_hoist_9 = object({
-            other: direct_hoist_6,
-            value: direct_hoist_7,
-            value2: direct_hoist_8
-        });
-        const direct_hoist_10 = object({
-            wrappedNumber: direct_hoist_6,
-            wrappedString: direct_hoist_1
-        });
+        const direct_hoist_9 = object([
+            "other",
+            direct_hoist_6,
+            "value",
+            direct_hoist_7,
+            "value2",
+            direct_hoist_8
+        ]);
+        const direct_hoist_10 = object([
+            "wrappedNumber",
+            direct_hoist_6,
+            "wrappedString",
+            direct_hoist_1
+        ]);
         define(registry, {
             GenericWrapper_string: direct_hoist_5,
             GenericWrapper_number: direct_hoist_9,
@@ -2405,19 +2466,23 @@ mod tests {
         ), @r#"
         const direct_hoist_0 = reference(registry, "UsesGenericWrapper");
         const direct_hoist_1 = string();
-        const direct_hoist_2 = object({
-            value: direct_hoist_1
-        });
+        const direct_hoist_2 = object([
+            "value",
+            direct_hoist_1
+        ]);
         const direct_hoist_3 = number();
-        const direct_hoist_4 = object({
-            value: direct_hoist_3
-        });
+        const direct_hoist_4 = object([
+            "value",
+            direct_hoist_3
+        ]);
         const direct_hoist_5 = reference(registry, "GenericWrapper_number");
         const direct_hoist_6 = reference(registry, "GenericWrapper_string");
-        const direct_hoist_7 = object({
-            wrappedNumber: direct_hoist_5,
-            wrappedString: direct_hoist_6
-        });
+        const direct_hoist_7 = object([
+            "wrappedNumber",
+            direct_hoist_5,
+            "wrappedString",
+            direct_hoist_6
+        ]);
         define(registry, {
             GenericWrapper_string: direct_hoist_2,
             GenericWrapper_number: direct_hoist_4,
@@ -2459,9 +2524,10 @@ mod tests {
         const direct_hoist_0 = reference(registry, "X");
         const direct_hoist_1 = reference(registry, "EditableLogicalConditionsAstLogicalOp_string");
         const direct_hoist_2 = literal("none");
-        const direct_hoist_3 = object({
-            _tag: direct_hoist_2
-        });
+        const direct_hoist_3 = object([
+            "_tag",
+            direct_hoist_2
+        ]);
         const direct_hoist_4 = discriminatedUnion("_tag", {
             logical: direct_hoist_1,
             none: direct_hoist_3
@@ -2471,19 +2537,24 @@ mod tests {
         ]);
         const direct_hoist_5 = literal("custom");
         const direct_hoist_6 = string();
-        const direct_hoist_7 = object({
-            _tag: direct_hoist_5,
-            data: direct_hoist_6
-        });
+        const direct_hoist_7 = object([
+            "_tag",
+            direct_hoist_5,
+            "data",
+            direct_hoist_6
+        ]);
         const direct_hoist_8 = literal("logical");
         const direct_hoist_9 = reference(registry, "EditableLogicalConditionsAstNode_string");
         const direct_hoist_10 = array(direct_hoist_9);
         const direct_hoist_11 = reference(registry, "LogicalOp");
-        const direct_hoist_12 = object({
-            _tag: direct_hoist_8,
-            nodes: direct_hoist_10,
-            op: direct_hoist_11
-        });
+        const direct_hoist_12 = object([
+            "_tag",
+            direct_hoist_8,
+            "nodes",
+            direct_hoist_10,
+            "op",
+            direct_hoist_11
+        ]);
         const direct_hoist_13 = reference(registry, "EditableLogicalConditionsAstCustom_string");
         const direct_hoist_14 = discriminatedUnion("_tag", {
             custom: direct_hoist_13,
@@ -2573,16 +2644,20 @@ mod tests {
         const direct_hoist_2 = reference(registry, "__proto__");
         const direct_hoist_3 = boolean();
         const direct_hoist_4 = literal("__proto__");
-        const direct_hoist_5 = object({
-            c: direct_hoist_3,
-            kind: direct_hoist_4
-        });
+        const direct_hoist_5 = object([
+            "c",
+            direct_hoist_3,
+            "kind",
+            direct_hoist_4
+        ]);
         const direct_hoist_6 = string();
         const direct_hoist_7 = literal("toString");
-        const direct_hoist_8 = object({
-            a: direct_hoist_6,
-            kind: direct_hoist_7
-        });
+        const direct_hoist_8 = object([
+            "a",
+            direct_hoist_6,
+            "kind",
+            direct_hoist_7
+        ]);
         const direct_hoist_9 = discriminatedUnion("kind", {
             ["__proto__"]: direct_hoist_5,
             toString: direct_hoist_8
@@ -2591,13 +2666,16 @@ mod tests {
             direct_hoist_5
         ]);
         const direct_hoist_10 = number();
-        const direct_hoist_11 = object({
-            ["__proto__"]: direct_hoist_6,
-            toString: direct_hoist_10
-        });
-        const direct_hoist_12 = object({
-            a: direct_hoist_6
-        });
+        const direct_hoist_11 = object([
+            "__proto__",
+            direct_hoist_6,
+            "toString",
+            direct_hoist_10
+        ]);
+        const direct_hoist_12 = object([
+            "a",
+            direct_hoist_6
+        ]);
         define(registry, {
             ProtoDiscriminated: direct_hoist_9,
             ProtoKeyObject: direct_hoist_11,

@@ -1548,19 +1548,38 @@ function hasExtraKeys(positions: PropertyPositions, input: object): boolean {
   return false;
 }
 
-export function object(properties: Record<string, Runtype>, indexed: Indexed = []): Runtype {
-  const keys = Object.keys(properties);
+// The properties of an object as a flat list: the key of a property, then its type, for each property
+// ([key, type, key, type, ...]). The compiler writes this list. An array literal is cheaper to load than an
+// object literal, because the JavaScript engine makes a hidden class for each different set of keys of an
+// object literal.
+type PropertyEntries = Array<string | Runtype>;
+
+function propertiesOf(entries: PropertyEntries): Map<string, Runtype> {
+  const properties = new Map<string, Runtype>();
+  for (let index = 0; index < entries.length; index += 2) {
+    properties.set(entries[index] as string, entries[index + 1] as Runtype);
+  }
+  return properties;
+}
+
+export function object(
+  propertyEntries: PropertyEntries | Record<string, Runtype>,
+  indexed: Indexed = [],
+): Runtype {
+  const entries = Array.isArray(propertyEntries) ? propertyEntries : Object.entries(propertyEntries).flat();
   // The property list has the key, the optional flag, and the validate and parse functions of each property.
   // An optional property has the functions of its inner type, so it does not add a call.
   // The validate and parse functions below read only this array, and they do not call helper functions for
   // the properties. Then each level of a deep input puts fewer values and calls on the stack, and validation
   // can go deeper before the stack overflows.
   const propertyList: PropertyList = [];
-  // It has no prototype, so only the keys of `properties` are in it.
+  // It has no prototype, so only the keys of the properties are in it.
   const positions: PropertyPositions = Object.create(null);
-  for (const key of keys) {
-    const optional = properties[key].tag === TAG_OPTIONAL;
-    const inner = optional ? properties[key].children()[0] : properties[key];
+  for (let index = 0; index < entries.length; index += 2) {
+    const key = entries[index] as string;
+    const property = entries[index + 1] as Runtype;
+    const optional = property.tag === TAG_OPTIONAL;
+    const inner = optional ? property.children()[0] : property;
     positions[key] = propertyList.length;
     propertyList.push(key, optional, inner.validate, inner.parse);
   }
@@ -1659,7 +1678,7 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
             acc,
             key,
             propertyList[position + PropertyOffset.Validate] as Validate,
-            properties[key].reportErrors,
+            (entries[position / 2 + 1] as Runtype).reportErrors,
             value,
           );
         }
@@ -1700,9 +1719,10 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
       return acc;
     },
     describe: (ctx) => {
-      const props = [...keys]
+      const properties = propertiesOf(entries);
+      const props = [...properties.keys()]
         .sort()
-        .map((key) => describeObjectMember(ctx, describePropertyKey(key), properties[key]));
+        .map((key) => describeObjectMember(ctx, describePropertyKey(key), properties.get(key)!));
 
       const indexProps = indexed.map(({ key, value }) => describeIndexObjectMember(ctx, key, value));
 
@@ -1720,11 +1740,13 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
       return { typeExpr: `{ ${content} }` };
     },
     schema: (ctx) => {
+      const properties = propertiesOf(entries);
+      const keys = [...properties.keys()];
       const schemaProperties: Record<string, JSONSchema7Definition> = {};
       const optionalized = new Set<string>();
       for (const key of keys) {
         pushPath(ctx, key);
-        const raw = properties[key].schema(ctx);
+        const raw = properties.get(key)!.schema(ctx);
         const rewrite = removeNullUnionBranch(raw);
         if (rewrite != null) {
           schemaProperties[key] = rewrite;
@@ -1782,7 +1804,7 @@ export function object(properties: Record<string, Runtype>, indexed: Indexed = [
         allOf: [base, ...indexSchemas],
       };
     },
-    children: () => [...Object.values(properties), ...indexed.flatMap(({ key, value }) => [key, value])],
+    children: () => [...propertiesOf(entries).values(), ...indexed.flatMap(({ key, value }) => [key, value])],
   });
 }
 
