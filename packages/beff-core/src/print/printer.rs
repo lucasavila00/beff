@@ -8,8 +8,8 @@ use swc_common::{FilePathMapping, sync::Lrc};
 use swc_ecma_ast::Module;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, ComputedPropName, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit,
-    ModuleItem, NewExpr, Null, Number, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt,
-    Str, VarDecl, VarDeclKind, VarDeclarator,
+    ModuleItem, NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str,
+    VarDecl, VarDeclKind, VarDeclarator,
 };
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
@@ -361,14 +361,6 @@ fn string_lit(s: &str) -> Expr {
     Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
         value: s.into(),
-        raw: None,
-    }))
-}
-
-fn number_lit(value: usize) -> Expr {
-    Expr::Lit(Lit::Num(Number {
-        span: DUMMY_SP,
-        value: value as f64,
         raw: None,
     }))
 }
@@ -782,20 +774,11 @@ fn maybe_runtype_any_of_consts(
     None
 }
 
-// Prints the given literal members of a union as one `AnyOfConstsRuntype`.
-// That runtype compares the input with a list of literals. It does not try each member.
-// Returns `None` when a member is not a literal.
-fn print_literals_as_one_runtype(
-    members: &[&Runtype],
-    named_schemas: &NamedSchemas,
-    ctx: &mut PrintContext,
-) -> Option<Expr> {
-    let union = Runtype::any_of(members.iter().map(|it| (*it).clone()).collect());
-    let flat_values = members
-        .iter()
-        .flat_map(|it| extract_union(it, named_schemas))
-        .collect::<BTreeSet<_>>();
-    maybe_runtype_any_of_consts(&union, &flat_values, ctx)
+// Returns true if the runtype is a literal or a union of literals.
+fn is_literal_or_union_of_literals(schema: &Runtype, named_schemas: &NamedSchemas) -> bool {
+    extract_union(schema, named_schemas).iter().all(|it| {
+        it.extract_single_string_const().is_some() || matches!(it.kind, RuntypeKind::Const(_))
+    })
 }
 
 // Prints a union. There are three forms:
@@ -844,14 +827,14 @@ fn print_union(
 //
 // A "kind" is a group of JavaScript values (see `JsValueKind`). The kind table is an object
 // literal. It has one property for each kind that the union accepts. The value of the property is
-// the runtype that checks all inputs of that kind. The value has one of two forms:
-// - A number: the index of a member of the union.
-// - An `AnyOfConstsRuntype`: all the literal members of that kind, as one runtype.
+// the runtype that checks all inputs of that kind. The runtime calls only that runtype.
 //
 // Example: `type Node = { next: Node | null }` prints the union as
-// `new AnyOfRuntype(undefined, [<null>, <Node>], { "nullish": 0, "object": 1 })`.
-// Example: `"a" | "b" | number` prints the table
-// `{ "number": 2, "string": new AnyOfConstsRuntype(undefined, ["a", "b"]) }`.
+// `new AnyOfRuntype(undefined, [nullRuntype, nodeRuntype], { nullish: nullRuntype, object: nodeRuntype })`.
+// In the generated code, `nullRuntype` and `nodeRuntype` are `direct_hoist_<n>` constants.
+//
+// Example: `"a" | "b" | number` prints the table `{ number: numberRuntype, string: aOrB }`.
+// `aOrB` is one `AnyOfConstsRuntype` for the two string literals. It is not a member of the union.
 fn print_kind_table(
     members: &[&Runtype],
     named_schemas: &NamedSchemas,
@@ -873,9 +856,12 @@ fn print_kind_table(
 
     let mut entries = vec![];
     for kind in JsValueKind::ALL {
-        // The indexes of the members that accept this kind.
-        let accepting = (0..members.len())
-            .filter(|index| kinds_of_members[*index].contains(&kind))
+        // The members that accept this kind.
+        let accepting = members
+            .iter()
+            .zip(&kinds_of_members)
+            .filter(|(_, kinds)| kinds.contains(&kind))
+            .map(|(member, _)| *member)
             .collect::<Vec<_>>();
         // All members accept this kind. The runtype for this kind would be the same union again.
         // No table.
@@ -885,28 +871,34 @@ fn print_kind_table(
         if accepting.is_empty() {
             continue;
         }
-        let all_are_nullish = accepting.iter().all(|index| {
+        let all_are_nullish = accepting.iter().all(|member| {
             matches!(
-                members[*index].kind,
+                member.kind,
                 RuntypeKind::Null | RuntypeKind::Undefined | RuntypeKind::Void
             )
         });
         let runtype_for_kind = if accepting.len() == 1 || all_are_nullish {
             // One member is sufficient. For a group of null, undefined and void, use the first:
             // the runtime checks all three with `== null`, and parse returns the input.
-            number_lit(accepting[0])
+            // `print_runtype` returns the constant that the list of members also uses.
+            print_runtype(accepting[0], named_schemas, ctx)
+        } else if accepting
+            .iter()
+            .all(|member| is_literal_or_union_of_literals(member, named_schemas))
+        {
+            // Two or more members accept this kind, and all of them are literals. The union of
+            // these members prints as one `AnyOfConstsRuntype`. That runtype compares the input
+            // with a list of literals. It does not try each member.
+            let literals = Runtype::any_of(accepting.iter().map(|it| (*it).clone()).collect());
+            print_runtype(&literals, named_schemas, ctx)
         } else {
-            // Two or more members accept this kind. If all of them are literals, one runtype
-            // checks them. If not, `?` returns `None` and the union gets no table. The reasons:
+            // Two or more members accept this kind, and they are not all literals. No table.
+            // The reasons:
             // - An `AnyOfRuntype` for these members validates each member again when it parses.
             //   The table would then add a step and save no time.
             // - An `AnyOfDiscriminatedRuntype` for these members would be a new runtype for each
             //   union. That adds too much generated code.
-            let literals = accepting
-                .iter()
-                .map(|index| members[*index])
-                .collect::<Vec<_>>();
-            print_literals_as_one_runtype(&literals, named_schemas, ctx)?
+            return None;
         };
         entries.push((kind.name().to_string(), runtype_for_kind));
     }

@@ -45,7 +45,7 @@ const makeList = (
   const node = counted(runtypeOf(createNamedType(name, b.Unknown())));
   const members = nodeFirst ? [node.runtype, other] : [other, node.runtype];
   // The kind table: `other` checks its kind, and the node checks objects. The union accepts no other kind.
-  const kindTable = { [otherKind]: members.indexOf(other), object: members.indexOf(node.runtype) };
+  const kindTable = { [otherKind]: other, object: node.runtype };
   const next = new AnyOfRuntype(undefined, members, withKinds ? kindTable : undefined);
   overrideNamedType(
     name,
@@ -107,10 +107,10 @@ describe("union with the runtype of each kind", () => {
   it("uses one runtype for all the literals of a kind", () => {
     const a = new ConstRuntype(undefined, "a");
     const c = new ConstRuntype(undefined, "c");
-    // Member 2 checks numbers. One `AnyOfConstsRuntype`, which is not a member, checks the two string literals.
+    // `num` checks numbers. One `AnyOfConstsRuntype`, which is not a member, checks the two string literals.
     const U = buildParserFromRuntype(
       new AnyOfRuntype(undefined, [a, c, num], {
-        number: 2,
+        number: num,
         string: new AnyOfConstsRuntype(undefined, ["a", "c"]),
       }),
       "U",
@@ -124,9 +124,9 @@ describe("union with the runtype of each kind", () => {
 
   it("sends an array or a function with the prototype of a Date to the Date member", () => {
     const d = new DateRuntype(undefined);
-    // Member 1 checks strings. Member 0 (the Date) checks arrays, objects and functions.
+    // `str` checks strings. `d` (the Date) checks arrays, objects and functions.
     const U = buildParserFromRuntype(
-      new AnyOfRuntype(undefined, [d, str], { string: 1, array: 0, object: 0, function: 0 }),
+      new AnyOfRuntype(undefined, [d, str], { string: str, array: d, object: d, function: d }),
       "U",
       false,
     );

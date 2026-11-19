@@ -1316,10 +1316,11 @@ const valueKindIndexOf = (input: unknown): number => {
 
 // The kind table of a union, as the compiler prints it. It tells the union which runtype checks each kind.
 // Each property is a kind that the union accepts. A kind that the union does not accept has no property.
-// A number is the index of a member of the union. A runtype is used as it is.
-// Example for `Node | null`, with members [null, Node]: { nullish: 0, object: 1 }.
-// Example for `"a" | "b" | number`: { number: 2, string: new AnyOfConstsRuntype(undefined, ["a", "b"]) }.
-type UnionKindTable = Partial<Record<ValueKind, number | Runtype>>;
+// For an input of that kind, the union calls only that runtype.
+// Example for `Node | null`: { nullish: nullRuntype, object: nodeRuntype }.
+// The runtype is a member of the union, or one `AnyOfConstsRuntype` for all the literal members of that kind.
+// Example for `"a" | "b" | number`: { number: numberRuntype, string: new AnyOfConstsRuntype(undefined, ["a", "b"]) }.
+type UnionKindTable = Partial<Record<ValueKind, Runtype>>;
 
 export class AnyOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
@@ -1334,10 +1335,7 @@ export class AnyOfRuntype extends BaseRuntype {
     this.schemas = schemas;
     this.runtypeByKindIndex = undefined;
     if (kindTable !== undefined) {
-      const runtypeByKindIndex: (Runtype | undefined)[] = VALUE_KINDS.map((kind) => {
-        const entry = kindTable[kind];
-        return typeof entry === "number" ? schemas[entry] : entry;
-      });
+      const runtypeByKindIndex: (Runtype | undefined)[] = VALUE_KINDS.map((kind) => kindTable[kind]);
       // The last entry is for a value that has no kind (see `valueKindIndexOf`). The union rejects it.
       runtypeByKindIndex.push(undefined);
       this.runtypeByKindIndex = runtypeByKindIndex;

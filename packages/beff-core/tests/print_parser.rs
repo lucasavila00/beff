@@ -908,8 +908,8 @@ mod tests {
             direct_hoist_2,
             direct_hoist_1
         ], {
-            "nullish": 0,
-            "string": 1
+            "nullish": direct_hoist_2,
+            "string": direct_hoist_1
         });
         const direct_hoist_4 = new ConstRuntype(undefined, "CRON");
         const direct_hoist_5 = new ObjectRuntype(undefined, {
@@ -2014,8 +2014,8 @@ mod tests {
             direct_hoist_1,
             direct_hoist_2
         ], {
-            "number": 1,
-            "string": 0
+            "number": direct_hoist_2,
+            "string": direct_hoist_1
         });
         const namedRuntypes = {
             "Alias": direct_hoist_3
@@ -2308,8 +2308,8 @@ mod tests {
             direct_hoist_1,
             direct_hoist_2
         ], {
-            "nullish": 0,
-            "object": 1
+            "nullish": direct_hoist_1,
+            "object": direct_hoist_2
         });
         const direct_hoist_4 = new TypeofRuntype(undefined, "string");
         const direct_hoist_5 = new TypeofRuntype(undefined, "boolean");
@@ -2317,8 +2317,8 @@ mod tests {
             direct_hoist_5,
             direct_hoist_4
         ], {
-            "boolean": 0,
-            "string": 1
+            "boolean": direct_hoist_5,
+            "string": direct_hoist_4
         });
         const direct_hoist_7 = new ObjectRuntype(undefined, {
             "other": direct_hoist_3,
@@ -2330,16 +2330,16 @@ mod tests {
             direct_hoist_1,
             direct_hoist_8
         ], {
-            "nullish": 0,
-            "object": 1
+            "nullish": direct_hoist_1,
+            "object": direct_hoist_8
         });
         const direct_hoist_10 = new TypeofRuntype(undefined, "number");
         const direct_hoist_11 = new AnyOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_10
         ], {
-            "boolean": 0,
-            "number": 1
+            "boolean": direct_hoist_5,
+            "number": direct_hoist_10
         });
         const direct_hoist_12 = new ObjectRuntype(undefined, {
             "other": direct_hoist_9,
@@ -2388,8 +2388,8 @@ mod tests {
             direct_hoist_3,
             direct_hoist_2
         ], {
-            "boolean": 0,
-            "string": 1
+            "boolean": direct_hoist_3,
+            "string": direct_hoist_2
         });
         const direct_hoist_5 = new ObjectRuntype(undefined, {
             "other": direct_hoist_1,
@@ -2402,8 +2402,8 @@ mod tests {
             direct_hoist_3,
             direct_hoist_7
         ], {
-            "boolean": 0,
-            "number": 1
+            "boolean": direct_hoist_3,
+            "number": direct_hoist_7
         });
         const direct_hoist_9 = new ObjectRuntype(undefined, {
             "other": direct_hoist_6,
@@ -2665,7 +2665,7 @@ mod tests {
     // bigint, array, object, function.
     // The table is the last argument of `AnyOfRuntype`, an object. It has one property for each
     // kind that the union accepts. The value is the runtype that checks all inputs of that kind:
-    // the index of a member, or one `AnyOfConstsRuntype` for all the literal members of that kind.
+    // a member of the union, or one `AnyOfConstsRuntype` for all the literal members of that kind.
     // A union gets no table when two or more members accept the same kind and they are not all
     // literals.
     #[test]
@@ -2682,8 +2682,8 @@ mod tests {
             direct_hoist_1,
             direct_hoist_0
         ], {
-            "nullish": 0,
-            "object": 1
+            "nullish": direct_hoist_1,
+            "object": direct_hoist_0
         });
         const direct_hoist_3 = new TypeofRuntype(undefined, "number");
         const direct_hoist_4 = new ObjectRuntype(undefined, {
@@ -2713,8 +2713,8 @@ mod tests {
             direct_hoist_1,
             direct_hoist_0
         ], {
-            "string": 0,
-            "object": 1
+            "string": direct_hoist_1,
+            "object": direct_hoist_0
         });
         const direct_hoist_3 = new TypeofRuntype(undefined, "number");
         const direct_hoist_4 = new ObjectRuntype(undefined, {
@@ -2747,9 +2747,9 @@ mod tests {
             direct_hoist_2,
             direct_hoist_3
         ], {
-            "nullish": 0,
-            "number": 2,
-            "string": 1
+            "nullish": direct_hoist_1,
+            "number": direct_hoist_3,
+            "string": direct_hoist_2
         });
         const namedRuntypes = {
             "U": direct_hoist_4
@@ -2922,8 +2922,8 @@ mod tests {
             direct_hoist_8,
             direct_hoist_9
         ], {
-            "nullish": 0,
-            "object": 1
+            "nullish": direct_hoist_8,
+            "object": direct_hoist_9
         });
         const namedRuntypes = {
             "Disc": direct_hoist_7,
@@ -2947,19 +2947,65 @@ mod tests {
         const direct_hoist_1 = new TypeofRuntype(undefined, "number");
         const direct_hoist_2 = new ConstRuntype(undefined, "a");
         const direct_hoist_3 = new ConstRuntype(undefined, "b");
-        const direct_hoist_4 = new AnyOfRuntype(undefined, [
+        const direct_hoist_4 = new AnyOfConstsRuntype(undefined, [
+            "a",
+            "b"
+        ]);
+        const direct_hoist_5 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2,
             direct_hoist_3
         ], {
-            "number": 0,
-            "string": new AnyOfConstsRuntype(undefined, [
-                "a",
-                "b"
-            ])
+            "number": direct_hoist_1,
+            "string": direct_hoist_4
         });
         const namedRuntypes = {
-            "U": direct_hoist_4
+            "U": direct_hoist_5
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    // An intersection accepts a kind only if all its members accept that kind.
+    #[test]
+    fn union_table_intersection_or_null() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type A = { a: string };
+            type B = { b: number };
+            type U = (A & B) | null;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_2 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_1
+        }, []);
+        const direct_hoist_3 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_4 = new ObjectRuntype(undefined, {
+            "b": direct_hoist_3
+        }, []);
+        const direct_hoist_5 = new NullishRuntype(undefined, "null");
+        const direct_hoist_6 = new RefRuntype(undefined, "A");
+        const direct_hoist_7 = new RefRuntype(undefined, "B");
+        const direct_hoist_8 = new AllOfRuntype(undefined, [
+            direct_hoist_6,
+            direct_hoist_7
+        ]);
+        const direct_hoist_9 = new AnyOfRuntype(undefined, [
+            direct_hoist_5,
+            direct_hoist_8
+        ], {
+            "nullish": direct_hoist_5,
+            "object": direct_hoist_8
+        });
+        const namedRuntypes = {
+            "A": direct_hoist_2,
+            "B": direct_hoist_4,
+            "U": direct_hoist_9
         };
         const buildParsersInput = {
             "U": direct_hoist_0
@@ -2982,10 +3028,10 @@ mod tests {
             direct_hoist_1,
             direct_hoist_2
         ], {
-            "string": 0,
-            "array": 1,
-            "object": 1,
-            "function": 1
+            "string": direct_hoist_1,
+            "array": direct_hoist_2,
+            "object": direct_hoist_2,
+            "function": direct_hoist_2
         });
         const namedRuntypes = {
             "U": direct_hoist_3

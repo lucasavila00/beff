@@ -177,16 +177,16 @@ const direct_hoist_41 = new AnyOfRuntype(undefined, [
     direct_hoist_4,
     direct_hoist_1
 ], {
-    "nullish": 0,
-    "number": 2
+    "nullish": direct_hoist_3,
+    "number": direct_hoist_1
 });
 const direct_hoist_42 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_4,
     direct_hoist_0
 ], {
-    "nullish": 0,
-    "string": 2
+    "nullish": direct_hoist_3,
+    "string": direct_hoist_0
 });
 const direct_hoist_43 = new ObjectRuntype(undefined, {
     "limit": new OptionalFieldRuntype(direct_hoist_41),
