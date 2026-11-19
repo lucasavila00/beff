@@ -30,14 +30,8 @@ function firstUse(parsers, shape, N) {
   for (const parser of Object.values(parsers)) {
     parser.validate(undefined);
     parser.safeParse(undefined);
-    // `describe` and `schema` can throw: some types have no JSON Schema, and a long chain of recursive types
-    // overflows the stack.
-    try {
-      parser.describe();
-    } catch {}
-    try {
-      parser.schema();
-    } catch {}
+    parser.describe();
+    parser.schema();
   }
   const valid = shapes[shape].value(N, 4);
   const invalid = corrupt(shapes[shape].value(N, 4));
@@ -85,14 +79,7 @@ if (process.argv[2] === "--child") {
   for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
     const dir = outDir(shape, N);
     generate(shape, N, dir);
-    try {
-      compile(dir);
-    } catch (e) {
-      console.log(
-        `| ${shape} | failed: ${e.message.split("\n").slice(1).join(" ").slice(0, 120)} | | | | | | |`,
-      );
-      continue;
-    }
+    compile(dir);
     const file = path.join(dir, "src/generated/parser.js");
     const runs = [];
     for (let i = 0; i < 5; i++) {

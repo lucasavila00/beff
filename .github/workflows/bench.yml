@@ -107,6 +107,7 @@ jobs:
           COMPARE_ARGS: ${{ inputs.compare_args }}
         run: |
           shape=${SHAPE:+--shape $SHAPE}
+          set -o pipefail
           echo "## node compare.mjs $shape $COMPARE_ARGS (baseline: $BASELINE_REF, candidate: $GITHUB_REF_NAME)" >> "$GITHUB_STEP_SUMMARY"
           node compare.mjs --baseline "$RUNNER_TEMP/baseline" $shape $COMPARE_ARGS | tee compare.txt
           cat compare.txt >> "$GITHUB_STEP_SUMMARY"

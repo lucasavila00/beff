@@ -21,15 +21,7 @@ for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
   for (let i = 0, N = from; i < rows && N <= (shapes[shape].maxScale ?? Infinity); i++, N *= 2) {
     const dir = outDir(shape, N);
     const { lines } = generate(shape, N, dir);
-    let r;
-    try {
-      r = compile(dir);
-    } catch (e) {
-      console.log(
-        `| ${N} | ${lines} | failed: ${e.message.split("\n").slice(1).join(" ").slice(0, 120)} | | | |`,
-      );
-      break;
-    }
+    const r = compile(dir);
     const kb = fs.statSync(path.join(dir, "src/generated/parser.js")).size / 1024;
     const growth = prev ? `${(r.ms / prev).toFixed(1)}x` : "";
     console.log(

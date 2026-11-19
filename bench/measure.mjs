@@ -1,13 +1,8 @@
 // The calls that runtime.mjs and compare.mjs measure, and the function that measures them.
 
 // Milliseconds per call, measured for at least 200 ms after one warm-up call.
-// If the call throws, it returns the name of the error.
 export function measure(f) {
-  try {
-    f();
-  } catch (e) {
-    return `${e.constructor.name}`;
-  }
+  f();
   let calls = 0;
   const start = performance.now();
   let elapsed = 0;
