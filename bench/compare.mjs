@@ -110,16 +110,6 @@ if (process.argv[2] === "--child") {
     return path.join(dir, "src", "generated", "parser.js");
   };
 
-  // Compiles the project of a shape for each version. Returns the paths of the parser.js files, or the
-  // error message if a version cannot compile it.
-  const compileVersions = (shape, projectScale) => {
-    try {
-      return Object.fromEntries(versions.map((it) => [it.label, compileProject(it, shape, projectScale)]));
-    } catch (e) {
-      return { failed: e.message.split("\n").join(" ").slice(0, 200) };
-    }
-  };
-
   // Runs `run(version)` for each round and version, with the versions in turns.
   // Returns the results of each version, in the order of the rounds.
   const inTurns = (run) => {
@@ -141,13 +131,7 @@ if (process.argv[2] === "--child") {
   console.log(`|${" --- |".repeat(operationNames.length + 2)}`);
   const timeRows = [];
   for (const shape of selectedShapes) {
-    const files = compileVersions(shape, scale);
-    if (files.failed) {
-      const row = `| ${shape} | ${inputSize(shape)} | ${files.failed} |`;
-      console.log(row);
-      timeRows.push(row);
-      continue;
-    }
+    const files = Object.fromEntries(versions.map((it) => [it.label, compileProject(it, shape, scale)]));
     const results = inTurns((version) =>
       JSON.parse(execFileSync(process.execPath, [self, "--child", files[version.label], shape, scale])),
     );
@@ -194,11 +178,7 @@ if (process.argv[2] === "--child") {
   console.log("| --- | --- | --- | --- | --- | --- |");
   const loadScript = path.join(benchDir, "load.mjs");
   for (const shape of selectedShapes) {
-    const files = compileVersions(shape, loadScale);
-    if (files.failed) {
-      console.log(`| ${shape} | ${files.failed} |`);
-      continue;
-    }
+    const files = Object.fromEntries(versions.map((it) => [it.label, compileProject(it, shape, loadScale)]));
     const sizes = Object.fromEntries(
       versions.map((it) => [it.label, minifiedSizes(fs.readFileSync(files[it.label], "utf-8"))]),
     );
