@@ -1170,11 +1170,13 @@ export class AllOfRuntype extends BaseRuntype {
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
     return withIntersectionInput(ctx, input, () => {
       const parsed = this.schemas.map((it) => it.parseAfterValidation(ctx, input));
-      // A member can give a value that is not a plain object, for example a Date or null.
+      // A member can give a value that is not a plain object, for example a Date, null or undefined.
       // A merge into a plain object loses that value, and the type does not accept the result.
       // Thus, give the value of that member.
-      const notPlain = parsed.find((it) => it === null || Object.getPrototypeOf(it) !== JSON_PROTO);
-      return notPlain !== undefined ? notPlain : mergeParsedMembers(parsed);
+      const i = parsed.findIndex(
+        (it) => typeof it !== "object" || it === null || Object.getPrototypeOf(it) !== JSON_PROTO,
+      );
+      return i !== -1 ? parsed[i] : mergeParsedMembers(parsed);
     });
   }
   private parseMembers(ctx: ParseContext, input: any): object {

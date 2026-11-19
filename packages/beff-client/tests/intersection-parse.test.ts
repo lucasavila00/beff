@@ -40,6 +40,8 @@ describe("parse of an intersection", () => {
       false,
     );
     expect(T.parse(null)).toBe(null);
+    expect(T.validate(undefined)).toBe(false);
+    expect(T.safeParse(undefined).success).toBe(false);
     expect(T.parse({ a: "x", b: 1, c: 2 })).toEqual({ a: "x", b: 1 });
   });
 });
