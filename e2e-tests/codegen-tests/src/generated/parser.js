@@ -99,16 +99,25 @@ const direct_hoist_26 = new NullishRuntype(undefined, "undefined");
 const direct_hoist_27 = new AnyOfRuntype(undefined, [
     direct_hoist_26,
     direct_hoist_0
+], [
+    1,
+    8
 ]);
 const direct_hoist_28 = new NullishRuntype(undefined, "void");
 const direct_hoist_29 = new AnyOfRuntype(undefined, [
     direct_hoist_28,
     direct_hoist_0
+], [
+    1,
+    8
 ]);
 const direct_hoist_30 = new NullishRuntype(undefined, "null");
 const direct_hoist_31 = new AnyOfRuntype(undefined, [
     direct_hoist_30,
     direct_hoist_0
+], [
+    1,
+    8
 ]);
 const direct_hoist_32 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
@@ -175,6 +184,9 @@ const direct_hoist_55 = new RegexRuntype(undefined, /^(beta-entity-)([\s\S]*)$/,
 const direct_hoist_56 = new AnyOfRuntype(undefined, [
     direct_hoist_54,
     direct_hoist_55
+], [
+    8,
+    8
 ]);
 const direct_hoist_57 = new ObjectRuntype(undefined, {
     "alpha": new OptionalFieldRuntype(direct_hoist_0),
@@ -201,6 +213,11 @@ const direct_hoist_61 = new AnyOfRuntype(undefined, [
     direct_hoist_54,
     direct_hoist_60,
     direct_hoist_55
+], [
+    8,
+    8,
+    8,
+    8
 ]);
 const direct_hoist_62 = new ObjectRuntype(undefined, {
     "1": direct_hoist_0,

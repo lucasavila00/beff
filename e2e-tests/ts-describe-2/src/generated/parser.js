@@ -80,16 +80,25 @@ const direct_hoist_7 = new NullishRuntype(undefined, "undefined");
 const direct_hoist_8 = new AnyOfRuntype(undefined, [
     direct_hoist_7,
     direct_hoist_6
+], [
+    1,
+    8
 ]);
 const direct_hoist_9 = new NullishRuntype(undefined, "void");
 const direct_hoist_10 = new AnyOfRuntype(undefined, [
     direct_hoist_9,
     direct_hoist_6
+], [
+    1,
+    8
 ]);
 const direct_hoist_11 = new NullishRuntype(undefined, "null");
 const direct_hoist_12 = new AnyOfRuntype(undefined, [
     direct_hoist_11,
     direct_hoist_6
+], [
+    1,
+    8
 ]);
 const direct_hoist_13 = new ObjectRuntype(undefined, {
     "a": direct_hoist_6,

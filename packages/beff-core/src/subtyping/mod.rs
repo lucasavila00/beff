@@ -1,6 +1,6 @@
 use self::bdd::ListAtomic;
 use self::semtype::{ComplexSemType, SemType, SemTypeContext, SemTypeOps};
-use self::subtype::StringLitOrFormat;
+use self::subtype::{StringLitOrFormat, SubTypeTag};
 use crate::RuntypeUUID;
 use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst, RuntypeKind};
 use crate::subtyping::bdd::{IndexedPropertiesAtomic, MappingAtomicType};
@@ -33,6 +33,9 @@ impl IsEmptyStatus {
 struct ToSemTypeConverter<'a> {
     validators: &'a [&'a NamedSchema],
     seen_refs: BTreeSet<RuntypeUUID>,
+    // Do not look inside objects, arrays, maps and sets: they become "any object", "any array"...
+    // This is enough to know the basic types of a runtype, and does not walk the type graph.
+    shallow: bool,
 }
 
 impl<'a> ToSemTypeConverter<'a> {
@@ -40,6 +43,7 @@ impl<'a> ToSemTypeConverter<'a> {
         Self {
             validators,
             seen_refs: BTreeSet::new(),
+            shallow: false,
         }
     }
 
@@ -57,6 +61,26 @@ impl<'a> ToSemTypeConverter<'a> {
         schema: &Runtype,
         builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
+        if self.shallow {
+            let target = match &schema.kind {
+                RuntypeKind::Ref(name) => self.get_reference(name)?,
+                _ => schema,
+            };
+            let tag = match &target.kind {
+                RuntypeKind::Object { .. } => Some(SubTypeTag::Mapping),
+                RuntypeKind::Array(_) | RuntypeKind::Tuple { .. } | RuntypeKind::AnyArrayLike => {
+                    Some(SubTypeTag::List)
+                }
+                RuntypeKind::Map(..) => Some(SubTypeTag::Map),
+                RuntypeKind::Set(_) => Some(SubTypeTag::Set),
+                // the complement of a shallow type would be too small
+                RuntypeKind::StNot(_) => bail!("shallow semtype of a negation"),
+                _ => None,
+            };
+            if let Some(tag) = tag {
+                return Ok(SemType::new_basic(tag.code()).into());
+            }
+        }
         match &schema.kind {
             RuntypeKind::Ref(name) => {
                 let schema = self.get_reference(name)?.clone();
@@ -346,5 +370,76 @@ impl ToSemType for Runtype {
         ctx: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
         ToSemTypeConverter::new(validators).convert_to_sem_type(self, ctx)
+    }
+}
+
+/// The kinds of JavaScript value, as the generated code sees them (`kindOf` in the client).
+/// A union is printed with the kinds each branch can accept, so the runtime can skip
+/// the branches that cannot match an input without walking them.
+pub(crate) mod js_kind {
+    pub(crate) const NULLISH: u32 = 1;
+    pub(crate) const BOOLEAN: u32 = 1 << 1;
+    pub(crate) const NUMBER: u32 = 1 << 2;
+    pub(crate) const STRING: u32 = 1 << 3;
+    pub(crate) const BIGINT: u32 = 1 << 4;
+    pub(crate) const ARRAY: u32 = 1 << 5;
+    pub(crate) const OBJECT: u32 = 1 << 6;
+    /// functions and symbols
+    pub(crate) const OTHER: u32 = 1 << 7;
+    pub(crate) const ALL: u32 = (1 << 8) - 1;
+}
+
+impl SubTypeTag {
+    /// The kinds of JavaScript value that the runtime check of this basic type can accept.
+    fn js_kinds(&self) -> u32 {
+        match self {
+            // the runtime checks all of these with `== null`
+            SubTypeTag::Null | SubTypeTag::VoidUndefined | SubTypeTag::OptionalProp => {
+                js_kind::NULLISH
+            }
+            SubTypeTag::Boolean => js_kind::BOOLEAN,
+            SubTypeTag::Number => js_kind::NUMBER,
+            SubTypeTag::String => js_kind::STRING,
+            SubTypeTag::BigInt => js_kind::BIGINT,
+            SubTypeTag::List => js_kind::ARRAY,
+            SubTypeTag::Mapping => js_kind::OBJECT,
+            // checked with `instanceof`, which is also true for an array or a function
+            // that has the class in its prototype chain
+            SubTypeTag::Date | SubTypeTag::TypedArray | SubTypeTag::Map | SubTypeTag::Set => {
+                js_kind::OBJECT | js_kind::ARRAY | js_kind::OTHER
+            }
+        }
+    }
+}
+
+impl SemType {
+    fn js_kinds(&self) -> u32 {
+        if self.is_any() {
+            return js_kind::ALL;
+        }
+        let tags = self.all
+            | self
+                .subtype_data
+                .iter()
+                .fold(0, |acc, it| acc | it.to_code());
+        SubTypeTag::all()
+            .into_iter()
+            .filter(|tag| tags & tag.code() != 0)
+            .fold(0, |acc, tag| acc | tag.js_kinds())
+    }
+}
+
+impl Runtype {
+    /// The kinds of JavaScript value (`js_kind`) that this runtype can accept, from the basic
+    /// types of its semantic type. It can include kinds that are never accepted, but it never
+    /// misses one.
+    pub(crate) fn js_kinds(&self, validators: &[&NamedSchema]) -> u32 {
+        let mut converter = ToSemTypeConverter::new(validators);
+        converter.shallow = true;
+        match converter.convert_to_sem_type(self, &mut SemTypeContext::new()) {
+            Ok(ty) => ty.js_kinds(),
+            // not a semantic type (a function), or an alias that only refers to itself
+            Err(_) => js_kind::ALL,
+        }
     }
 }

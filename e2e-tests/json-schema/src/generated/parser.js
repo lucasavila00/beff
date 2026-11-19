@@ -177,11 +177,19 @@ const direct_hoist_41 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_4,
     direct_hoist_1
+], [
+    1,
+    1,
+    4
 ]);
 const direct_hoist_42 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_4,
     direct_hoist_0
+], [
+    1,
+    1,
+    8
 ]);
 const direct_hoist_43 = new ObjectRuntype(undefined, {
     "limit": new OptionalFieldRuntype(direct_hoist_41),

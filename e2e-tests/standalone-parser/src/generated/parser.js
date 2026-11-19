@@ -180,6 +180,9 @@ const direct_hoist_83 = new ObjectRuntype(undefined, {
 const direct_hoist_84 = new AnyOfRuntype(undefined, [
     direct_hoist_80,
     direct_hoist_83
+], [
+    1,
+    64
 ]);
 const direct_hoist_85 = new ObjectRuntype(undefined, {
     "orderBy": direct_hoist_84
@@ -261,6 +264,11 @@ const direct_hoist_107 = new AnyOfRuntype(undefined, [
     direct_hoist_101,
     direct_hoist_106,
     direct_hoist_103
+], [
+    64,
+    64,
+    64,
+    64
 ]);
 const direct_hoist_108 = new AnyOfConstsRuntype(undefined, [
     "a",
@@ -301,6 +309,9 @@ const direct_hoist_114 = new ObjectRuntype(undefined, {
 const direct_hoist_115 = new AnyOfRuntype(undefined, [
     direct_hoist_112,
     direct_hoist_114
+], [
+    64,
+    64
 ]);
 const direct_hoist_116 = new ObjectRuntype(undefined, {}, [
     {
@@ -338,6 +349,9 @@ const direct_hoist_127 = new AllOfRuntype(undefined, [
 const direct_hoist_128 = new AnyOfRuntype(undefined, [
     direct_hoist_16,
     direct_hoist_20
+], [
+    8,
+    4
 ]);
 const direct_hoist_129 = new ObjectRuntype(undefined, {}, [
     {
@@ -528,6 +542,11 @@ const direct_hoist_180 = new AnyOfRuntype(undefined, [
     direct_hoist_59,
     direct_hoist_94,
     direct_hoist_156
+], [
+    8,
+    8,
+    8,
+    64
 ]);
 const direct_hoist_181 = new ConstRuntype(undefined, "circle");
 const direct_hoist_182 = new ObjectRuntype(undefined, {
@@ -574,6 +593,11 @@ const direct_hoist_190 = new AnyOfRuntype(undefined, [
     direct_hoist_80,
     direct_hoist_16,
     direct_hoist_20
+], [
+    1,
+    1,
+    8,
+    4
 ]);
 const direct_hoist_191 = new ArrayRuntype(undefined, direct_hoist_190);
 const direct_hoist_192 = new AnyOfRuntype(undefined, [
@@ -581,6 +605,11 @@ const direct_hoist_192 = new AnyOfRuntype(undefined, [
     direct_hoist_80,
     direct_hoist_16,
     direct_hoist_191
+], [
+    1,
+    1,
+    8,
+    32
 ]);
 const direct_hoist_193 = new TypedArrayRuntype(undefined, "Uint8Array");
 const direct_hoist_194 = new RefRuntype(undefined, "OtherEnum__A");

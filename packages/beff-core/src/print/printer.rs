@@ -17,6 +17,7 @@ use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
 use crate::NameIndex;
 use crate::RuntypeUUID;
 use crate::ast::json::Json;
+use crate::ast::json::N;
 use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::TplLitTypeItem;
@@ -438,6 +439,28 @@ fn runtype_union_or_intersection(
         .map(|schema| print_runtype(schema, named_schemas, ctx))
         .collect::<Vec<Expr>>();
     new_runtype_class(constructor, vec![array_lit(exprs)], original_runtype)
+}
+
+// A union is printed with the kinds of value (`js_kind`) that each branch can accept,
+// so the runtime can skip the branches that cannot match an input.
+fn runtype_union(
+    vs: &BTreeSet<Runtype>,
+    named_schemas: &[NamedSchema],
+    ctx: &mut PrintContext,
+    original_runtype: &Runtype,
+) -> Expr {
+    let validators = named_schemas.iter().collect::<Vec<_>>();
+    let mut exprs = vec![];
+    let mut kinds = vec![];
+    for schema in vs {
+        exprs.push(print_runtype(schema, named_schemas, ctx));
+        kinds.push(Json::Number(N::parse_int(schema.js_kinds(&validators) as i64)).into_expr());
+    }
+    new_runtype_class(
+        "AnyOfRuntype",
+        vec![array_lit(exprs), array_lit(kinds)],
+        original_runtype,
+    )
 }
 
 fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
@@ -866,7 +889,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
             {
                 discriminated
             } else {
-                runtype_union_or_intersection("AnyOfRuntype", vs, named_schemas, ctx, schema)
+                runtype_union(vs, named_schemas, ctx, schema)
             }
         }
         RuntypeKind::Tuple {

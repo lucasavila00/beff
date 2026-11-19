@@ -1545,11 +1545,34 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
     .join(",")}}`;
 }
 
+// The kind of a value, as one bit. The compiler prints, for each branch of a union, the kinds
+// that the branch can accept (`js_kind` in beff-core), with the same bits.
+function kindOf(input: unknown): number {
+  if (input == null) return 1;
+  switch (typeof input) {
+    case "boolean":
+      return 2;
+    case "number":
+      return 4;
+    case "string":
+      return 8;
+    case "bigint":
+      return 16;
+    case "object":
+      return Array.isArray(input) ? 32 : 64;
+    default:
+      return 128;
+  }
+}
+
 export class AnyOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
-  constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[]) {
+  // The kinds of value each schema can accept. Only unions printed by the compiler have it.
+  private kinds: number[] | undefined;
+  constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[], kinds?: number[]) {
     super(metadata);
     this.schemas = schemas;
+    this.kinds = kinds;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, {
@@ -1565,6 +1588,22 @@ export class AnyOfRuntype extends BaseRuntype {
     return false;
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    const kinds = this.kinds;
+    if (kinds != null) {
+      const kind = kindOf(input);
+      let candidates = 0;
+      let candidate = 0;
+      for (let i = 0; i < kinds.length; i++) {
+        if ((kinds[i] & kind) !== 0) {
+          candidates++;
+          candidate = i;
+        }
+      }
+      // The input passed validate(), so the only branch that accepts its kind is the match.
+      if (candidates === 1) {
+        return this.schemas[candidate].parseAfterValidation(ctx, input);
+      }
+    }
     const items = [];
     for (const it of this.schemas) {
       if (it.validate(ctx, input)) {

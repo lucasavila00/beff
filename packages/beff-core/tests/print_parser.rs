@@ -862,6 +862,9 @@ mod tests {
         const direct_hoist_9 = new AnyOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_8
+        ], [
+            64,
+            64
         ]);
         const namedRuntypes = {
             "DiscriminatedUnion4": direct_hoist_9
@@ -907,6 +910,9 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_2,
             direct_hoist_1
+        ], [
+            1,
+            8
         ]);
         const direct_hoist_4 = new ConstRuntype(undefined, "CRON");
         const direct_hoist_5 = new ObjectRuntype(undefined, {
@@ -2010,6 +2016,9 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
+        ], [
+            8,
+            4
         ]);
         const namedRuntypes = {
             "Alias": direct_hoist_3
@@ -2301,12 +2310,18 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
+        ], [
+            1,
+            64
         ]);
         const direct_hoist_4 = new TypeofRuntype(undefined, "string");
         const direct_hoist_5 = new TypeofRuntype(undefined, "boolean");
         const direct_hoist_6 = new AnyOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_4
+        ], [
+            2,
+            8
         ]);
         const direct_hoist_7 = new ObjectRuntype(undefined, {
             "other": direct_hoist_3,
@@ -2317,11 +2332,17 @@ mod tests {
         const direct_hoist_9 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_8
+        ], [
+            1,
+            64
         ]);
         const direct_hoist_10 = new TypeofRuntype(undefined, "number");
         const direct_hoist_11 = new AnyOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_10
+        ], [
+            2,
+            4
         ]);
         const direct_hoist_12 = new ObjectRuntype(undefined, {
             "other": direct_hoist_9,
@@ -2369,6 +2390,9 @@ mod tests {
         const direct_hoist_4 = new AnyOfRuntype(undefined, [
             direct_hoist_3,
             direct_hoist_2
+        ], [
+            2,
+            8
         ]);
         const direct_hoist_5 = new ObjectRuntype(undefined, {
             "other": direct_hoist_1,
@@ -2380,6 +2404,9 @@ mod tests {
         const direct_hoist_8 = new AnyOfRuntype(undefined, [
             direct_hoist_3,
             direct_hoist_7
+        ], [
+            2,
+            4
         ]);
         const direct_hoist_9 = new ObjectRuntype(undefined, {
             "other": direct_hoist_6,
@@ -2578,5 +2605,73 @@ mod tests {
           Q1: Q__string__,
         }
         "#);
+    }
+
+    // The second argument of AnyOfRuntype has the kinds of value each branch accepts:
+    // 1 nullish, 2 boolean, 4 number, 8 string, 16 bigint, 32 array, 64 object, 128 other.
+    fn union_kinds(types: &str, name: &str) -> String {
+        let out = print_cgen(&format!(
+            "{types}\nparse.buildParsers<{{ {name}: {name} }}>();"
+        ));
+        let out = out.split_whitespace().collect::<String>();
+        let start = out.find("newAnyOfRuntype(").expect("a union");
+        let end = start + out[start..].find(");").expect("end of the union");
+        let kinds = start + out[start..end].rfind('[').expect("kinds");
+        out[kinds..end].to_string()
+    }
+
+    fn sorted_union_kinds(types: &str, name: &str) -> Vec<u32> {
+        let kinds = union_kinds(types, name);
+        let mut kinds = kinds
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .map(|it| it.parse::<u32>().expect("number"))
+            .collect::<Vec<_>>();
+        kinds.sort();
+        kinds
+    }
+
+    #[test]
+    fn union_kinds_recursive_ref() {
+        // branches are printed in a sorted order: null, string, then the reference
+        let node = "type Node = { value: number; next: Node | null | string };";
+        assert_eq!(union_kinds(node, "Node"), "[1,8,64]");
+    }
+
+    #[test]
+    fn union_kinds_primitives() {
+        let from = "type U = string | number | bigint | undefined | { a: 1 } | boolean[];";
+        assert_eq!(sorted_union_kinds(from, "U"), vec![1, 4, 8, 16, 32, 64]);
+    }
+
+    #[test]
+    fn union_kinds_resolve_references() {
+        // references to a union of literals, to a tuple and to a discriminated union
+        let from = r#"
+            type Lit = "a" | "b";
+            type Tup = [string, number];
+            type Disc = { t: "a"; a: string } | { t: "b"; b: number };
+            type U = Lit | Tup | Disc | null;
+        "#;
+        assert_eq!(sorted_union_kinds(from, "U"), vec![1, 8, 32, 64]);
+    }
+
+    #[test]
+    fn union_kinds_instanceof_and_any() {
+        // `instanceof` is also true for arrays and functions with the right prototype
+        assert_eq!(union_kinds("type U = Date | string;", "U"), "[8,224]");
+        let from = "type U = Map<string, number> | Set<string> | Uint8Array | null;";
+        assert_eq!(union_kinds(from, "U"), "[1,224,224,224]");
+        // functions are not semantic types, so they accept every kind
+        assert_eq!(
+            union_kinds("type U = (() => void) | string;", "U"),
+            "[8,255]"
+        );
+    }
+
+    #[test]
+    fn union_kinds_intersection() {
+        let from = "type U = ({ a: string } & { b: number }) | string[];";
+        assert_eq!(sorted_union_kinds(from, "U"), vec![32, 64]);
     }
 }

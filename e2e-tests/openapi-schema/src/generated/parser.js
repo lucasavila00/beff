@@ -113,6 +113,9 @@ const direct_hoist_26 = new NullishRuntype(undefined, "undefined");
 const direct_hoist_27 = new AnyOfRuntype(undefined, [
     direct_hoist_26,
     direct_hoist_21
+], [
+    1,
+    8
 ]);
 const direct_hoist_28 = new ConstRuntype(undefined, "CRON");
 const direct_hoist_29 = new ObjectRuntype(undefined, {
@@ -209,6 +212,10 @@ const direct_hoist_54 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_52,
     direct_hoist_53
+], [
+    1,
+    8,
+    4
 ]);
 const direct_hoist_55 = new AnyOfConstsRuntype(undefined, [
     "admin",
@@ -228,11 +235,19 @@ const direct_hoist_59 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_26,
     direct_hoist_58
+], [
+    1,
+    1,
+    4
 ]);
 const direct_hoist_60 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_26,
     direct_hoist_21
+], [
+    1,
+    1,
+    8
 ]);
 const direct_hoist_61 = new ObjectRuntype(undefined, {
     "limit": new OptionalFieldRuntype(direct_hoist_59),
@@ -243,10 +258,17 @@ const direct_hoist_63 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_52,
     direct_hoist_62
+], [
+    1,
+    8,
+    8
 ]);
 const direct_hoist_64 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_21
+], [
+    1,
+    8
 ]);
 const direct_hoist_65 = new ObjectRuntype(undefined, {
     "maybeEnum": direct_hoist_63,

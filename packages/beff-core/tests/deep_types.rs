@@ -28,6 +28,14 @@ mod tests {
         assert!(out.contains("R1999"));
     }
 
+    // The kinds of the branches of a union are computed without walking the chain.
+    #[test]
+    fn long_reference_chain_through_unions() {
+        let types = chain(2000, "R0").replace(" };", " | null };");
+        let out = print_cgen(&format!("{types}\nparse.buildParsers<{{ R0: R0 }}>();\n"));
+        assert!(out.contains("R1999"));
+    }
+
     #[test]
     fn error_at_the_end_of_a_long_reference_chain() {
         let from = format!(
