@@ -73,7 +73,10 @@ fn parse_modules(fs: &[(&str, &str)]) -> BTreeMap<BffFileName, Rc<ParsedModule>>
     }
     map
 }
-fn extract_types_with_settings(fs: &[(&str, &str)], settings: BeffUserSettings) -> ParserExtractResult {
+fn extract_types_with_settings(
+    fs: &[(&str, &str)],
+    settings: BeffUserSettings,
+) -> ParserExtractResult {
     let mut man = TestFileManager {
         fs: parse_modules(fs),
     };

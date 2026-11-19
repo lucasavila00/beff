@@ -914,7 +914,13 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
                 })
                 .collect();
 
-            let mut args = vec![object_lit(mapped.into_iter().collect())];
+            // The properties are a flat list: [key, type, key, type, ...].
+            let mut args = vec![array_lit(
+                mapped
+                    .into_iter()
+                    .flat_map(|(key, value)| [string_lit(&key), value])
+                    .collect(),
+            )];
             if !indexed_properties_props.is_empty() {
                 args.push(array_lit(indexed_properties_props));
             }

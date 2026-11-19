@@ -6,8 +6,8 @@ use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::swc_tools::SymbolExport;
 use crate::{Anchor, NamedSchema, RuntypeUUID, TsBuiltIn, TypeAddress};
 use crate::{
-    BeffUserSettings, BffFileName, FileManager, ModuleItemAddress, ParsedModule,
-    RuntypeName, Visibility,
+    BeffUserSettings, BffFileName, FileManager, ModuleItemAddress, ParsedModule, RuntypeName,
+    Visibility,
     ast::runtype::{
         CustomFormat, Optionality, Runtype, RuntypeConst, RuntypeKind, TplLitType, TplLitTypeItem,
     },
@@ -121,7 +121,11 @@ struct PendingNamedType {
 }
 
 impl<'a, R: FileManager> FrontendCtx<'a, R> {
-    pub(crate) fn new(files: &'a mut R, parser_file: BffFileName, settings: &'a BeffUserSettings) -> Self {
+    pub(crate) fn new(
+        files: &'a mut R,
+        parser_file: BffFileName,
+        settings: &'a BeffUserSettings,
+    ) -> Self {
         FrontendCtx {
             files,
             parser_file,
@@ -1156,7 +1160,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    pub(crate) fn typeof_expr(&mut self, e: &Expr, as_const: bool, file: BffFileName) -> Res<Runtype> {
+    pub(crate) fn typeof_expr(
+        &mut self,
+        e: &Expr,
+        as_const: bool,
+        file: BffFileName,
+    ) -> Res<Runtype> {
         let anchor = Anchor {
             f: file.clone(),
             s: e.span(),
@@ -2191,7 +2200,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         let mut vs: BTreeMap<String, Optionality<Runtype>> = BTreeMap::new();
         for (key, key_runtype) in string_keys.into_iter() {
-            self.type_application_stack.push((name.clone(), key_runtype));
+            self.type_application_stack
+                .push((name.clone(), key_runtype));
 
             let ty = self.extract_type(type_ann, file_name.clone());
             self.type_application_stack.pop();
