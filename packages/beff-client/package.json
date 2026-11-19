@@ -1,6 +1,6 @@
 {
   "name": "@beff/client",
-  "version": "0.0.154",
+  "version": "1.0.0",
   "description": "",
   "repository": {
     "type": "git",
@@ -32,7 +32,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.154"
+    "@beff/cli": "workspace:^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.2.2",

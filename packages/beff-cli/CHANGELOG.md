@@ -1,5 +1,21 @@
 # @beff/cli
 
+## 1.0.0
+
+### Major Changes
+
+- 4997bba: The default configuration file name is now `beff.json`. Before, it was `bff.json`.
+- 726fac4: Beff now reports a compile error for an intersection of `Date`, `Map`, `Set` or a typed array with a different type, for example `Date & { foo: string }`.
+- c59f47b: `hash()` and `hash256()` are removed from parsers. In OpenAPI and JSON Schema output, the number at the end of the names of inline discriminated union variants changes.
+
+### Patch Changes
+
+- 3eae117: Code generation is faster for projects with many named types.
+- e2fd05f: Two parser files that use a custom format with the same name now each use their own format function.
+- 497f925: A property or a discriminator value with the name `__proto__` now works in generated parsers.
+- 127edf7: Generated parser files are smaller.
+- 26f60b5: Code generation is faster for unions of many object types.
+
 ## 0.0.154
 
 ### Patch Changes
