@@ -1168,18 +1168,17 @@ export class AllOfRuntype extends BaseRuntype {
     return Object.keys(input).filter((k) => !hasOwn.call(known, k));
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    return withIntersectionInput(ctx, input, () => this.parseMembers(ctx, input));
+    return withIntersectionInput(ctx, input, () => {
+      const parsed = this.schemas.map((it) => it.parseAfterValidation(ctx, input));
+      // A member can give a value that is not a plain object, for example a Date or null.
+      // A merge into a plain object loses that value, and the type does not accept the result.
+      // Thus, give the value of that member.
+      const notPlain = parsed.find((it) => it === null || Object.getPrototypeOf(it) !== JSON_PROTO);
+      return notPlain !== undefined ? notPlain : mergeParsedMembers(parsed);
+    });
   }
   private parseMembers(ctx: ParseContext, input: any): object {
-    let acc = {};
-    for (const it of this.schemas) {
-      const parsed = it.parseAfterValidation(ctx, input);
-      if (typeof parsed !== "object") {
-        throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
-      }
-      acc = { ...acc, ...parsed };
-    }
-    return acc;
+    return mergeParsedMembers(this.schemas.map((it) => it.parseAfterValidation(ctx, input)));
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
@@ -1203,6 +1202,17 @@ export class AllOfRuntype extends BaseRuntype {
     }
     return acc;
   }
+}
+
+function mergeParsedMembers(parsed: unknown[]): object {
+  let acc = {};
+  for (const it of parsed) {
+    if (typeof it !== "object") {
+      throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
+    }
+    acc = { ...acc, ...it };
+  }
+  return acc;
 }
 
 const MERGEABLE_OBJECT_SCHEMA_KEYS = new Set(["type", "properties", "required", "additionalProperties"]);

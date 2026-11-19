@@ -186,6 +186,8 @@ export const buildCodecs = (parse: { buildParsers: BuildParserFunction }) =>
     IntersectionIndex: IA & { n: number } & Record<string, string | number>;
     IntersectionTplIndex: IA & Record<`x_${string}`, number>;
     IntersectionUnion: IntersectionUnion;
+    IntersectionDate: Date & { foo: string };
+    IntersectionNullish: (IA | null) & (IB | undefined);
 
     // Utility types
     OmitT: Omit<Base, "b">;

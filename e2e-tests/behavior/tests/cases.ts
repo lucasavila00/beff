@@ -72,6 +72,8 @@ const expectInvalid = (codec: BeffParser<any>, invalid: Invalid, options?: typeo
   expect((thrown as Error).message.length).toBeGreaterThan(0);
 };
 
+const dateWithFoo = Object.assign(new Date(0), { foo: "x" });
+
 const label = (x: unknown): string => {
   if (isAt(x)) return label(x.value);
   if (typeof x === "bigint") return `${x}n`;
@@ -532,6 +534,23 @@ const cases: { [K in keyof Codecs]?: Case } = {
     ],
     strictValid: [{ a: "x", kind: "v", v: 1 }],
     strictInvalid: [{ a: "x", kind: "u", u: "y", v: 1 }],
+  },
+  // #463
+  IntersectionDate: {
+    valid: [dateWithFoo],
+    invalid: [new Date(0), { foo: "x" }, null],
+    parsed: [[dateWithFoo, dateWithFoo]],
+  },
+  IntersectionNullish: {
+    valid: [null, { a: "x" }, { a: "x", b: 1 }],
+    invalid: [{}, { b: 1 }, 1],
+    parsed: [
+      [null, null],
+      [
+        { a: "x", b: 1, c: 2 },
+        { a: "x", b: 1 },
+      ],
+    ],
   },
 
   // Utility types
