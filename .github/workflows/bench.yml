@@ -20,9 +20,6 @@ on:
         description: "Extra args for stress.mjs (--scale, --runs, --seed)"
         required: false
         default: ""
-concurrency:
-  group: bench-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   bench:
     runs-on: ubuntu-22.04
