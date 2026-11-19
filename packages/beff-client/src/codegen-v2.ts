@@ -1671,10 +1671,32 @@ function setOwnProperty(target: Record<string, unknown>, key: string, value: unk
   target[key] = value;
 }
 
-export function obj(
-  properties: Record<string, Runtype>,
-  indexed: Array<{ key: Runtype; value: Runtype }> = [],
-): Runtype {
+type Indexed = Array<{ key: Runtype; value: Runtype }>;
+
+// In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
+function leavesKeyToIntersection(indexed: Indexed, c: Ctx, i: object, k: string): boolean {
+  return c.intersectionInput === i && !indexed.some((p) => p.key.v(c, k));
+}
+
+function parseIndexed(indexed: Indexed, c: Ctx, acc: Record<string, unknown>, k: string, v: unknown): void {
+  for (const p of indexed) {
+    if (p.key.v(c, k) && p.value.v(c, v)) {
+      const itemParsed = p.value.p(c, v);
+      setOwnProperty(acc, p.key.p(c, k), itemParsed);
+    }
+  }
+}
+
+function hasExtraKeys(index: Record<string, number | undefined>, i: object): boolean {
+  for (const k of Object.keys(i)) {
+    if (index[k] === undefined) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function obj(properties: Record<string, Runtype>, indexed: Indexed = []): Runtype {
   // The properties as parallel arrays. An optional property keeps the functions of its inner type, and
   // `optional` says that it also accepts null and undefined.
   const keys = Object.keys(properties);
@@ -1683,39 +1705,25 @@ export function obj(
   const inner = keys.map((k, j) => (optional[j] ? properties[k].kids()[0] : properties[k]));
   const vs = inner.map((it) => it.v);
   const ps = inner.map((it) => it.p);
-  const rs = inner.map((it) => it.r);
   // The position of each property. It has no prototype, so only the keys of `properties` are in it.
   const index: Record<string, number | undefined> = Object.create(null);
   keys.forEach((k, j) => {
     index[k] = j;
   });
-  const sortedKeys = [...keys].sort();
   const hasIndexed = indexed.length > 0;
-  // In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
-  const leavesKeyToIntersection = (c: Ctx, i: object, k: string): boolean =>
-    c.intersectionInput === i && !indexed.some((p) => p.key.v(c, k));
-  const parseIndexed = (c: Ctx, acc: Record<string, unknown>, k: string, v: unknown): void => {
-    for (const p of indexed) {
-      if (p.key.v(c, k) && p.value.v(c, v)) {
-        const itemParsed = p.value.p(c, v);
-        setOwnProperty(acc, p.key.p(c, k), itemParsed);
-      }
-    }
-  };
-  return node(
-    0,
-    (c, i) => {
-      if (typeof i !== "object" || i === null || Array.isArray(i)) {
-        return false;
-      }
-      for (let j = 0; j < count; j++) {
-        const x = i[keys[j]];
-        if (!(x == null && optional[j]) && !vs[j](c, x)) {
+  // There is one validate function for objects with an index signature and one for objects without. Each is
+  // small, so that it needs little stack: validation of deep inputs must not overflow the stack.
+  const v: Validate = hasIndexed
+    ? (c, i) => {
+        if (typeof i !== "object" || i === null || Array.isArray(i)) {
           return false;
         }
-      }
-
-      if (hasIndexed) {
+        for (let j = 0; j < count; j++) {
+          const x = i[keys[j]];
+          if (!(x == null && optional[j]) && !vs[j](c, x)) {
+            return false;
+          }
+        }
         for (const k of Object.keys(i)) {
           if (index[k] !== undefined) {
             continue;
@@ -1727,20 +1735,27 @@ export function obj(
               break;
             }
           }
-          if (!isValid && !leavesKeyToIntersection(c, i, k)) {
+          if (!isValid && !leavesKeyToIntersection(indexed, c, i, k)) {
             return false;
           }
         }
-      } else if (c.disallowExtraProperties && c.intersectionInput !== i) {
-        for (const k of Object.keys(i)) {
-          if (index[k] === undefined) {
-            return false;
-          }
-        }
+        return true;
       }
-
-      return true;
-    },
+    : (c, i) => {
+        if (typeof i !== "object" || i === null || Array.isArray(i)) {
+          return false;
+        }
+        for (let j = 0; j < count; j++) {
+          const x = i[keys[j]];
+          if (!(x == null && optional[j]) && !vs[j](c, x)) {
+            return false;
+          }
+        }
+        return !(c.disallowExtraProperties && c.intersectionInput !== i && hasExtraKeys(index, i));
+      };
+  return node(
+    0,
+    v,
     (c, i) => {
       const acc: any = {};
       const inputKeys = Object.keys(i);
@@ -1752,11 +1767,11 @@ export function obj(
           if (j !== undefined) {
             setOwnProperty(acc, k, x == null && optional[j] ? x : ps[j](c, x));
           } else if (hasIndexed) {
-            parseIndexed(c, acc, k, x);
+            parseIndexed(indexed, c, acc, k, x);
           }
         }
       } else {
-        for (const k of sortedKeys) {
+        for (const k of [...keys].sort()) {
           if (!hasOwn.call(i, k)) {
             continue;
           }
@@ -1767,7 +1782,7 @@ export function obj(
 
         if (hasIndexed) {
           for (const k of inputKeys.filter((k) => index[k] === undefined).sort()) {
-            parseIndexed(c, acc, k, i[k]);
+            parseIndexed(indexed, c, acc, k, i[k]);
           }
         }
       }
@@ -1784,13 +1799,13 @@ export function obj(
       for (let j = 0; j < count; j++) {
         const x = i[keys[j]];
         if (!(x == null && optional[j])) {
-          reportAtPath(c, acc, keys[j], vs[j], rs[j], x);
+          reportAtPath(c, acc, keys[j], vs[j], properties[keys[j]].r, x);
         }
       }
 
       if (hasIndexed) {
         for (const k of Object.keys(i)) {
-          if (index[k] !== undefined || leavesKeyToIntersection(c, i, k)) {
+          if (index[k] !== undefined || leavesKeyToIntersection(indexed, c, i, k)) {
             continue;
           }
           for (const p of indexed) {
@@ -1823,7 +1838,9 @@ export function obj(
       return acc;
     },
     (ctx) => {
-      const props = sortedKeys.map((k) => describeObjectMember(ctx, describePropertyKey(k), properties[k]));
+      const props = [...keys]
+        .sort()
+        .map((k) => describeObjectMember(ctx, describePropertyKey(k), properties[k]));
 
       const indexProps = indexed.map(({ key, value }) => describeIndexObjectMember(ctx, key, value));
 
@@ -1905,7 +1922,7 @@ export function obj(
     },
     (ctx) => {
       let acc: number[] = [objectHash];
-      for (const key of sortedKeys) {
+      for (const key of [...keys].sort()) {
         acc.push(generateHashFromString(key));
         acc.push(properties[key].hash(ctx));
       }
@@ -1918,7 +1935,7 @@ export function obj(
     (ctx) => {
       ctx.writer.updateTag("object");
       ctx.writer.updateNumber(count);
-      for (const key of sortedKeys) {
+      for (const key of [...keys].sort()) {
         const parser = properties[key];
         ctx.writer.updateString(key);
         ctx.writer.updateBoolean(parser.t === T_OPT);
