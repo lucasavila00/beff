@@ -240,6 +240,9 @@ export type IntersectionOmitPick = Omit<IBase & IExtra, "c"> & Partial<Pick<IOth
 export type IntersectionNested = IA & (IB & { n: { x: string } });
 export type IntersectionIndex = IA & { n: number } & Record<string, string | number>;
 export type IntersectionUnion = IA & ({ kind: "u"; u: string } | { kind: "v"; v?: number });
+export type IntersectionTplIndex = IA & Record<`x_${string}`, number>;
+export type IntersectionTwoTplIndexes = IA & Record<`x_${string}`, number> & Record<`y_${string}`, string>;
+export type TplRecord = Record<`x_${string}`, number>;
 
 export const {
   Version,
@@ -305,6 +308,9 @@ export const {
   IntersectionNested: IntersectionNestedCodec,
   IntersectionIndex: IntersectionIndexCodec,
   IntersectionUnion: IntersectionUnionCodec,
+  IntersectionTplIndex: IntersectionTplIndexCodec,
+  IntersectionTwoTplIndexes: IntersectionTwoTplIndexesCodec,
+  TplRecord: TplRecordCodec,
 } = parse.buildParsers<{
   Intersection: Intersection;
   IntersectionPartial: IntersectionPartial;
@@ -312,6 +318,9 @@ export const {
   IntersectionNested: IntersectionNested;
   IntersectionIndex: IntersectionIndex;
   IntersectionUnion: IntersectionUnion;
+  IntersectionTplIndex: IntersectionTplIndex;
+  IntersectionTwoTplIndexes: IntersectionTwoTplIndexes;
+  TplRecord: TplRecord;
   Repro5: Repro5;
   Repro6: Repro6;
   M1: M1;
