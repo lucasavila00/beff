@@ -1,5 +1,4 @@
 import { type BeffParser, type DecodeError, type ParseOptions, type RegularDecodeError } from "./types.js";
-import { z } from "zod";
 import { JSONSchema7, JSONSchema7Definition } from "./json-schema.js";
 import { removeNullUnionBranch } from "./openapi-pp.js";
 import { printErrors } from "./err.js";
@@ -2133,17 +2132,6 @@ class ParserFromRuntype implements BeffParser<any> {
       success: false,
       errors: this._runtype.reportDecodeError(ctx, input).slice(0, 10),
     };
-  }
-  zod(): z.ZodType<any, z.ZodTypeDef, any> {
-    //@ts-ignore
-    return z.custom(
-      (data: any) => this.validate(data),
-      //@ts-ignore
-      (val: any) => {
-        const errors = this._runtype.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
-        return printErrors(errors, []);
-      },
-    );
   }
   validate(input: any, options?: ParseOptions): input is any {
     const disallowExtraProperties = options?.disallowExtraProperties ?? false;

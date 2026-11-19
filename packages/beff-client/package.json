@@ -34,9 +34,6 @@
   "dependencies": {
     "@beff/cli": "workspace:^0.0.154"
   },
-  "peerDependencies": {
-    "zod": "^3.23.5"
-  },
   "devDependencies": {
     "typescript": "^5.2.2",
     "vitest": "^0.34.4"
