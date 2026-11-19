@@ -7,9 +7,10 @@ use swc_common::SyntaxContext;
 use swc_common::{FilePathMapping, sync::Lrc};
 use swc_ecma_ast::Module;
 use swc_ecma_ast::{
-    ArrayLit, BindingIdent, ComputedPropName, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit,
-    ModuleItem, NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str,
-    VarDecl, VarDeclKind, VarDeclarator,
+    ArrayLit, BindingIdent, CallExpr, Callee, ComputedPropName, Decl, Expr, ExprOrSpread, ExprStmt,
+    Ident, IdentName, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null,
+    ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str, VarDecl, VarDeclKind,
+    VarDeclarator,
 };
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
@@ -396,6 +397,7 @@ fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext, original_runtype: &Runt
         vec![
             //
             string_lit(&ctx.print_rt_name(to)),
+            Expr::Ident(identifier("namedRuntypes")),
         ],
         original_runtype,
     )
@@ -996,10 +998,31 @@ impl ParserExtractResult {
             build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
         );
 
-        let build_named_parsers_input = const_decl(
-            "namedRuntypes",
-            named_runtypes(&named_schemas, &mut hoisted),
-        );
+        // The refs read namedRuntypes, so it is declared before them and filled after them.
+        let declare_named_runtypes = const_decl("namedRuntypes", object_lit(vec![]));
+        let fill_named_runtypes = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                ctxt: SyntaxContext::empty(),
+                callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+                    span: DUMMY_SP,
+                    obj: Box::new(Expr::Ident(identifier("Object"))),
+                    prop: MemberProp::Ident(IdentName::new("assign".into(), DUMMY_SP)),
+                }))),
+                args: vec![
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(Expr::Ident(identifier("namedRuntypes"))),
+                    },
+                    ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(named_runtypes(&named_schemas, &mut hoisted)),
+                    },
+                ],
+                type_args: None,
+            })),
+        }));
 
         let mut sorted_direct_hoisted_values = hoisted.hoisted.into_values().collect::<Vec<_>>();
         sorted_direct_hoisted_values.sort_by_key(|it| it.0);
@@ -1009,11 +1032,11 @@ impl ParserExtractResult {
             .map(|(id, expr)| const_decl(&hoist_name(id), expr))
             .collect();
 
-        let module_items = hoisted_direct_decls
-            .into_iter()
+        let module_items = std::iter::once(declare_named_runtypes)
+            .chain(hoisted_direct_decls)
             .chain(vec![
                 //
-                build_named_parsers_input,
+                fill_named_runtypes,
                 build_parsers_input,
             ])
             .collect();

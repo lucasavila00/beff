@@ -4,13 +4,13 @@ import { removeNullUnionBranch } from "../src/openapi-pp.js";
 import {
   AllOfRuntype,
   AnyOfDiscriminatedRuntype,
-  BaseRefRuntype,
   ConstRuntype,
   ObjectRuntype,
   OptionalFieldRuntype,
+  RefRuntype,
   SchemaPrintingContext,
   TypeofRuntype,
-} from "../src/codegen-v2.js";
+} from "../src/runtime.js";
 
 describe("removeNullUnionBranch", () => {
   it("removes the null branch from a two-variant anyOf", () => {
@@ -144,14 +144,8 @@ describe("discriminated union schemas", () => {
       ),
     };
 
-    class TestRefRuntype extends BaseRefRuntype {
-      getNamedRuntypes() {
-        return named;
-      }
-    }
-
-    const cron = new TestRefRuntype(undefined, "CronSource");
-    const event = new TestRefRuntype(undefined, "EventSource");
+    const cron = new RefRuntype(undefined, "CronSource", named);
+    const event = new RefRuntype(undefined, "EventSource", named);
     const printingContext = new SchemaPrintingContext({
       refPathTemplate: "#/components/schemas/{name}",
       definitionContainerKey: null,

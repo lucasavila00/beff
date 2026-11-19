@@ -51,7 +51,7 @@ node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6]
 node stress.mjs [--shape records] [--scale 8] [--runs 500] [--seed 1]
 
 # Size of the generated parser.js (raw, gzip, minified), and the time and heap that loading it takes.
-# Also prints the size of the @beff/client/codegen-v2 runtime.
+# Also prints the size of the @beff/client/runtime runtime.
 node load.mjs [--shape objects] [--scale 800]
 
 # Compare two versions on the same machine: runtime, load time, heap and minified sizes.

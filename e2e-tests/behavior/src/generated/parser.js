@@ -1,7 +1,5 @@
 //@ts-nocheck
 
-"use strict";
-
 import {
   TypeofRuntype,
   AnyRuntype,
@@ -21,53 +19,16 @@ import {
   AnyOfDiscriminatedRuntype,
   ObjectRuntype,
   OptionalFieldRuntype,
-  BaseRefRuntype,
-  registerStringFormatter,
-  registerNumberFormatter,
-  buildParserFromRuntype,
+  RefRuntype,
   TypedArrayRuntype,
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
-} from "@beff/client/codegen-v2";
-
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
-
-const buildParsers = (args) => {
-  const stringFormats = args?.stringFormats ?? {};
-  for (const k of RequiredStringFormats) {
-    if (stringFormats[k] == null) {
-      throw new Error(`Missing custom format ${k}`);
-    }
-  }
-  Object.keys(stringFormats).forEach((k) => {
-    const v = stringFormats[k];
-    registerStringFormatter(k, v);
-  });
-  const numberFormats = args?.numberFormats ?? {};
-  for (const k of RequiredNumberFormats) {
-    if (numberFormats[k] == null) {
-      throw new Error(`Missing custom format ${k}`);
-    }
-  }
-  Object.keys(numberFormats).forEach((k) => {
-    const v = numberFormats[k];
-    registerNumberFormatter(k, v);
-  });
-  let acc = {};
-  for (const k of Object.keys(buildParsersInput)) {
-    const it = buildParserFromRuntype(buildParsersInput[k], k, false);
-    acc[k] = it;
-  }
-  return acc;
-};
-
+  buildParsers,
+} from "@beff/client/runtime";
 const RequiredStringFormats = ["UserId","AdminId"];
 const RequiredNumberFormats = ["NonNegative","Rate"];
+const namedRuntypes = {};
 const direct_hoist_0 = new TypeofRuntype(undefined, "string");
 const direct_hoist_1 = new TypeofRuntype(undefined, "number");
 const direct_hoist_2 = new TypeofRuntype(undefined, "boolean");
@@ -98,8 +59,8 @@ const direct_hoist_16 = new AnyOfConstsRuntype(undefined, [
     "constructor",
     "toString"
 ]);
-const direct_hoist_17 = new RefRuntype(undefined, "Color");
-const direct_hoist_18 = new RefRuntype(undefined, "Color__Red");
+const direct_hoist_17 = new RefRuntype(undefined, "Color", namedRuntypes);
+const direct_hoist_18 = new RefRuntype(undefined, "Color__Red", namedRuntypes);
 const direct_hoist_19 = new ArrayRuntype(undefined, direct_hoist_0);
 const direct_hoist_20 = new ArrayRuntype(undefined, direct_hoist_1);
 const direct_hoist_21 = new ArrayRuntype(undefined, direct_hoist_20);
@@ -115,9 +76,9 @@ const direct_hoist_24 = new TupleRuntype(undefined, [
     direct_hoist_0
 ], null);
 const direct_hoist_25 = new ObjectRuntype(undefined, {}, []);
-const direct_hoist_26 = new RefRuntype(undefined, "Nested");
-const direct_hoist_27 = new RefRuntype(undefined, "ManyFields");
-const direct_hoist_28 = new RefRuntype(undefined, "Optionals");
+const direct_hoist_26 = new RefRuntype(undefined, "Nested", namedRuntypes);
+const direct_hoist_27 = new RefRuntype(undefined, "ManyFields", namedRuntypes);
+const direct_hoist_28 = new RefRuntype(undefined, "Optionals", namedRuntypes);
 const direct_hoist_29 = new ObjectRuntype(undefined, {
     ["__proto__"]: direct_hoist_0,
     "toString": direct_hoist_1
@@ -134,7 +95,7 @@ const direct_hoist_31 = new ObjectRuntype(undefined, {}, [
         "value": direct_hoist_0
     }
 ]);
-const direct_hoist_32 = new RefRuntype(undefined, "NumberKeyedObj");
+const direct_hoist_32 = new RefRuntype(undefined, "NumberKeyedObj", namedRuntypes);
 const direct_hoist_33 = new ObjectRuntype(undefined, {
     "x": direct_hoist_1,
     "y": direct_hoist_1
@@ -154,7 +115,7 @@ const direct_hoist_37 = new ObjectRuntype(undefined, {}, [
         "value": direct_hoist_1
     }
 ]);
-const direct_hoist_38 = new RefRuntype(undefined, "TplIndexWithProps");
+const direct_hoist_38 = new RefRuntype(undefined, "TplIndexWithProps", namedRuntypes);
 const direct_hoist_39 = new RegexRuntype(undefined, /^(beta_)([\s\S]*)$/, "`beta_${string}`");
 const direct_hoist_40 = new ObjectRuntype(undefined, {
     "alpha": new OptionalFieldRuntype(direct_hoist_0)
@@ -179,8 +140,8 @@ const direct_hoist_45 = new AnyOfRuntype(undefined, [
     direct_hoist_0,
     direct_hoist_1
 ]);
-const direct_hoist_46 = new RefRuntype(undefined, "ObjA");
-const direct_hoist_47 = new RefRuntype(undefined, "ObjB");
+const direct_hoist_46 = new RefRuntype(undefined, "ObjA", namedRuntypes);
+const direct_hoist_47 = new RefRuntype(undefined, "ObjB", namedRuntypes);
 const direct_hoist_48 = new AnyOfRuntype(undefined, [
     direct_hoist_46,
     direct_hoist_47
@@ -191,11 +152,11 @@ const direct_hoist_49 = new AnyOfRuntype(undefined, [
     direct_hoist_20,
     direct_hoist_46
 ]);
-const direct_hoist_50 = new RefRuntype(undefined, "Shape");
-const direct_hoist_51 = new RefRuntype(undefined, "NestedDiscriminated");
-const direct_hoist_52 = new RefRuntype(undefined, "ProtoDiscriminated");
-const direct_hoist_53 = new RefRuntype(undefined, "MultiValueDiscriminated");
-const direct_hoist_54 = new RefRuntype(undefined, "OptionalDiscriminated");
+const direct_hoist_50 = new RefRuntype(undefined, "Shape", namedRuntypes);
+const direct_hoist_51 = new RefRuntype(undefined, "NestedDiscriminated", namedRuntypes);
+const direct_hoist_52 = new RefRuntype(undefined, "ProtoDiscriminated", namedRuntypes);
+const direct_hoist_53 = new RefRuntype(undefined, "MultiValueDiscriminated", namedRuntypes);
+const direct_hoist_54 = new RefRuntype(undefined, "OptionalDiscriminated", namedRuntypes);
 const direct_hoist_55 = new MapRuntype(undefined, direct_hoist_0, direct_hoist_1);
 const direct_hoist_56 = new SetRuntype(undefined, direct_hoist_0);
 const direct_hoist_57 = new AnyOfRuntype(undefined, [
@@ -203,8 +164,8 @@ const direct_hoist_57 = new AnyOfRuntype(undefined, [
     direct_hoist_55,
     direct_hoist_56
 ]);
-const direct_hoist_58 = new RefRuntype(undefined, "IA");
-const direct_hoist_59 = new RefRuntype(undefined, "IB");
+const direct_hoist_58 = new RefRuntype(undefined, "IA", namedRuntypes);
+const direct_hoist_59 = new RefRuntype(undefined, "IB", namedRuntypes);
 const direct_hoist_60 = new AllOfRuntype(undefined, [
     direct_hoist_58,
     direct_hoist_59
@@ -241,7 +202,7 @@ const direct_hoist_68 = new AllOfRuntype(undefined, [
     direct_hoist_37,
     direct_hoist_58
 ]);
-const direct_hoist_69 = new RefRuntype(undefined, "IntersectionUnion");
+const direct_hoist_69 = new RefRuntype(undefined, "IntersectionUnion", namedRuntypes);
 const direct_hoist_70 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
     "c": new OptionalFieldRuntype(direct_hoist_2)
@@ -281,23 +242,23 @@ const direct_hoist_78 = new AnyOfConstsRuntype(undefined, [
     "a",
     "c"
 ]);
-const direct_hoist_79 = new RefRuntype(undefined, "ShapeKind");
-const direct_hoist_80 = new RefRuntype(undefined, "Box_string");
-const direct_hoist_81 = new RefRuntype(undefined, "Box_Box__number__");
-const direct_hoist_82 = new RefRuntype(undefined, "Pair_number");
-const direct_hoist_83 = new RefRuntype(undefined, "Pair_instance_3");
-const direct_hoist_84 = new RefRuntype(undefined, "ListOf_number");
-const direct_hoist_85 = new RefRuntype(undefined, "WithDefault_boolean");
-const direct_hoist_86 = new RefRuntype(undefined, "GenericRecursive_string");
-const direct_hoist_87 = new RefRuntype(undefined, "LinkedList");
-const direct_hoist_88 = new RefRuntype(undefined, "Tree");
-const direct_hoist_89 = new RefRuntype(undefined, "Json");
-const direct_hoist_90 = new RefRuntype(undefined, "Expr");
-const direct_hoist_91 = new RefRuntype(undefined, "MutualA");
-const direct_hoist_92 = new RefRuntype(undefined, "RecursiveFirst");
-const direct_hoist_93 = new RefRuntype(undefined, "RecursiveMiddle");
-const direct_hoist_94 = new RefRuntype(undefined, "RecursiveLast");
-const direct_hoist_95 = new RefRuntype(undefined, "RecursiveInTuple");
+const direct_hoist_79 = new RefRuntype(undefined, "ShapeKind", namedRuntypes);
+const direct_hoist_80 = new RefRuntype(undefined, "Box_string", namedRuntypes);
+const direct_hoist_81 = new RefRuntype(undefined, "Box_Box__number__", namedRuntypes);
+const direct_hoist_82 = new RefRuntype(undefined, "Pair_number", namedRuntypes);
+const direct_hoist_83 = new RefRuntype(undefined, "Pair_instance_3", namedRuntypes);
+const direct_hoist_84 = new RefRuntype(undefined, "ListOf_number", namedRuntypes);
+const direct_hoist_85 = new RefRuntype(undefined, "WithDefault_boolean", namedRuntypes);
+const direct_hoist_86 = new RefRuntype(undefined, "GenericRecursive_string", namedRuntypes);
+const direct_hoist_87 = new RefRuntype(undefined, "LinkedList", namedRuntypes);
+const direct_hoist_88 = new RefRuntype(undefined, "Tree", namedRuntypes);
+const direct_hoist_89 = new RefRuntype(undefined, "Json", namedRuntypes);
+const direct_hoist_90 = new RefRuntype(undefined, "Expr", namedRuntypes);
+const direct_hoist_91 = new RefRuntype(undefined, "MutualA", namedRuntypes);
+const direct_hoist_92 = new RefRuntype(undefined, "RecursiveFirst", namedRuntypes);
+const direct_hoist_93 = new RefRuntype(undefined, "RecursiveMiddle", namedRuntypes);
+const direct_hoist_94 = new RefRuntype(undefined, "RecursiveLast", namedRuntypes);
+const direct_hoist_95 = new RefRuntype(undefined, "RecursiveInTuple", namedRuntypes);
 const direct_hoist_96 = new RegexRuntype(undefined, /^(a)([\s\S]*)$/, "`a${string}`");
 const direct_hoist_97 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}`");
 const direct_hoist_98 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}.${number}.${number}`");
@@ -306,10 +267,10 @@ const direct_hoist_100 = new RegexRuntype(undefined, /^((a)|(b))(-)(-?(\d+(\.\d*
 const direct_hoist_101 = new RegexRuntype(undefined, /^(true|false)$/, "`${boolean}`");
 const direct_hoist_102 = new RegexRuntype(undefined, /^([\s\S]*)$/, "`${string}`");
 const direct_hoist_103 = new RegexRuntype(undefined, /^((green)|(red))$/, '`("green" | "red")`');
-const direct_hoist_104 = new RefRuntype(undefined, "UserId");
-const direct_hoist_105 = new RefRuntype(undefined, "AdminId");
-const direct_hoist_106 = new RefRuntype(undefined, "NonNegative");
-const direct_hoist_107 = new RefRuntype(undefined, "Rate");
+const direct_hoist_104 = new RefRuntype(undefined, "UserId", namedRuntypes);
+const direct_hoist_105 = new RefRuntype(undefined, "AdminId", namedRuntypes);
+const direct_hoist_106 = new RefRuntype(undefined, "NonNegative", namedRuntypes);
+const direct_hoist_107 = new RefRuntype(undefined, "Rate", namedRuntypes);
 const direct_hoist_108 = new ObjectRuntype(undefined, {
     "id": direct_hoist_104,
     "rate": direct_hoist_107
@@ -341,7 +302,7 @@ const direct_hoist_118 = new ObjectRuntype(undefined, {
 const direct_hoist_119 = new ObjectRuntype(undefined, {
     "value": direct_hoist_1
 }, []);
-const direct_hoist_120 = new RefRuntype(undefined, "Box_number");
+const direct_hoist_120 = new RefRuntype(undefined, "Box_number", namedRuntypes);
 const direct_hoist_121 = new ObjectRuntype(undefined, {
     "value": direct_hoist_120
 }, []);
@@ -487,7 +448,7 @@ const direct_hoist_151 = new AnyOfDiscriminatedRuntype(undefined, [
     "b": direct_hoist_150,
     "c": direct_hoist_149
 });
-const direct_hoist_152 = new RefRuntype(undefined, "MutualB");
+const direct_hoist_152 = new RefRuntype(undefined, "MutualB", namedRuntypes);
 const direct_hoist_153 = new ObjectRuntype(undefined, {
     "b": new OptionalFieldRuntype(direct_hoist_152),
     "tag": direct_hoist_13
@@ -700,7 +661,7 @@ const direct_hoist_204 = new ObjectRuntype(undefined, {
     "b": direct_hoist_203
 }, []);
 const direct_hoist_205 = new ConstRuntype(undefined, "red");
-const namedRuntypes = {
+Object.assign(namedRuntypes, {
     "AdminId": direct_hoist_116,
     "Base": direct_hoist_117,
     "Box_string": direct_hoist_118,
@@ -743,7 +704,7 @@ const namedRuntypes = {
     "UserId": direct_hoist_202,
     "WithDefault_boolean": direct_hoist_204,
     "Color__Red": direct_hoist_205
-};
+});
 const buildParsersInput = {
     "String": direct_hoist_0,
     "Number": direct_hoist_1,
@@ -845,4 +806,6 @@ const buildParsersInput = {
     "DateInObject": direct_hoist_115
 };
 
-export default { buildParsers };
+export default {
+  buildParsers: (args) => buildParsers(buildParsersInput, RequiredStringFormats, RequiredNumberFormats, args),
+};

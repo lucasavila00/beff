@@ -17,30 +17,60 @@ Object.defineProperty(exports, "__esModule", {
 
 const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
+// The names that the printed code uses from the runtime.
+const runtimeImports = [
+  "TypeofRuntype",
+  "AnyRuntype",
+  "NullishRuntype",
+  "NeverRuntype",
+  "ConstRuntype",
+  "RegexRuntype",
+  "DateRuntype",
+  "BigIntRuntype",
+  "StringWithFormatRuntype",
+  "NumberWithFormatRuntype",
+  "AnyOfConstsRuntype",
+  "TupleRuntype",
+  "AllOfRuntype",
+  "AnyOfRuntype",
+  "ArrayRuntype",
+  "AnyOfDiscriminatedRuntype",
+  "ObjectRuntype",
+  "OptionalFieldRuntype",
+  "RefRuntype",
+  "TypedArrayRuntype",
+  "MapRuntype",
+  "SetRuntype",
+  "NumberKeyRuntype",
+  "buildParsers",
+];
+
+const importCode = (mod: ProjectModule) => {
+  const names = runtimeImports.map((it) => `  ${it},`).join("\n");
+  if (mod === "cjs") {
+    return `const {\n${names}\n} = require("@beff/client/runtime");`;
+  }
+  return `import {\n${names}\n} from "@beff/client/runtime";`;
+};
+
 const finalizeParserV2File = (
   wasmCode: string,
   mod: ProjectModule,
   stringFormats: string[],
   numberFormats: string[],
 ) => {
-  const exportedItems = ["buildParsers"].join(", ");
-  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
+  const exports = `${exportCode(mod)} {
+  buildParsers: (args) => buildParsers(buildParsersInput, RequiredStringFormats, RequiredNumberFormats, args),
+};`;
 
   const stringFormatsCode = `const RequiredStringFormats = ${JSON.stringify(stringFormats)};`;
   const numberFormatsCode = `const RequiredNumberFormats = ${JSON.stringify(numberFormats)};`;
-
-  let genV2 = gen["codegen-v2.js"];
-  if (mod === "cjs") {
-    genV2 = genV2
-      .replace("import {", "const {")
-      .replace('} from "@beff/client/codegen-v2";', '} = require("@beff/client/codegen-v2");');
-  }
 
   return [
     //
     "//@ts-nocheck",
     esmTag(mod),
-    genV2,
+    importCode(mod),
     stringFormatsCode,
     numberFormatsCode,
     wasmCode,

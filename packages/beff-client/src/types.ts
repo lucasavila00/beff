@@ -1,6 +1,6 @@
 import type { ZodType } from "zod";
 import { JSONSchema7 } from "./json-schema.js";
-import type { SchemaPrintingContext } from "./codegen-v2.js";
+import type { SchemaPrintingContext } from "./runtime.js";
 
 export type StringFormat<Tag1 extends string> = string & { [k in Tag1]: Tag1 };
 

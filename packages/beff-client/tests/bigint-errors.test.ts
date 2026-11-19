@@ -7,7 +7,7 @@ import {
   SetRuntype,
   TypeofRuntype,
   BigIntRuntype,
-} from "../src/codegen-v2.js";
+} from "../src/runtime.js";
 import { printErrors } from "../src/err.js";
 
 const num = new TypeofRuntype(undefined, "number");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, NumberKeyRuntype } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, NumberKeyRuntype } from "../src/runtime.js";
 
 const NumberKey = buildParserFromRuntype(new NumberKeyRuntype(undefined), "NumberKey", true);
 

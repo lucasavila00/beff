@@ -153,11 +153,18 @@ if (process.argv[2] === "--child") {
   console.log(`|${" --- |".repeat(operationNames.length + 2)}`);
   for (const row of timeRows) console.log(row);
 
-  console.log(`\n### @beff/client/codegen-v2 (bundled, without zod), baseline → candidate\n`);
+  console.log(`\n### @beff/client/runtime (bundled, without zod), baseline → candidate\n`);
   console.log("| minified | minified + gzip |");
   console.log("| --- | --- |");
   const clientSizes = versions.map((version) => {
-    const client = createRequire(path.join(version.outDir, "index.js")).resolve("@beff/client/codegen-v2");
+    const requireFromVersion = createRequire(path.join(version.outDir, "index.js"));
+    // A baseline from before the rename has the runtime at @beff/client/codegen-v2.
+    let client;
+    try {
+      client = requireFromVersion.resolve("@beff/client/runtime");
+    } catch {
+      client = requireFromVersion.resolve("@beff/client/codegen-v2");
+    }
     const bundle = buildSync({
       entryPoints: [client],
       bundle: true,

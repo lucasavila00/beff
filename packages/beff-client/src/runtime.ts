@@ -611,7 +611,7 @@ function renderObjectMember(member: { docText?: string; member: string }): strin
 }
 
 function collectDescribeRefs(runtype: Runtype, ctx: DescribeContext): void {
-  if (runtype instanceof BaseRefRuntype) {
+  if (runtype instanceof RefRuntype) {
     runtype.collectDescribeRefs(ctx);
     return;
   }
@@ -1546,7 +1546,7 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
   }
 
   private getRefTarget(runtype: Runtype): { name: string; target: Runtype } | null {
-    if (!(runtype instanceof BaseRefRuntype)) {
+    if (!(runtype instanceof RefRuntype)) {
       return null;
     }
 
@@ -1992,13 +1992,21 @@ export class ObjectRuntype extends BaseRuntype {
     );
   }
 }
-export abstract class BaseRefRuntype extends BaseRuntype {
+export class RefRuntype extends BaseRuntype {
   refName: string;
-  constructor(metadata: RuntypeMetadata | undefined, refName: string) {
+  private namedRuntypes: Record<string, Runtype>;
+  constructor(
+    metadata: RuntypeMetadata | undefined,
+    refName: string,
+    namedRuntypes: Record<string, Runtype>,
+  ) {
     super(metadata);
     this.refName = refName;
+    this.namedRuntypes = namedRuntypes;
   }
-  abstract getNamedRuntypes(): Record<string, Runtype>;
+  getNamedRuntypes(): Record<string, Runtype> {
+    return this.namedRuntypes;
+  }
   protected describeTypeExpr(_ctx: DescribeContext): string {
     return this.refName;
   }
@@ -2077,17 +2085,12 @@ export abstract class BaseRefRuntype extends BaseRuntype {
 
 const namedRuntypes: Record<string, Runtype> = {};
 
-class RuntimeRefRuntype extends BaseRefRuntype {
-  getNamedRuntypes(): Record<string, Runtype> {
-    return namedRuntypes;
-  }
-}
 const createNamedTypeImpl = (name: string, runtype: Runtype) => {
   if (name in namedRuntypes) {
     throw new Error(`Named type ${name} already exists`);
   }
   namedRuntypes[name] = runtype;
-  return buildParserFromRuntype(new RuntimeRefRuntype(undefined, name), name, false);
+  return buildParserFromRuntype(new RefRuntype(undefined, name, namedRuntypes), name, false);
 };
 export const createNamedType = <T>(name: string, p: BeffParser<T>): BeffParser<T> => {
   return createNamedTypeImpl(name, (p as ParserFromRuntype)._runtype);
@@ -2199,3 +2202,41 @@ export const buildParserFromRuntype = (
   name: string,
   hideTypeNameInDescribe: boolean,
 ): BeffParser<any> => new ParserFromRuntype(runtype, name, hideTypeNameInDescribe);
+
+// The generated parser.js calls this with its runtypes and the format names that the project settings require.
+export const buildParsers = (
+  parsersInput: Record<string, Runtype>,
+  requiredStringFormats: string[],
+  requiredNumberFormats: string[],
+  args?: {
+    stringFormats?: Record<string, UserProvidedStringFormat>;
+    numberFormats?: Record<string, UserProvidedNumberFormat>;
+  },
+): Record<string, BeffParser<any>> => {
+  const stringFormats = args?.stringFormats ?? {};
+  for (const k of requiredStringFormats) {
+    if (stringFormats[k] == null) {
+      throw new Error(`Missing custom format ${k}`);
+    }
+  }
+  Object.keys(stringFormats).forEach((k) => {
+    const v = stringFormats[k];
+    registerStringFormatter(k, v);
+  });
+  const numberFormats = args?.numberFormats ?? {};
+  for (const k of requiredNumberFormats) {
+    if (numberFormats[k] == null) {
+      throw new Error(`Missing custom format ${k}`);
+    }
+  }
+  Object.keys(numberFormats).forEach((k) => {
+    const v = numberFormats[k];
+    registerNumberFormatter(k, v);
+  });
+  let acc: Record<string, BeffParser<any>> = {};
+  for (const k of Object.keys(parsersInput)) {
+    const it = buildParserFromRuntype(parsersInput[k], k, false);
+    acc[k] = it;
+  }
+  return acc;
+};

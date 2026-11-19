@@ -7,7 +7,7 @@ import {
   ObjectRuntype,
   SetRuntype,
   TypeofRuntype,
-} from "../src/codegen-v2.js";
+} from "../src/runtime.js";
 
 const str = new TypeofRuntype(undefined, "string");
 const num = new TypeofRuntype(undefined, "number");
