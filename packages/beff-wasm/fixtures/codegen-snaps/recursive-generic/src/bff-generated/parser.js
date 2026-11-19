@@ -76,10 +76,7 @@ const direct_hoist_3 = new TypeofRuntype(undefined, "boolean");
 const direct_hoist_4 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_2
-], {
-    "boolean": direct_hoist_3,
-    "string": direct_hoist_2
-});
+], ",0,,1");
 const direct_hoist_5 = new ObjectRuntype(undefined, {
     "other": direct_hoist_1,
     "value": direct_hoist_2,
@@ -90,10 +87,7 @@ const direct_hoist_7 = new TypeofRuntype(undefined, "number");
 const direct_hoist_8 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_7
-], {
-    "boolean": direct_hoist_3,
-    "number": direct_hoist_7
-});
+], ",0,1");
 const direct_hoist_9 = new ObjectRuntype(undefined, {
     "other": direct_hoist_6,
     "value": direct_hoist_7,

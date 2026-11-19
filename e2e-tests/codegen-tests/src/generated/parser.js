@@ -99,26 +99,17 @@ const direct_hoist_26 = new NullishRuntype(undefined, "undefined");
 const direct_hoist_27 = new AnyOfRuntype(undefined, [
     direct_hoist_26,
     direct_hoist_0
-], {
-    "nullish": direct_hoist_26,
-    "string": direct_hoist_0
-});
+], "0,,,1");
 const direct_hoist_28 = new NullishRuntype(undefined, "void");
 const direct_hoist_29 = new AnyOfRuntype(undefined, [
     direct_hoist_28,
     direct_hoist_0
-], {
-    "nullish": direct_hoist_28,
-    "string": direct_hoist_0
-});
+], "0,,,1");
 const direct_hoist_30 = new NullishRuntype(undefined, "null");
 const direct_hoist_31 = new AnyOfRuntype(undefined, [
     direct_hoist_30,
     direct_hoist_0
-], {
-    "nullish": direct_hoist_30,
-    "string": direct_hoist_0
-});
+], "0,,,1");
 const direct_hoist_32 = new ObjectRuntype(undefined, {
     "a": direct_hoist_0,
     "b": direct_hoist_27,

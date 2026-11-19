@@ -379,11 +379,10 @@ impl ToSemType for Runtype {
 }
 
 /// The kinds of JavaScript value, as the generated code sees them (`kindOf` in the client).
-/// Bit `i` of a kind set is `JS_KINDS[i]`.
-pub(crate) const JS_KINDS: [&str; 8] = [
-    "nullish", "boolean", "number", "string", "bigint", "array", "object", "function",
-];
-pub(crate) const ALL_JS_KINDS: u32 = (1 << JS_KINDS.len()) - 1;
+/// A set of kinds is a bit set. The bits are, in order: nullish, boolean, number, string, bigint,
+/// array, object, function.
+pub(crate) const JS_KIND_COUNT: usize = 8;
+pub(crate) const ALL_JS_KINDS: u32 = (1 << JS_KIND_COUNT) - 1;
 
 impl SubTypeTag {
     /// The kinds of JavaScript value that the runtime check of this basic type can accept.
@@ -429,7 +428,7 @@ impl SemType {
 }
 
 impl Runtype {
-    /// The kinds of JavaScript value (`JS_KINDS`) that this runtype can accept, from the basic
+    /// The kinds of JavaScript value (`ALL_JS_KINDS`) that this runtype can accept, from the basic
     /// types of its semantic type. It can include kinds that are never accepted, but it never
     /// misses one.
     pub(crate) fn js_kinds(&self, validators: &[&NamedSchema]) -> u32 {

@@ -1545,58 +1545,49 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
     .join(",")}}`;
 }
 
-// The kind of a value. The compiler knows the kinds each member of a union accepts (`js_kinds` in
-// beff-core), and prints the runtype that checks each kind.
-type Kind = "nullish" | "boolean" | "number" | "string" | "bigint" | "array" | "object" | "function";
+// The kind of a value, as a number: nullish, boolean, number, string, bigint, array, object, function.
+// The compiler knows the kinds each member of a union accepts (`js_kinds` in beff-core), in this order.
+const KIND_COUNT = 8;
+const kindOf = (input: unknown): number => {
+  if (input == null) return 0;
+  switch (typeof input) {
+    case "boolean":
+      return 1;
+    case "number":
+      return 2;
+    case "string":
+      return 3;
+    case "bigint":
+      return 4;
+    case "object":
+      return Array.isArray(input) ? 5 : 6;
+    case "function":
+      return 7;
+    default:
+      return KIND_COUNT;
+  }
+};
 
 export class AnyOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
-  // For each kind of value that the union accepts, the one runtype that checks values of that kind.
+  // For each kind of value, the one runtype that checks values of that kind, if the union accepts the kind.
   // Only the compiler passes it: it is never computed here, because a named type can be overridden.
-  private hasKinds: boolean;
-  private kNullish: Runtype | undefined;
-  private kBoolean: Runtype | undefined;
-  private kNumber: Runtype | undefined;
-  private kString: Runtype | undefined;
-  private kBigint: Runtype | undefined;
-  private kArray: Runtype | undefined;
-  private kObject: Runtype | undefined;
-  private kFunction: Runtype | undefined;
-  constructor(
-    metadata: RuntypeMetadata | undefined,
-    schemas: Runtype[],
-    byKind?: Partial<Record<Kind, Runtype>>,
-  ) {
+  private byKind: (Runtype | undefined)[] | undefined;
+  // `kinds` has, for each kind, the index of its runtype in `schemas` followed by `others`: "1,,,,,,0" is
+  // "nullish is schemas[1], an object is schemas[0]".
+  constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[], kinds?: string, others?: Runtype[]) {
     super(metadata);
     this.schemas = schemas;
-    this.hasKinds = byKind !== undefined;
-    this.kNullish = byKind?.nullish;
-    this.kBoolean = byKind?.boolean;
-    this.kNumber = byKind?.number;
-    this.kString = byKind?.string;
-    this.kBigint = byKind?.bigint;
-    this.kArray = byKind?.array;
-    this.kObject = byKind?.object;
-    this.kFunction = byKind?.function;
-  }
-  // The runtype that checks values of the kind of the input.
-  private ofKind(input: unknown): Runtype | undefined {
-    if (input == null) return this.kNullish;
-    switch (typeof input) {
-      case "object":
-        return Array.isArray(input) ? this.kArray : this.kObject;
-      case "string":
-        return this.kString;
-      case "number":
-        return this.kNumber;
-      case "boolean":
-        return this.kBoolean;
-      case "bigint":
-        return this.kBigint;
-      case "function":
-        return this.kFunction;
-      default:
-        return undefined;
+    this.byKind = undefined;
+    if (kinds !== undefined) {
+      const all = others === undefined ? schemas : schemas.concat(others);
+      const indexes = kinds.split(",");
+      const byKind: (Runtype | undefined)[] = [];
+      // One more entry, for the kinds no type accepts (a symbol).
+      for (let k = 0; k <= KIND_COUNT; k++) {
+        byKind.push(indexes[k] ? all[Number(indexes[k])] : undefined);
+      }
+      this.byKind = byKind;
     }
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -1605,8 +1596,9 @@ export class AnyOfRuntype extends BaseRuntype {
     });
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
-    if (this.hasKinds) {
-      const it = this.ofKind(input);
+    const byKind = this.byKind;
+    if (byKind !== undefined) {
+      const it = byKind[kindOf(input)];
       return it !== undefined && it.validate(ctx, input);
     }
     for (const it of this.schemas) {
@@ -1617,9 +1609,10 @@ export class AnyOfRuntype extends BaseRuntype {
     return false;
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    if (this.hasKinds) {
+    const byKind = this.byKind;
+    if (byKind !== undefined) {
       // The input passed validate(), so its kind is in the table. Its runtype does not validate again.
-      return this.ofKind(input)!.parseAfterValidation(ctx, input);
+      return byKind[kindOf(input)]!.parseAfterValidation(ctx, input);
     }
     const items = [];
     for (const it of this.schemas) {

@@ -34,7 +34,7 @@ mod tests {
         let types = chain(2000, "R0").replace(" };", " | null };");
         let out = print_cgen(&format!("{types}\nparse.buildParsers<{{ R0: R0 }}>();\n"));
         assert!(out.contains("R1999"));
-        assert!(out.contains("\"nullish\": direct_hoist_2"), "{}", &out[..600]);
+        assert!(out.contains(r#"], "0,,,,,,1");"#), "{}", &out[..600]);
     }
 
     #[test]

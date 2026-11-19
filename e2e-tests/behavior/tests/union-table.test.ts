@@ -14,12 +14,12 @@ vi.mock("@beff/client/codegen-v2", async (importOriginal) => {
   const original = await importOriginal<typeof import("@beff/client/codegen-v2")>();
   class AnyOfRuntype extends original.AnyOfRuntype {
     constructor(...args: ConstructorParameters<typeof original.AnyOfRuntype>) {
-      const [metadata, schemas, byKind] = args;
-      if (byKind !== undefined) {
+      const [metadata, schemas, kinds, others] = args;
+      if (kinds !== undefined) {
         if (state.tables) state.withTable++;
         else state.withoutTable++;
       }
-      super(metadata, schemas, state.tables ? byKind : undefined);
+      super(metadata, schemas, state.tables ? kinds : undefined, state.tables ? others : undefined);
     }
   }
   return { ...original, AnyOfRuntype };

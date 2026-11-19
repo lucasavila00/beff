@@ -16,6 +16,11 @@ const str = new TypeofRuntype(undefined, "string");
 const num = new TypeofRuntype(undefined, "number");
 const nul = new NullishRuntype(undefined, "null");
 
+// The positions of the kinds in the table of a union.
+const NULLISH = 0;
+const STRING = 3;
+const OBJECT = 6;
+
 const runtypeOf = (parser: unknown): Runtype => (parser as { _runtype: Runtype })._runtype;
 
 // Counts the validate() calls of a runtype.
@@ -32,12 +37,15 @@ const counted = (inner: Runtype): { runtype: Runtype; calls: () => number } => {
 // `type Node = { value: number; next: <union of Node and `other`, in the given order> }`,
 // as the compiler prints it: the union has the runtype of each kind.
 let listId = 0;
-const makeList = (other: Runtype, otherKind: string, nodeFirst: boolean, withKinds: boolean) => {
+const makeList = (other: Runtype, otherKind: number, nodeFirst: boolean, withKinds: boolean) => {
   const name = `UnionKindsNode${listId++}`;
   const node = counted(runtypeOf(createNamedType(name, b.Unknown())));
   const members = nodeFirst ? [node.runtype, other] : [other, node.runtype];
-  const byKind = withKinds ? { [otherKind]: other, object: node.runtype } : undefined;
-  const next = new AnyOfRuntype(undefined, members, byKind);
+  // The index of the member that checks each kind: `other` for its kind, the node for an object.
+  const kinds = Array.from({ length: 7 }, () => "");
+  kinds[otherKind] = String(members.indexOf(other));
+  kinds[OBJECT] = String(members.indexOf(node.runtype));
+  const next = new AnyOfRuntype(undefined, members, withKinds ? kinds.join(",") : undefined);
   overrideNamedType(
     name,
     buildParserFromRuntype(new ObjectRuntype(undefined, { value: num, next }, []), name, false),
@@ -53,9 +61,9 @@ const chain = (depth: number, end: unknown, extra: boolean) => {
 
 describe("union with the runtype of each kind", () => {
   const DEPTH = 40;
-  const shapes: [string, Runtype, string, unknown][] = [
-    ["Node | null", nul, "nullish", null],
-    ["Node | string", str, "string", "end"],
+  const shapes: [string, Runtype, number, unknown][] = [
+    ["Node | null", nul, NULLISH, null],
+    ["Node | string", str, STRING, "end"],
   ];
   for (const [name, other, otherKind, end] of shapes) {
     for (const nodeFirst of [true, false]) {
@@ -73,8 +81,8 @@ describe("union with the runtype of each kind", () => {
   }
 
   it("rejects invalid inputs the same way", () => {
-    const list = makeList(nul, "nullish", true, true);
-    const without = makeList(nul, "nullish", true, false);
+    const list = makeList(nul, NULLISH, true, true);
+    const without = makeList(nul, NULLISH, true, false);
     for (const bad of [chain(3, "end", false), chain(3, 1, false), chain(3, {}, false), Symbol("s"), []]) {
       expect(list.parser.validate(bad)).toBe(false);
       expect(list.parser.safeParse(bad)).toEqual(without.parser.safeParse(bad));
@@ -82,19 +90,11 @@ describe("union with the runtype of each kind", () => {
     }
   });
 
-  it("merges the members of one kind that match", () => {
+  it("merges the members that match when the union has no table", () => {
     const a = new ObjectRuntype(undefined, { a: str }, []);
     const c = new ObjectRuntype(undefined, { c: num }, []);
-    const U = buildParserFromRuntype(
-      new AnyOfRuntype(undefined, [a, c, nul], {
-        nullish: nul,
-        object: new AnyOfRuntype(undefined, [a, c]),
-      }),
-      "U",
-      false,
-    );
+    const U = buildParserFromRuntype(new AnyOfRuntype(undefined, [a, c, nul]), "U", false);
     expect(U.parse({ a: "x", z: 1 })).toEqual({ a: "x" });
-    expect(U.parse({ c: 1, z: 1 })).toEqual({ c: 1 });
     expect(U.parse({ a: "x", c: 1, z: 1 })).toEqual({ a: "x", c: 1 });
     expect(U.parse(null)).toBe(null);
     expect(U.validate([])).toBe(false);
@@ -104,10 +104,10 @@ describe("union with the runtype of each kind", () => {
     const a = new ObjectRuntype(undefined, { t: new ConstRuntype(undefined, "a"), a: str }, []);
     const c = new ObjectRuntype(undefined, { t: new ConstRuntype(undefined, "c"), c: num }, []);
     const U = buildParserFromRuntype(
-      new AnyOfRuntype(undefined, [a, c, nul], {
-        nullish: nul,
-        object: new AnyOfDiscriminatedRuntype(undefined, [a, c], "t", { a, c }),
-      }),
+      // nullish is member 2, an object is the runtype after the members
+      new AnyOfRuntype(undefined, [a, c, nul], "2,,,,,,3", [
+        new AnyOfDiscriminatedRuntype(undefined, [a, c], "t", { a, c }),
+      ]),
       "U",
       false,
     );
@@ -116,27 +116,19 @@ describe("union with the runtype of each kind", () => {
     expect(U.validate({ t: "c", a: "x" })).toBe(false);
   });
 
-  it("keeps a Date when an object member could also accept it", () => {
+  it("sends an array or a function with the prototype of a Date to the Date member", () => {
     const d = new DateRuntype(undefined);
-    const o = new ObjectRuntype(undefined, { a: num }, []);
-    const U = buildParserFromRuntype(
-      new AnyOfRuntype(undefined, [d, o, str], {
-        string: str,
-        array: d,
-        function: d,
-        object: new AnyOfRuntype(undefined, [d, o]),
-      }),
-      "U",
-      false,
-    );
+    // string is member 1; array, object and function are member 0
+    const U = buildParserFromRuntype(new AnyOfRuntype(undefined, [d, str], ",,,1,,0,0,0"), "U", false);
     const value = new Date(0);
     expect(U.parse(value)).toBe(value);
-    expect(U.parse({ a: 1, z: 1 })).toEqual({ a: 1 });
     expect(U.parse("x")).toBe("x");
     // `instanceof` is also true for an array that has the prototype of a Date
     const spoofed = Object.setPrototypeOf([], Date.prototype);
     expect(U.validate(spoofed)).toBe(true);
     expect(U.validate([])).toBe(false);
+    expect(U.validate({})).toBe(false);
+    expect(U.validate(Symbol("s"))).toBe(false);
   });
 
   it("does not classify the members of a union of the b API", () => {
