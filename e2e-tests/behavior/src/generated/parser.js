@@ -117,41 +117,49 @@ const direct_hoist_24 = tuple([
     direct_hoist_2,
     direct_hoist_0
 ]);
-const direct_hoist_25 = object({});
+const direct_hoist_25 = object([]);
 const direct_hoist_26 = reference(registry, "Nested");
 const direct_hoist_27 = reference(registry, "ManyFields");
 const direct_hoist_28 = reference(registry, "Optionals");
-const direct_hoist_29 = object({
-    ["__proto__"]: direct_hoist_0,
-    toString: direct_hoist_1
-});
-const direct_hoist_30 = object({}, [
+const direct_hoist_29 = object([
+    "__proto__",
+    direct_hoist_0,
+    "toString",
+    direct_hoist_1
+]);
+const direct_hoist_30 = object([], [
     {
         key: direct_hoist_0,
         value: direct_hoist_1
     }
 ]);
-const direct_hoist_31 = object({}, [
+const direct_hoist_31 = object([], [
     {
         key: numberKey(),
         value: direct_hoist_0
     }
 ]);
 const direct_hoist_32 = reference(registry, "NumberKeyedObj");
-const direct_hoist_33 = object({
-    x: direct_hoist_1,
-    y: direct_hoist_1
-});
-const direct_hoist_34 = object({
-    "1": direct_hoist_0,
-    "2": direct_hoist_0
-});
-const direct_hoist_35 = object({
-    x: optional(direct_hoist_1),
-    y: optional(direct_hoist_1)
-});
+const direct_hoist_33 = object([
+    "x",
+    direct_hoist_1,
+    "y",
+    direct_hoist_1
+]);
+const direct_hoist_34 = object([
+    "1",
+    direct_hoist_0,
+    "2",
+    direct_hoist_0
+]);
+const direct_hoist_35 = object([
+    "x",
+    optional(direct_hoist_1),
+    "y",
+    optional(direct_hoist_1)
+]);
 const direct_hoist_36 = regex(/^(x_)([\s\S]*)$/, "`x_${string}`");
-const direct_hoist_37 = object({}, [
+const direct_hoist_37 = object([], [
     {
         key: direct_hoist_36,
         value: direct_hoist_1
@@ -159,25 +167,30 @@ const direct_hoist_37 = object({}, [
 ]);
 const direct_hoist_38 = reference(registry, "TplIndexWithProps");
 const direct_hoist_39 = regex(/^(beta_)([\s\S]*)$/, "`beta_${string}`");
-const direct_hoist_40 = object({
-    alpha: optional(direct_hoist_0)
-}, [
+const direct_hoist_40 = object([
+    "alpha",
+    optional(direct_hoist_0)
+], [
     {
         key: direct_hoist_39,
         value: optional(direct_hoist_0)
     }
 ]);
-const direct_hoist_41 = object({
-    value: direct_hoist_13
-});
+const direct_hoist_41 = object([
+    "value",
+    direct_hoist_13
+]);
 const direct_hoist_42 = literal("b");
-const direct_hoist_43 = object({
-    value: direct_hoist_42
-});
-const direct_hoist_44 = object({
-    a: direct_hoist_41,
-    b: direct_hoist_43
-});
+const direct_hoist_43 = object([
+    "value",
+    direct_hoist_42
+]);
+const direct_hoist_44 = object([
+    "a",
+    direct_hoist_41,
+    "b",
+    direct_hoist_43
+]);
 const direct_hoist_45 = union([
     direct_hoist_0,
     direct_hoist_1
@@ -212,12 +225,14 @@ const direct_hoist_60 = intersection([
     direct_hoist_58,
     direct_hoist_59
 ]);
-const direct_hoist_61 = object({
-    x: direct_hoist_0
-});
-const direct_hoist_62 = object({
-    n: direct_hoist_61
-});
+const direct_hoist_61 = object([
+    "x",
+    direct_hoist_0
+]);
+const direct_hoist_62 = object([
+    "n",
+    direct_hoist_61
+]);
 const direct_hoist_63 = intersection([
     direct_hoist_62,
     direct_hoist_59
@@ -226,15 +241,16 @@ const direct_hoist_64 = intersection([
     direct_hoist_58,
     direct_hoist_63
 ]);
-const direct_hoist_65 = object({}, [
+const direct_hoist_65 = object([], [
     {
         key: direct_hoist_0,
         value: direct_hoist_45
     }
 ]);
-const direct_hoist_66 = object({
-    n: direct_hoist_1
-});
+const direct_hoist_66 = object([
+    "n",
+    direct_hoist_1
+]);
 const direct_hoist_67 = intersection([
     direct_hoist_65,
     direct_hoist_66,
@@ -245,31 +261,44 @@ const direct_hoist_68 = intersection([
     direct_hoist_58
 ]);
 const direct_hoist_69 = reference(registry, "IntersectionUnion");
-const direct_hoist_70 = object({
-    a: direct_hoist_0,
-    c: optional(direct_hoist_2)
-});
-const direct_hoist_71 = object({
-    a: optional(direct_hoist_0),
-    b: optional(direct_hoist_1),
-    c: optional(direct_hoist_2)
-});
-const direct_hoist_72 = object({
-    a: direct_hoist_0,
-    b: direct_hoist_1,
-    c: direct_hoist_2
-});
+const direct_hoist_70 = object([
+    "a",
+    direct_hoist_0,
+    "c",
+    optional(direct_hoist_2)
+]);
+const direct_hoist_71 = object([
+    "a",
+    optional(direct_hoist_0),
+    "b",
+    optional(direct_hoist_1),
+    "c",
+    optional(direct_hoist_2)
+]);
+const direct_hoist_72 = object([
+    "a",
+    direct_hoist_0,
+    "b",
+    direct_hoist_1,
+    "c",
+    direct_hoist_2
+]);
 const direct_hoist_73 = literal("rect");
-const direct_hoist_74 = object({
-    h: direct_hoist_1,
-    kind: direct_hoist_73,
-    w: direct_hoist_1
-});
+const direct_hoist_74 = object([
+    "h",
+    direct_hoist_1,
+    "kind",
+    direct_hoist_73,
+    "w",
+    direct_hoist_1
+]);
 const direct_hoist_75 = literal("square");
-const direct_hoist_76 = object({
-    kind: direct_hoist_75,
-    size: direct_hoist_1
-});
+const direct_hoist_76 = object([
+    "kind",
+    direct_hoist_75,
+    "size",
+    direct_hoist_1
+]);
 const direct_hoist_77 = discriminatedUnion("kind", {
     rect: direct_hoist_74,
     square: direct_hoist_76
@@ -310,61 +339,79 @@ const direct_hoist_104 = reference(registry, "UserId");
 const direct_hoist_105 = reference(registry, "AdminId");
 const direct_hoist_106 = reference(registry, "NonNegative");
 const direct_hoist_107 = reference(registry, "Rate");
-const direct_hoist_108 = object({
-    id: direct_hoist_104,
-    rate: direct_hoist_107
-});
+const direct_hoist_108 = object([
+    "id",
+    direct_hoist_104,
+    "rate",
+    direct_hoist_107
+]);
 const direct_hoist_109 = map(direct_hoist_0, direct_hoist_8);
-const direct_hoist_110 = object({
-    m: direct_hoist_109
-});
+const direct_hoist_110 = object([
+    "m",
+    direct_hoist_109
+]);
 const direct_hoist_111 = typedArray("Uint8Array");
 const direct_hoist_112 = typedArray("Int32Array");
 const direct_hoist_113 = typedArray("Float64Array");
 const direct_hoist_114 = typedArray("BigInt64Array");
-const direct_hoist_115 = object({
-    at: direct_hoist_8,
-    big: direct_hoist_7
-});
+const direct_hoist_115 = object([
+    "at",
+    direct_hoist_8,
+    "big",
+    direct_hoist_7
+]);
 const direct_hoist_116 = stringWithFormat([
     "UserId",
     "AdminId"
 ]);
-const direct_hoist_117 = object({
-    a: direct_hoist_0,
-    b: direct_hoist_1,
-    c: optional(direct_hoist_2)
-});
-const direct_hoist_118 = object({
-    value: direct_hoist_0
-});
-const direct_hoist_119 = object({
-    value: direct_hoist_1
-});
+const direct_hoist_117 = object([
+    "a",
+    direct_hoist_0,
+    "b",
+    direct_hoist_1,
+    "c",
+    optional(direct_hoist_2)
+]);
+const direct_hoist_118 = object([
+    "value",
+    direct_hoist_0
+]);
+const direct_hoist_119 = object([
+    "value",
+    direct_hoist_1
+]);
 const direct_hoist_120 = reference(registry, "Box_number");
-const direct_hoist_121 = object({
-    value: direct_hoist_120
-});
+const direct_hoist_121 = object([
+    "value",
+    direct_hoist_120
+]);
 const direct_hoist_122 = literals([
     "green",
     "red"
 ]);
 const direct_hoist_123 = literal("add");
-const direct_hoist_124 = object({
-    left: direct_hoist_90,
-    op: direct_hoist_123,
-    right: direct_hoist_90
-});
+const direct_hoist_124 = object([
+    "left",
+    direct_hoist_90,
+    "op",
+    direct_hoist_123,
+    "right",
+    direct_hoist_90
+]);
 const direct_hoist_125 = literal("neg");
-const direct_hoist_126 = object({
-    arg: direct_hoist_90,
-    op: direct_hoist_125
-});
+const direct_hoist_126 = object([
+    "arg",
+    direct_hoist_90,
+    "op",
+    direct_hoist_125
+]);
 const direct_hoist_127 = literal("num");
-const direct_hoist_128 = object({
-    op: direct_hoist_127,
-    value: direct_hoist_1
-});
+const direct_hoist_128 = object([
+    "op",
+    direct_hoist_127,
+    "value",
+    direct_hoist_1
+]);
 const direct_hoist_129 = discriminatedUnion("op", {
     add: direct_hoist_124,
     neg: direct_hoist_126,
@@ -375,26 +422,34 @@ const direct_hoist_129 = discriminatedUnion("op", {
     direct_hoist_128
 ]);
 const direct_hoist_130 = array(direct_hoist_86);
-const direct_hoist_131 = object({
-    children: direct_hoist_130,
-    value: direct_hoist_0
-});
-const direct_hoist_132 = object({
-    a: direct_hoist_0
-});
-const direct_hoist_133 = object({
-    b: optional(direct_hoist_1)
-});
+const direct_hoist_131 = object([
+    "children",
+    direct_hoist_130,
+    "value",
+    direct_hoist_0
+]);
+const direct_hoist_132 = object([
+    "a",
+    direct_hoist_0
+]);
+const direct_hoist_133 = object([
+    "b",
+    optional(direct_hoist_1)
+]);
 const direct_hoist_134 = literal("u");
-const direct_hoist_135 = object({
-    kind: direct_hoist_134,
-    u: direct_hoist_0
-});
+const direct_hoist_135 = object([
+    "kind",
+    direct_hoist_134,
+    "u",
+    direct_hoist_0
+]);
 const direct_hoist_136 = literal("v");
-const direct_hoist_137 = object({
-    kind: direct_hoist_136,
-    v: optional(direct_hoist_1)
-});
+const direct_hoist_137 = object([
+    "kind",
+    direct_hoist_136,
+    "v",
+    optional(direct_hoist_1)
+]);
 const direct_hoist_138 = discriminatedUnion("kind", {
     u: direct_hoist_135,
     v: direct_hoist_137
@@ -406,7 +461,7 @@ const direct_hoist_139 = intersection([
     direct_hoist_58,
     direct_hoist_138
 ]);
-const direct_hoist_140 = object({}, [
+const direct_hoist_140 = object([], [
     {
         key: direct_hoist_0,
         value: direct_hoist_89
@@ -425,49 +480,77 @@ const direct_hoist_143 = union([
     direct_hoist_3,
     direct_hoist_87
 ]);
-const direct_hoist_144 = object({
-    next: direct_hoist_143,
-    value: direct_hoist_1
-});
-const direct_hoist_145 = object({
-    item: direct_hoist_1,
-    items: direct_hoist_20
-});
-const direct_hoist_146 = object({
-    f01: direct_hoist_0,
-    f02: direct_hoist_1,
-    f03: direct_hoist_2,
-    f04: direct_hoist_0,
-    f05: direct_hoist_1,
-    f06: direct_hoist_2,
-    f07: direct_hoist_0,
-    f08: direct_hoist_1,
-    f09: direct_hoist_2,
-    f10: direct_hoist_0,
-    f11: direct_hoist_1,
-    f12: direct_hoist_2,
-    f13: direct_hoist_0,
-    f14: direct_hoist_1,
-    f15: direct_hoist_2,
-    f16: direct_hoist_0,
-    f17: direct_hoist_1,
-    f18: direct_hoist_2,
-    f19: direct_hoist_0,
-    f20: direct_hoist_1
-});
+const direct_hoist_144 = object([
+    "next",
+    direct_hoist_143,
+    "value",
+    direct_hoist_1
+]);
+const direct_hoist_145 = object([
+    "item",
+    direct_hoist_1,
+    "items",
+    direct_hoist_20
+]);
+const direct_hoist_146 = object([
+    "f01",
+    direct_hoist_0,
+    "f02",
+    direct_hoist_1,
+    "f03",
+    direct_hoist_2,
+    "f04",
+    direct_hoist_0,
+    "f05",
+    direct_hoist_1,
+    "f06",
+    direct_hoist_2,
+    "f07",
+    direct_hoist_0,
+    "f08",
+    direct_hoist_1,
+    "f09",
+    direct_hoist_2,
+    "f10",
+    direct_hoist_0,
+    "f11",
+    direct_hoist_1,
+    "f12",
+    direct_hoist_2,
+    "f13",
+    direct_hoist_0,
+    "f14",
+    direct_hoist_1,
+    "f15",
+    direct_hoist_2,
+    "f16",
+    direct_hoist_0,
+    "f17",
+    direct_hoist_1,
+    "f18",
+    direct_hoist_2,
+    "f19",
+    direct_hoist_0,
+    "f20",
+    direct_hoist_1
+]);
 const direct_hoist_147 = literal("alpha");
 const direct_hoist_148 = union([
     direct_hoist_147,
     direct_hoist_39
 ]);
-const direct_hoist_149 = object({
-    a: direct_hoist_0,
-    type: direct_hoist_78
-});
-const direct_hoist_150 = object({
-    b: direct_hoist_1,
-    type: direct_hoist_42
-});
+const direct_hoist_149 = object([
+    "a",
+    direct_hoist_0,
+    "type",
+    direct_hoist_78
+]);
+const direct_hoist_150 = object([
+    "b",
+    direct_hoist_1,
+    "type",
+    direct_hoist_42
+]);
 const direct_hoist_151 = discriminatedUnion("type", {
     a: direct_hoist_149,
     b: direct_hoist_150,
@@ -477,37 +560,51 @@ const direct_hoist_151 = discriminatedUnion("type", {
     direct_hoist_150
 ]);
 const direct_hoist_152 = reference(registry, "MutualB");
-const direct_hoist_153 = object({
-    b: optional(direct_hoist_152),
-    tag: direct_hoist_13
-});
-const direct_hoist_154 = object({
-    a: optional(direct_hoist_91),
-    tag: direct_hoist_42
-});
-const direct_hoist_155 = object({
-    deep: direct_hoist_119
-});
-const direct_hoist_156 = object({
-    id: direct_hoist_0
-});
+const direct_hoist_153 = object([
+    "b",
+    optional(direct_hoist_152),
+    "tag",
+    direct_hoist_13
+]);
+const direct_hoist_154 = object([
+    "a",
+    optional(direct_hoist_91),
+    "tag",
+    direct_hoist_42
+]);
+const direct_hoist_155 = object([
+    "deep",
+    direct_hoist_119
+]);
+const direct_hoist_156 = object([
+    "id",
+    direct_hoist_0
+]);
 const direct_hoist_157 = array(direct_hoist_156);
-const direct_hoist_158 = object({
-    inner: direct_hoist_155,
-    list: direct_hoist_157
-});
+const direct_hoist_158 = object([
+    "inner",
+    direct_hoist_155,
+    "list",
+    direct_hoist_157
+]);
 const direct_hoist_159 = literal("a1");
-const direct_hoist_160 = object({
-    a1: direct_hoist_0,
-    subType: direct_hoist_159,
-    type: direct_hoist_13
-});
+const direct_hoist_160 = object([
+    "a1",
+    direct_hoist_0,
+    "subType",
+    direct_hoist_159,
+    "type",
+    direct_hoist_13
+]);
 const direct_hoist_161 = literal("a2");
-const direct_hoist_162 = object({
-    a2: direct_hoist_0,
-    subType: direct_hoist_161,
-    type: direct_hoist_13
-});
+const direct_hoist_162 = object([
+    "a2",
+    direct_hoist_0,
+    "subType",
+    direct_hoist_161,
+    "type",
+    direct_hoist_13
+]);
 const direct_hoist_163 = discriminatedUnion("subType", {
     a1: direct_hoist_160,
     a2: direct_hoist_162
@@ -515,10 +612,12 @@ const direct_hoist_163 = discriminatedUnion("subType", {
     direct_hoist_160,
     direct_hoist_162
 ]);
-const direct_hoist_164 = object({
-    type: direct_hoist_42,
-    value: direct_hoist_1
-});
+const direct_hoist_164 = object([
+    "type",
+    direct_hoist_42,
+    "value",
+    direct_hoist_1
+]);
 const direct_hoist_165 = discriminatedUnion("type", {
     a: direct_hoist_163,
     b: direct_hoist_164
@@ -530,24 +629,29 @@ const direct_hoist_165 = discriminatedUnion("type", {
 const direct_hoist_166 = numberWithFormat([
     "NonNegative"
 ]);
-const direct_hoist_167 = object({}, [
+const direct_hoist_167 = object([], [
     {
         key: numberKey(),
         value: direct_hoist_2
     }
 ]);
-const direct_hoist_168 = object({
-    b: direct_hoist_1
-});
-const direct_hoist_169 = object({
-    a: direct_hoist_0,
-    type: direct_hoist_13
-});
+const direct_hoist_168 = object([
+    "b",
+    direct_hoist_1
+]);
+const direct_hoist_169 = object([
+    "a",
+    direct_hoist_0,
+    "type",
+    direct_hoist_13
+]);
 const direct_hoist_170 = literal("d");
-const direct_hoist_171 = object({
-    d: direct_hoist_1,
-    type: optional(direct_hoist_170)
-});
+const direct_hoist_171 = object([
+    "d",
+    direct_hoist_1,
+    "type",
+    optional(direct_hoist_170)
+]);
 const direct_hoist_172 = union([
     direct_hoist_169,
     direct_hoist_171
@@ -564,36 +668,51 @@ const direct_hoist_175 = union([
     direct_hoist_5,
     direct_hoist_0
 ]);
-const direct_hoist_176 = object({
-    nul: direct_hoist_173,
-    opt: optional(direct_hoist_0),
-    req: direct_hoist_0,
-    undef: direct_hoist_174,
-    voided: direct_hoist_175
-});
-const direct_hoist_177 = object({
-    first: direct_hoist_1,
-    second: direct_hoist_0
-});
-const direct_hoist_178 = object({
-    first: direct_hoist_1,
-    second: direct_hoist_2
-});
+const direct_hoist_176 = object([
+    "nul",
+    direct_hoist_173,
+    "opt",
+    optional(direct_hoist_0),
+    "req",
+    direct_hoist_0,
+    "undef",
+    direct_hoist_174,
+    "voided",
+    direct_hoist_175
+]);
+const direct_hoist_177 = object([
+    "first",
+    direct_hoist_1,
+    "second",
+    direct_hoist_0
+]);
+const direct_hoist_178 = object([
+    "first",
+    direct_hoist_1,
+    "second",
+    direct_hoist_2
+]);
 const direct_hoist_179 = literal("__proto__");
-const direct_hoist_180 = object({
-    c: direct_hoist_2,
-    kind: direct_hoist_179
-});
+const direct_hoist_180 = object([
+    "c",
+    direct_hoist_2,
+    "kind",
+    direct_hoist_179
+]);
 const direct_hoist_181 = literal("constructor");
-const direct_hoist_182 = object({
-    b: direct_hoist_1,
-    kind: direct_hoist_181
-});
+const direct_hoist_182 = object([
+    "b",
+    direct_hoist_1,
+    "kind",
+    direct_hoist_181
+]);
 const direct_hoist_183 = literal("toString");
-const direct_hoist_184 = object({
-    a: direct_hoist_0,
-    kind: direct_hoist_183
-});
+const direct_hoist_184 = object([
+    "a",
+    direct_hoist_0,
+    "kind",
+    direct_hoist_183
+]);
 const direct_hoist_185 = discriminatedUnion("kind", {
     ["__proto__"]: direct_hoist_180,
     constructor: direct_hoist_182,
@@ -626,19 +745,22 @@ const direct_hoist_192 = union([
     direct_hoist_1,
     direct_hoist_191
 ]);
-const direct_hoist_193 = object({
-    child: direct_hoist_93
-});
+const direct_hoist_193 = object([
+    "child",
+    direct_hoist_93
+]);
 const direct_hoist_194 = union([
     direct_hoist_3,
     direct_hoist_1,
     direct_hoist_193
 ]);
 const direct_hoist_195 = literal("circle");
-const direct_hoist_196 = object({
-    kind: direct_hoist_195,
-    radius: direct_hoist_1
-});
+const direct_hoist_196 = object([
+    "kind",
+    direct_hoist_195,
+    "radius",
+    direct_hoist_1
+]);
 const direct_hoist_197 = discriminatedUnion("kind", {
     circle: direct_hoist_196,
     rect: direct_hoist_74,
@@ -653,27 +775,32 @@ const direct_hoist_198 = literals([
     "rect",
     "square"
 ]);
-const direct_hoist_199 = object({
-    a: direct_hoist_1
-}, [
+const direct_hoist_199 = object([
+    "a",
+    direct_hoist_1
+], [
     {
         key: direct_hoist_36,
         value: direct_hoist_1
     }
 ]);
 const direct_hoist_200 = array(direct_hoist_88);
-const direct_hoist_201 = object({
-    children: direct_hoist_200,
-    name: direct_hoist_0
-});
+const direct_hoist_201 = object([
+    "children",
+    direct_hoist_200,
+    "name",
+    direct_hoist_0
+]);
 const direct_hoist_202 = stringWithFormat([
     "UserId"
 ]);
 const direct_hoist_203 = array(direct_hoist_2);
-const direct_hoist_204 = object({
-    a: direct_hoist_2,
-    b: direct_hoist_203
-});
+const direct_hoist_204 = object([
+    "a",
+    direct_hoist_2,
+    "b",
+    direct_hoist_203
+]);
 const direct_hoist_205 = literal("red");
 define(registry, {
     AdminId: direct_hoist_116,
