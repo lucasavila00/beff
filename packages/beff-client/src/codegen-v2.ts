@@ -6,6 +6,26 @@ import { printErrors } from "./err.js";
 
 const JSON_PROTO = Object.getPrototypeOf({});
 
+// `instanceof` checks only the prototype chain. An array with Date.prototype is not a real Date,
+// and the Date methods throw on it. Call one method to make sure that the value is real.
+function isInstance(input: unknown, ctor: Function, method: Function): boolean {
+  if (!(input instanceof ctor)) {
+    return false;
+  }
+  try {
+    method.call(input);
+    return true;
+  } catch {
+    return false;
+  }
+}
+const dateGetTime = Date.prototype.getTime;
+const mapSize = Object.getOwnPropertyDescriptor(Map.prototype, "size")!.get!;
+const setSize = Object.getOwnPropertyDescriptor(Set.prototype, "size")!.get!;
+const isDate = (input: unknown): input is Date => isInstance(input, Date, dateGetTime);
+const isMap = (input: unknown): input is Map<unknown, unknown> => isInstance(input, Map, mapSize);
+const isSet = (input: unknown): input is Set<unknown> => isInstance(input, Set, setSize);
+
 function deepmergeConstructor(options: any) {
   // Define keys as own properties. Assigning to "__proto__" would set the prototype.
   function setKey(result: any, key: any, value: any) {
@@ -220,14 +240,28 @@ function prependPath(parentPath: string[], err: DecodeError): DecodeError {
 }
 
 // JSON.stringify throws on bigint values. Write them as `123n`.
+// It also throws on cyclic values and on values with a bad toJSON. Write them as `Object`.
 function stringifyWithBigInt(value: unknown): string {
-  return JSON.stringify(value, (_key, it) => (typeof it === "bigint" ? `${it}n` : it));
+  try {
+    return JSON.stringify(value, (_key, it) => (typeof it === "bigint" ? `${it}n` : it));
+  } catch {
+    return "Object";
+  }
+}
+
+// The key does not contain `received`. It is an input value and JSON.stringify can throw on it.
+// Errors with the same path come from the same input, so they have the same `received`.
+function errorKey(err: DecodeError): string {
+  if ("isUnionError" in err) {
+    return JSON.stringify([err.path, err.errors.map(errorKey)]);
+  }
+  return JSON.stringify([err.path, err.message]);
 }
 
 function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
   const seen = new Set<string>();
   return errors.filter((err) => {
-    const key = stringifyWithBigInt(err);
+    const key = errorKey(err);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -818,7 +852,7 @@ export class DateRuntype extends BaseRuntype {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Date"));
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
-    return input instanceof Date;
+    return isDate(input);
   }
   parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
     return input;
@@ -1402,7 +1436,7 @@ export class MapRuntype extends BaseRuntype {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Map"));
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
-    if (input instanceof Map) {
+    if (isMap(input)) {
       for (const [k, v] of input) {
         if (!this.keyParser.validate(ctx, k) || !this.valueParser.validate(ctx, v)) {
           return false;
@@ -1420,7 +1454,7 @@ export class MapRuntype extends BaseRuntype {
     return res;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!(input instanceof Map)) {
+    if (!isMap(input)) {
       return buildError(ctx, "expected Map", input);
     }
     const acc: DecodeError[] = [];
@@ -1448,7 +1482,7 @@ export class SetRuntype extends BaseRuntype {
     throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Set"));
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
-    if (input instanceof Set) {
+    if (isSet(input)) {
       for (const v of input) {
         if (!this.itemParser.validate(ctx, v)) {
           return false;
@@ -1466,7 +1500,7 @@ export class SetRuntype extends BaseRuntype {
     return res;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (!(input instanceof Set)) {
+    if (!isSet(input)) {
       return buildError(ctx, "expected Set", input);
     }
     const acc: DecodeError[] = [];
