@@ -155,7 +155,7 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
-      "DiscriminatedTypeCRON1906106737": {
+      "DiscriminatedTypeCRON937473895": {
         "additionalProperties": false,
         "properties": {
           "createdAt": {
@@ -201,7 +201,7 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
         ],
         "type": "object",
       },
-      "DiscriminatedTypeEVENT1906106737": {
+      "DiscriminatedTypeEVENT937473895": {
         "additionalProperties": false,
         "properties": {
           "createdAt": {
@@ -250,17 +250,17 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
       "WorkflowSource": {
         "discriminator": {
           "mapping": {
-            "CRON": "#/components/schemas/DiscriminatedTypeCRON1906106737",
-            "EVENT": "#/components/schemas/DiscriminatedTypeEVENT1906106737",
+            "CRON": "#/components/schemas/DiscriminatedTypeCRON937473895",
+            "EVENT": "#/components/schemas/DiscriminatedTypeEVENT937473895",
           },
           "propertyName": "type",
         },
         "oneOf": [
           {
-            "$ref": "#/components/schemas/DiscriminatedTypeCRON1906106737",
+            "$ref": "#/components/schemas/DiscriminatedTypeCRON937473895",
           },
           {
-            "$ref": "#/components/schemas/DiscriminatedTypeEVENT1906106737",
+            "$ref": "#/components/schemas/DiscriminatedTypeEVENT937473895",
           },
         ],
         "type": "object",
