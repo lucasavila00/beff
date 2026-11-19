@@ -8,6 +8,7 @@
     "directory": "packages/beff-client"
   },
   "type": "module",
+  "sideEffects": false,
   "main": "dist/cjs/index.js",
   "scripts": {
     "build": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json && node ./script/fixup-package.mjs",
