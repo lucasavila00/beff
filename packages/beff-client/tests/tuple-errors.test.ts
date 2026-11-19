@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, TupleRuntype, TypeofRuntype } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, TupleRuntype, TypeofRuntype } from "../src/runtime.js";
 
 const Pair = buildParserFromRuntype(
   new TupleRuntype(

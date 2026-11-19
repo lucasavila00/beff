@@ -10,7 +10,7 @@ import {
   Runtype,
   TypedArrayRuntype,
   TypeofRuntype,
-} from "./codegen-v2.js";
+} from "./runtime.js";
 import { BeffParser } from "./types.js";
 
 const Object_ = <T extends Record<string, BeffParser<any>>>(

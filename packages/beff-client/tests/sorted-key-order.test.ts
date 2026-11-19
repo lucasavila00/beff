@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildParserFromRuntype, ObjectRuntype, TypeofRuntype } from "../src/codegen-v2.js";
+import { buildParserFromRuntype, ObjectRuntype, TypeofRuntype } from "../src/runtime.js";
 
 const Counts = buildParserFromRuntype(
   new ObjectRuntype(undefined, {}, [

@@ -15,6 +15,10 @@ import { createRequire } from "node:module";
 const range = (n) => Array.from({ length: n }, (_, i) => i);
 const repeat = (n, f) => range(n).map(f);
 
+// Real code does not nest types more than 100 levels deep. The compiler fails on much longer chains of types.
+const maxDepth = 100;
+const depth = (N) => Math.min(N, maxDepth);
+
 export const shapes = {
   // N independent object types. Root is an array of the first one.
   objects: {
@@ -29,9 +33,10 @@ export const shapes = {
   },
   // One inline object type nested N levels deep.
   deep: {
+    maxScale: maxDepth,
     types: (N) =>
-      `type Deep = ${range(N).reduce((acc) => `{ v: number; c: ${acc} }`, "{ v: number }")};\ntype Root = Deep[];`,
-    value: (N, n) => repeat(n, () => range(N).reduce((acc) => ({ v: 1, c: acc }), { v: 1 })),
+      `type Deep = ${range(depth(N)).reduce((acc) => `{ v: number; c: ${acc} }`, "{ v: number }")};\ntype Root = Deep[];`,
+    value: (N, n) => repeat(n, () => range(depth(N)).reduce((acc) => ({ v: 1, c: acc }), { v: 1 })),
   },
   // A union of N object types that share no discriminator, and a union of N string literals.
   union: {
@@ -56,10 +61,12 @@ export const shapes = {
   },
   // N mutually recursive types. Root is a linked list n items deep.
   recursive: {
+    maxScale: maxDepth,
     types: (N) =>
-      repeat(N, (i) => `type R${i} = { name: string; tags: string[]; next: R${(i + 1) % N} | null };`).join(
-        "\n",
-      ) + `\ntype Root = R0;`,
+      repeat(
+        depth(N),
+        (i) => `type R${i} = { name: string; tags: string[]; next: R${(i + 1) % depth(N)} | null };`,
+      ).join("\n") + `\ntype Root = R0;`,
     value: (_N, n) => range(n).reduce((next) => ({ name: "r", tags: ["a"], next }), null),
   },
   // Two generic types instantiated with N different arguments.

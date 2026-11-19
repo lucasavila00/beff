@@ -29,7 +29,7 @@ const {
   SetRuntype,
   NumberKeyRuntype,
   buildParsers,
-} = require("@beff/client/codegen-v2");
+} = require("@beff/client/runtime");
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
 const namedRuntypes = {};

@@ -48,9 +48,9 @@ const runtimeImports = [
 const importCode = (mod: ProjectModule) => {
   const names = runtimeImports.map((it) => `  ${it},`).join("\n");
   if (mod === "cjs") {
-    return `const {\n${names}\n} = require("@beff/client/codegen-v2");`;
+    return `const {\n${names}\n} = require("@beff/client/runtime");`;
   }
-  return `import {\n${names}\n} from "@beff/client/codegen-v2";`;
+  return `import {\n${names}\n} from "@beff/client/runtime";`;
 };
 
 const finalizeParserV2File = (

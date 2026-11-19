@@ -5,7 +5,7 @@ import {
   ConstRuntype,
   ObjectRuntype,
   TypeofRuntype,
-} from "../src/codegen-v2.js";
+} from "../src/runtime.js";
 
 const circle = new ObjectRuntype(
   undefined,

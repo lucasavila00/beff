@@ -17,7 +17,8 @@ for (const shape of values.shape ? [values.shape] : Object.keys(shapes)) {
   console.log("| scale | lines | `beff` | peak RSS | parser.js | growth per 2x |");
   console.log("| --- | --- | --- | --- | --- | --- |");
   let prev = null;
-  for (let i = 0, N = from; i < rows; i++, N *= 2) {
+  // A larger scale than maxScale gives the same project.
+  for (let i = 0, N = from; i < rows && N <= (shapes[shape].maxScale ?? Infinity); i++, N *= 2) {
     const dir = outDir(shape, N);
     const { lines } = generate(shape, N, dir);
     const r = compile(dir);

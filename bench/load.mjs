@@ -59,14 +59,14 @@ if (process.argv[2] === "--child") {
   const { values } = parseArgs({ options: { shape: { type: "string" }, scale: { type: "string" } } });
   const N = Number(values.scale ?? 800);
 
-  const client = createRequire(import.meta.url).resolve("@beff/client/codegen-v2");
+  const client = createRequire(import.meta.url).resolve("@beff/client/runtime");
   const bundle = buildSync({
     entryPoints: [client],
     bundle: true,
     format: "esm",
     write: false,
   });
-  console.log(`\n### @beff/client/codegen-v2 (bundled)\n`);
+  console.log(`\n### @beff/client/runtime (bundled)\n`);
   console.log("| raw | gzip | minified | minified + gzip |");
   console.log("| --- | --- | --- | --- |");
   console.log(`| ${sizes(bundle.outputFiles[0].text).join(" | ")} |`);

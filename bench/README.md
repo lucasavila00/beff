@@ -15,7 +15,7 @@ Each script writes synthetic projects to `bench/out/<shape>-<scale>/` (ignored b
 
 ## Shapes
 
-`gen.mjs` writes `beff.json` and `src/parser.ts` for one shape. `--scale N` sets the number of types, variants or levels:
+`gen.mjs` writes `beff.json` and `src/parser.ts` for one shape. `--scale N` sets the number of types, variants or levels. For `deep` and `recursive`, N is at most 100, because real code does not nest types more deeply:
 
 | shape           | types                                                                                |
 | --------------- | ------------------------------------------------------------------------------------ |
@@ -53,7 +53,7 @@ node stress.mjs [--shape records] [--scale 8] [--runs 500] [--seed 1]
 # Size of the generated parser.js (raw, gzip, minified), and the time and heap that loading it takes.
 # "heap after first use" is the heap after each parser was also used one time (validate, safeParse, describe,
 # schema). It shows the memory of data that a parser makes on its first call.
-# Also prints the size of the @beff/client/codegen-v2 runtime.
+# Also prints the size of the @beff/client/runtime runtime.
 node load.mjs [--shape objects] [--scale 800]
 
 # Compare two versions on the same machine: runtime, load time, heap (after load, after first use) and minified sizes.
