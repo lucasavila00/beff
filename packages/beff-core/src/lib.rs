@@ -471,9 +471,6 @@ impl RuntypeUUID {
                     for (uuid, name) in ctx.type_with_args_names.iter() {
                         let has_same_name = name == &final_name;
                         if has_same_name {
-                            dbg!(&uuid);
-                            dbg!(&self);
-                            dbg!(uuid == self);
                             panic!(
                                 "Internal error: type with args name conflict: {} vs {}",
                                 uuid.diag_print(),
