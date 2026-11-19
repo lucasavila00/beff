@@ -3,7 +3,7 @@
   "version": "1.0.22",
   "description": "",
   "scripts": {
-    "beff": "beff -p beff.json",
+    "beff": "beff -p beff.json && beff -p beff-other.json",
     "test": "vitest --run --update"
   },
   "keywords": [],
