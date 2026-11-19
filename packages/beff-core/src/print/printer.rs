@@ -218,6 +218,12 @@ impl PrintableRuntypeKindKey {
 
 struct PrintContext {
     hoisted: BTreeMap<PrintableRuntypeKey, (usize, Expr)>,
+    // The `optional(...)` wrappers, by the hoisted name of the inner type. Objects with an optional property of
+    // the same type share one wrapper.
+    hoisted_optional: BTreeMap<String, (usize, Expr)>,
+    // The named types that are already printed, with the hoisted name of their node. A reference to one of
+    // them gets the node as an argument, so the runtime does not look the type up on each call.
+    defined: BTreeMap<RuntypeUUID, Expr>,
     all_names: NameIndex,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
 }
@@ -394,11 +400,83 @@ fn registry() -> Expr {
 }
 
 fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext, original_runtype: &Runtype) -> Expr {
-    builder(
-        "reference",
-        vec![registry(), string_lit(&ctx.print_rt_name(to))],
-        original_runtype,
-    )
+    let mut args = vec![registry(), string_lit(&ctx.print_rt_name(to))];
+    if let Some(target) = ctx.defined.get(to) {
+        args.push(target.clone());
+    }
+    builder("reference", args, original_runtype)
+}
+
+// The names that a type refers to. It does not go into the types of these names.
+fn referenced_names<'a>(schema: &'a Runtype) -> Vec<&'a RuntypeUUID> {
+    let mut names = vec![];
+    let mut stack = vec![schema];
+    while let Some(it) = stack.pop() {
+        match &it.kind {
+            RuntypeKind::Ref(name) => names.push(name),
+            RuntypeKind::Object {
+                vs,
+                indexed_properties,
+            } => {
+                stack.extend(vs.values().map(|it| it.inner()));
+                if let Some(indexed) = indexed_properties {
+                    stack.push(&indexed.key);
+                    stack.push(indexed.value.inner());
+                }
+            }
+            RuntypeKind::Array(item) | RuntypeKind::Set(item) | RuntypeKind::StNot(item) => {
+                stack.push(item)
+            }
+            RuntypeKind::Tuple {
+                prefix_items,
+                items,
+            } => {
+                stack.extend(prefix_items.iter());
+                if let Some(rest) = items {
+                    stack.push(rest);
+                }
+            }
+            RuntypeKind::AnyOf(vs) | RuntypeKind::AllOf(vs) => stack.extend(vs.iter()),
+            RuntypeKind::Map(key, value) => {
+                stack.push(key);
+                stack.push(value);
+            }
+            _ => {}
+        }
+    }
+    names
+}
+
+// The named types in an order that has each type after the types it refers to, where that is possible
+// (it is not possible for all the types of a cycle). It uses a list as the stack, not recursion, so a long
+// chain of references does not overflow the stack.
+fn definition_order<'a>(named_schemas: &NamedSchemas<'a>) -> Vec<&'a RuntypeUUID> {
+    let mut order = vec![];
+    let mut visited = BTreeSet::new();
+    for root in named_schemas.list {
+        if !visited.insert(&root.name) {
+            continue;
+        }
+        let mut stack = vec![(&root.name, referenced_names(&root.schema))];
+        while let Some((name, pending)) = stack.last_mut() {
+            match pending.pop() {
+                Some(dependency) => {
+                    if let Some((dependency, schema)) =
+                        named_schemas.by_name.get_key_value(dependency)
+                    {
+                        if visited.insert(*dependency) {
+                            stack.push((*dependency, referenced_names(schema)));
+                        }
+                    }
+                }
+                None => {
+                    order.push(*name);
+                    stack.pop();
+                }
+            }
+        }
+    }
+    order
 }
 
 fn no_args_runtype(function: &str, original_runtype: &Runtype) -> Expr {
@@ -768,8 +846,24 @@ fn hoist_identifier(name: usize) -> Expr {
     Expr::Ident(identifier(&hoist_name(name)))
 }
 
-fn optionality_wrapper(inner: Expr) -> Expr {
-    call("optional", vec![inner])
+impl PrintContext {
+    fn next_hoist_id(&self) -> usize {
+        self.hoisted.len() + self.hoisted_optional.len()
+    }
+}
+
+fn optionality_wrapper(inner: Expr, ctx: &mut PrintContext) -> Expr {
+    let Expr::Ident(inner_name) = &inner else {
+        return call("optional", vec![inner]);
+    };
+    let key = inner_name.sym.to_string();
+    if let Some((var_name, _)) = ctx.hoisted_optional.get(&key) {
+        return hoist_identifier(*var_name);
+    }
+    let new_id = ctx.next_hoist_id();
+    ctx.hoisted_optional
+        .insert(key, (new_id, call("optional", vec![inner])));
+    hoist_identifier(new_id)
 }
 
 fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut PrintContext) -> Expr {
@@ -887,7 +981,8 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
             for (k, v) in vs.iter() {
                 let r = match v {
                     Optionality::Optional(schema) => {
-                        optionality_wrapper(print_runtype(schema, named_schemas, ctx))
+                        let inner = print_runtype(schema, named_schemas, ctx);
+                        optionality_wrapper(inner, ctx)
                     }
                     Optionality::Required(schema) => print_runtype(schema, named_schemas, ctx),
                 };
@@ -899,7 +994,8 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
                 .map(|it| {
                     let value_rt = match &it.value {
                         Optionality::Optional(schema) => {
-                            optionality_wrapper(print_runtype(schema, named_schemas, ctx))
+                            let inner = print_runtype(schema, named_schemas, ctx);
+                            optionality_wrapper(inner, ctx)
                         }
                         Optionality::Required(schema) => print_runtype(schema, named_schemas, ctx),
                     };
@@ -914,7 +1010,13 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
                 })
                 .collect();
 
-            let mut args = vec![object_lit(mapped.into_iter().collect())];
+            // The properties are a flat list: [key, type, key, type, ...].
+            let mut args = vec![array_lit(
+                mapped
+                    .into_iter()
+                    .flat_map(|(key, value)| [string_lit(&key), value])
+                    .collect(),
+            )];
             if !indexed_properties_props.is_empty() {
                 args.push(array_lit(indexed_properties_props));
             }
@@ -926,7 +1028,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
         RuntypeKind::Void => no_args_runtype("voidType", schema),
     };
 
-    let new_id = ctx.hoisted.len();
+    let new_id = ctx.next_hoist_id();
     ctx.hoisted.insert(hoist_key, (new_id, out.clone()));
     hoist_identifier(new_id)
 }
@@ -946,11 +1048,15 @@ fn build_parsers_input(
 }
 
 fn named_runtypes(named_schemas: &NamedSchemas, ctx: &mut PrintContext) -> Expr {
-    let mut validator_exprs: Vec<(RuntypeUUID, Expr)> = vec![];
-    for named_schema in named_schemas.list {
-        let validator = print_runtype(&named_schema.schema, named_schemas, ctx);
-        validator_exprs.push((named_schema.name.clone(), validator));
+    for name in definition_order(named_schemas) {
+        let validator = print_runtype(named_schemas.by_name[name], named_schemas, ctx);
+        ctx.defined.insert(name.clone(), validator);
     }
+    let validator_exprs: Vec<(RuntypeUUID, Expr)> = named_schemas
+        .list
+        .iter()
+        .map(|it| (it.name.clone(), ctx.defined[&it.name].clone()))
+        .collect();
     object_lit(
         validator_exprs
             .into_iter()
@@ -966,14 +1072,11 @@ impl ParserExtractResult {
         let all_names = NameIndex::new(named_schemas.list.iter().map(|it| &it.name));
         let mut hoisted = PrintContext {
             hoisted: BTreeMap::new(),
+            hoisted_optional: BTreeMap::new(),
+            defined: BTreeMap::new(),
             all_names,
             type_with_args_names: BTreeMap::new(),
         };
-
-        let build_parsers_input: ModuleItem = const_decl(
-            "buildParsersInput",
-            build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
-        );
 
         let define_named_runtypes = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
             span: DUMMY_SP,
@@ -984,7 +1087,17 @@ impl ParserExtractResult {
             .into(),
         }));
 
-        let mut sorted_direct_hoisted_values = hoisted.hoisted.into_values().collect::<Vec<_>>();
+        // After the named types, so that its references get the nodes of the types.
+        let build_parsers_input: ModuleItem = const_decl(
+            "buildParsersInput",
+            build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
+        );
+
+        let mut sorted_direct_hoisted_values = hoisted
+            .hoisted
+            .into_values()
+            .chain(hoisted.hoisted_optional.into_values())
+            .collect::<Vec<_>>();
         sorted_direct_hoisted_values.sort_by_key(|it| it.0);
 
         let hoisted_direct_decls: Vec<ModuleItem> = sorted_direct_hoisted_values
