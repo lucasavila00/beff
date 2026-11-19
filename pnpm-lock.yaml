@@ -19,6 +19,15 @@ importers:
         specifier: ^6.46.1
         version: 6.46.1
 
+  bench:
+    dependencies:
+      '@beff/cli':
+        specifier: workspace:^
+        version: link:../packages/beff-cli
+      '@beff/client':
+        specifier: workspace:^
+        version: link:../packages/beff-client
+
   e2e-tests/bug-rust-repro:
     dependencies:
       '@beff/cli':

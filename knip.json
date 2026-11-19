@@ -22,6 +22,11 @@
       "entry": ["bin/*.js"],
       "project": []
     },
+    "bench": {
+      "entry": ["*.mjs"],
+      "project": ["*.mjs"],
+      "ignoreDependencies": ["@beff/client"]
+    },
     "e2e-tests/*": {
       "entry": ["src/**/*.{ts,tsx}", "tests/**/*.test.ts"],
       "project": ["src/**/*.{ts,tsx}", "tests/**/*.ts"],
