@@ -33,7 +33,7 @@ const finalizeParserV2File = (
   if (mod === "cjs") {
     genV2 = genV2
       .replace("import {", "const {")
-      .replace('} from "@beff/client/codegen-v2";', '} = require("@beff/client/codegen-v2");');
+      .replace('} from "@beff/client/runtime";', '} = require("@beff/client/runtime");');
   }
 
   return [

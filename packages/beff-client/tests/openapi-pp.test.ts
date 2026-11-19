@@ -10,7 +10,7 @@ import {
   OptionalFieldRuntype,
   SchemaPrintingContext,
   TypeofRuntype,
-} from "../src/codegen-v2.js";
+} from "../src/runtime.js";
 
 describe("removeNullUnionBranch", () => {
   it("removes the null branch from a two-variant anyOf", () => {

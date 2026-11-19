@@ -27,7 +27,7 @@ import {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
-} from "@beff/client/codegen-v2";
+} from "@beff/client/runtime";
 
 class RefRuntype extends BaseRefRuntype  {
   getNamedRuntypes() {

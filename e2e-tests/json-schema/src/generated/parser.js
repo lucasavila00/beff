@@ -33,7 +33,7 @@ const {
   MapRuntype,
   SetRuntype,
   NumberKeyRuntype,
-} = require("@beff/client/codegen-v2");
+} = require("@beff/client/runtime");
 
 class RefRuntype extends BaseRefRuntype  {
   getNamedRuntypes() {

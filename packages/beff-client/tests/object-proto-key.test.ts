@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AnyRuntype, buildParserFromRuntype, ObjectRuntype, TypeofRuntype } from "../src/codegen-v2.js";
+import { AnyRuntype, buildParserFromRuntype, ObjectRuntype, TypeofRuntype } from "../src/runtime.js";
 
 const Rec = buildParserFromRuntype(
   new ObjectRuntype(undefined, {}, [

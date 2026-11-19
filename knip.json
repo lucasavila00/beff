@@ -7,7 +7,7 @@
       "project": []
     },
     "packages/beff-client": {
-      "entry": ["src/index.ts", "src/codegen-v2.ts", "script/*.mjs", "tests/**/*.test.ts"],
+      "entry": ["src/index.ts", "src/runtime.ts", "script/*.mjs", "tests/**/*.test.ts"],
       "project": ["src/**/*.ts", "script/**/*.mjs", "tests/**/*.ts"],
       "includeEntryExports": false,
       "ignoreDependencies": ["@beff/cli"]
