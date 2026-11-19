@@ -228,20 +228,40 @@ function deepmergeArray(options: any) {
 
 const deepmerge = deepmergeConstructor({ mergeArray: deepmergeArray }) as (...args: unknown[]) => unknown;
 
+// The depth of the errors inside each union error, so that an outer union does not walk them again.
+const unionErrorDepth = new WeakMap<DecodeError, number>();
+
 function maxErrorDepth(errors: DecodeError[]): number {
   let max = 0;
   for (const err of errors) {
-    const depth = "isUnionError" in err ? err.path.length + maxErrorDepth(err.errors) : err.path.length;
+    const depth = "isUnionError" in err ? err.path.length + unionErrorDepth.get(err)! : err.path.length;
     if (depth > max) max = depth;
   }
   return max;
 }
 
 function prependPath(parentPath: string[], err: DecodeError): DecodeError {
-  if ("isUnionError" in err) {
-    return { ...err, path: [...parentPath, ...err.path] };
+  for (let i = parentPath.length - 1; i >= 0; i--) {
+    err.path.push(parentPath[i]);
   }
-  return { ...err, path: [...parentPath, ...err.path] };
+  return err;
+}
+
+// While errors are reported, their paths are stored reversed (innermost key first). A union that
+// flattens a single error can then add its own path to it in place, instead of copying the whole
+// path at every level of a recursive type. `finishErrors` puts the paths back in order.
+function reversedPath(ctx: { path: string[] }): string[] {
+  return ctx.path.slice().reverse();
+}
+
+function finishErrors(errors: DecodeError[]): DecodeError[] {
+  for (const err of errors) {
+    err.path.reverse();
+    if ("isUnionError" in err) {
+      finishErrors(err.errors);
+    }
+  }
+  return errors;
 }
 
 // JSON.stringify throws on bigint values. Write them as `123n`.
@@ -250,6 +270,18 @@ function stringifyWithBigInt(value: unknown): string {
 }
 
 function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
+  if (errors.length < 2) {
+    return errors;
+  }
+  // Errors with different messages or paths are never equal. Only stringify whole errors, with
+  // their received values and nested errors, when two of them have the same message and path.
+  const messagesAndPaths = new Set<string>();
+  for (const err of errors) {
+    messagesAndPaths.add(JSON.stringify(["message" in err ? err.message : null, err.path]));
+  }
+  if (messagesAndPaths.size === errors.length) {
+    return errors;
+  }
   const seen = new Set<string>();
   return errors.filter((err) => {
     const key = stringifyWithBigInt(err);
@@ -259,26 +291,31 @@ function deduplicateErrors(errors: DecodeError[]): DecodeError[] {
   });
 }
 
-function buildUnionError(ctx: { path: string[] }, errors: DecodeError[], received: unknown): DecodeError[] {
+function buildUnionError(
+  ctx: { path: string[] },
+  errors: DecodeError[],
+  received: unknown,
+  depth: number,
+): DecodeError[] {
   const deduplicated = deduplicateErrors(errors);
   // Single branch survived filtering — flatten instead of wrapping
   if (deduplicated.length === 1) {
     return [prependPath(ctx.path, deduplicated[0])];
   }
-  return [
-    {
-      path: [...ctx.path],
-      received,
-      errors: deduplicated,
-      isUnionError: true,
-    },
-  ];
+  const err: DecodeError = {
+    path: reversedPath(ctx),
+    received,
+    errors: deduplicated,
+    isUnionError: true,
+  };
+  unionErrorDepth.set(err, depth);
+  return [err];
 }
 function buildError(ctx: { path: string[] }, message: string, received: unknown): RegularDecodeError[] {
   return [
     {
       message,
-      path: [...ctx.path],
+      path: reversedPath(ctx),
       received,
     },
   ];
@@ -509,6 +546,8 @@ type ValidateContext = {
   // The input an intersection is checking. Its members leave the keys of this input they do not know to the
   // intersection: another member may know them.
   intersectionInput?: unknown;
+  // Set only while reporting errors. See ValidateCache.
+  validateCache?: ValidateCache;
 };
 
 type ParseContext = ValidateContext & {
@@ -517,6 +556,7 @@ type ParseContext = ValidateContext & {
 
 type ReportContext = ValidateContext & {
   path: string[];
+  validateCache: ValidateCache;
 };
 
 // Should an intersection check the extra properties of this input against the keys of all its members?
@@ -556,6 +596,7 @@ export interface Runtype {
   hash256(ctx: Hash256Context): void;
   validate(ctx: ValidateContext, input: unknown): boolean;
   parseAfterValidation(ctx: ParseContext, input: any): unknown;
+  // The paths of the returned errors are reversed. See reversedPath.
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
 }
 
@@ -1591,7 +1632,7 @@ export class AnyOfRuntype extends BaseRuntype {
     const filtered =
       bestDepth > 0 ? branchErrors.filter((_, i) => depths[i] === bestDepth).flat() : branchErrors.flat();
 
-    return buildUnionError(ctx, filtered, input);
+    return buildUnionError(ctx, filtered, input, bestDepth > 0 ? bestDepth : 0);
   }
   protected describeTypeExpr(ctx: DescribeContext): string {
     return `(${this.schemas.map((it) => describeTypeExpr(ctx, it)).join(" | ")})`;
@@ -2441,7 +2482,10 @@ export abstract class BaseRefRuntype extends BaseRuntype {
   }
   validate(ctx: ValidateContext, input: any): boolean {
     const to = this.getNamedRuntypes()[this.refName];
-    return to.validate(ctx, input);
+    // Keep the cache code out of this method. With it inlined here, every validate frame got bigger and
+    // validate overflowed the stack on shallower inputs.
+    const cache = ctx.validateCache;
+    return (cache === undefined ? to : cachedValidation(cache, to)).validate(ctx, input);
   }
   parseAfterValidation(ctx: ParseContext, input: any): any {
     const to = this.getNamedRuntypes()[this.refName];
@@ -2450,6 +2494,50 @@ export abstract class BaseRefRuntype extends BaseRuntype {
   reportDecodeError(ctx: ReportContext, input: any): DecodeError[] {
     const to = this.getNamedRuntypes()[this.refName];
     return to.reportDecodeError(ctx, input);
+  }
+}
+
+// reportAtPath validates each child before it reports its errors. Without this cache, every level
+// of a recursive type would validate everything below it again. Error reporting only descends into
+// invalid values, so only those are remembered, and only when their validation went through another
+// named type. Other values are cheap to validate again, and remembering every member of a union that
+// failed would cost more than it saves.
+class ValidateCache {
+  calls = 0;
+  targets = new Map<Runtype, CachedValidation>();
+}
+
+function cachedValidation(cache: ValidateCache, to: Runtype): CachedValidation {
+  let cached = cache.targets.get(to);
+  if (cached === undefined) {
+    cached = new CachedValidation(cache, to);
+    cache.targets.set(to, cached);
+  }
+  return cached;
+}
+
+class CachedValidation {
+  private cache: ValidateCache;
+  private to: Runtype;
+  private invalid = new Set<object>();
+  constructor(cache: ValidateCache, to: Runtype) {
+    this.cache = cache;
+    this.to = to;
+  }
+  validate(ctx: ValidateContext, input: unknown): boolean {
+    // Inside an intersection, the result also depends on ctx.intersectionInput.
+    if (typeof input !== "object" || input === null || ctx.intersectionInput === input) {
+      return this.to.validate(ctx, input);
+    }
+    if (this.invalid.has(input)) {
+      return false;
+    }
+    const calls = ++this.cache.calls;
+    const ok = this.to.validate(ctx, input);
+    if (!ok && this.cache.calls > calls) {
+      this.invalid.add(input);
+    }
+    return ok;
   }
 }
 
@@ -2506,10 +2594,10 @@ class ParserFromRuntype implements BeffParser<any> {
       const parsed = this._runtype.parseAfterValidation(ctx, input);
       return { success: true, data: parsed };
     }
-    let ctx = { path: [], disallowExtraProperties };
+    let ctx = { path: [], disallowExtraProperties, validateCache: new ValidateCache() };
     return {
       success: false,
-      errors: this._runtype.reportDecodeError(ctx, input).slice(0, 10),
+      errors: finishErrors(this._runtype.reportDecodeError(ctx, input).slice(0, 10)),
     };
   }
   zod(): z.ZodType<any, z.ZodTypeDef, any> {
@@ -2518,8 +2606,11 @@ class ParserFromRuntype implements BeffParser<any> {
       (data: any) => this.validate(data),
       //@ts-ignore
       (val: any) => {
-        const errors = this._runtype.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
-        return printErrors(errors, []);
+        const errors = this._runtype.reportDecodeError(
+          { path: [], disallowExtraProperties: false, validateCache: new ValidateCache() },
+          val,
+        );
+        return printErrors(finishErrors(errors), []);
       },
     );
   }
