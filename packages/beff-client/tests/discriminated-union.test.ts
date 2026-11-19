@@ -18,7 +18,7 @@ const square = new ObjectRuntype(
   [],
 );
 const Shape = buildParserFromRuntype(
-  new AnyOfDiscriminatedRuntype(undefined, [circle, square], "kind", { circle, square }, { circle, square }),
+  new AnyOfDiscriminatedRuntype(undefined, [circle, square], "kind", { circle, square }),
   "Shape",
   false,
 );

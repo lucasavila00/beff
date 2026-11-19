@@ -1545,11 +1545,25 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
     .join(",")}}`;
 }
 
+// The kind of a value. The compiler knows the kinds each member of a union accepts (`js_kinds` in
+// beff-core), and prints the runtype that checks each kind.
+type Kind = "nullish" | "boolean" | "number" | "string" | "bigint" | "array" | "object" | "function";
+const kindOf = (input: unknown): string =>
+  input == null ? "nullish" : Array.isArray(input) ? "array" : typeof input;
+
 export class AnyOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
-  constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[]) {
+  // For each kind of value that the union accepts, the one runtype that checks values of that kind.
+  // Only the compiler passes it: it is never computed here, because a named type can be overridden.
+  private byKind: Record<string, Runtype | undefined> | undefined;
+  constructor(
+    metadata: RuntypeMetadata | undefined,
+    schemas: Runtype[],
+    byKind?: Partial<Record<Kind, Runtype>>,
+  ) {
     super(metadata);
     this.schemas = schemas;
+    this.byKind = byKind;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     return annotateSchema(this.metadata, {
@@ -1557,6 +1571,11 @@ export class AnyOfRuntype extends BaseRuntype {
     });
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
+    const byKind = this.byKind;
+    if (byKind !== undefined) {
+      const it = byKind[kindOf(input)];
+      return it !== undefined && it.validate(ctx, input);
+    }
     for (const it of this.schemas) {
       if (it.validate(ctx, input)) {
         return true;
@@ -1565,6 +1584,11 @@ export class AnyOfRuntype extends BaseRuntype {
     return false;
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    const byKind = this.byKind;
+    if (byKind !== undefined) {
+      // The input passed validate(), so its kind is in the table. Its runtype does not validate again.
+      return byKind[kindOf(input)]!.parseAfterValidation(ctx, input);
+    }
     const items = [];
     for (const it of this.schemas) {
       if (it.validate(ctx, input)) {
@@ -1785,19 +1809,16 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
   private schemas: Runtype[];
   private discriminator: string;
   private mapping: Record<string, Runtype>;
-  private schemaMapping: Record<string, Runtype>;
   constructor(
     metadata: RuntypeMetadata | undefined,
     schemas: Runtype[],
     discriminator: string,
     mapping: Record<string, Runtype>,
-    schemaMapping: Record<string, Runtype>,
   ) {
     super(metadata);
     this.schemas = schemas;
     this.discriminator = discriminator;
     this.mapping = mapping;
-    this.schemaMapping = schemaMapping;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     if (ctx.mode === "contextual" && ctx.printingContext != null) {
@@ -1823,7 +1844,7 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
   }
   private getSchemaVariantRefs(ctx: SchemaContext): Array<{ key: string; ref: string }> {
     const unionHash = this.hash({ seen: {} });
-    return Object.entries(this.schemaMapping).map(([key, schema]) => ({
+    return Object.entries(this.mapping).map(([key, schema]) => ({
       key,
       ref: this.ensureSchemaVariantRef(schema, key, unionHash, ctx),
     }));
