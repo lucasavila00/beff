@@ -1979,6 +1979,8 @@ export class OptionalFieldRuntype implements Runtype {
   }
 }
 
+const hasOwn = Object.prototype.hasOwnProperty;
+
 // Assigning to "__proto__" sets the prototype instead of creating a property.
 function setOwnProperty(target: Record<string, unknown>, key: string, value: unknown): void {
   if (key === "__proto__") {
@@ -2112,7 +2114,7 @@ export class ObjectRuntype extends BaseRuntype {
 
       if (this.indexedPropertiesParser.length > 0) {
         const inputKeys = Object.keys(input);
-        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
         for (const k of extraKeys) {
           let isValid = false;
           for (const p of this.indexedPropertiesParser) {
@@ -2133,7 +2135,7 @@ export class ObjectRuntype extends BaseRuntype {
       } else {
         if (ctx.disallowExtraProperties) {
           const inputKeys = Object.keys(input);
-          const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+          const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
 
           if (extraKeys.length > 0) {
             return false;
@@ -2149,7 +2151,6 @@ export class ObjectRuntype extends BaseRuntype {
     let acc: any = {};
 
     const inputKeys = Object.keys(input);
-    const hasOwn = Object.prototype.hasOwnProperty;
 
     if (ctx.objectKeyOrder === "input") {
       for (const k of inputKeys) {
@@ -2213,7 +2214,7 @@ export class ObjectRuntype extends BaseRuntype {
 
     if (this.indexedPropertiesParser.length > 0) {
       const inputKeys = Object.keys(input);
-      const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+      const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
       for (const k of extraKeys) {
         for (const p of this.indexedPropertiesParser) {
           const keyOk = p.key.validate(ctx, k);
@@ -2236,7 +2237,7 @@ export class ObjectRuntype extends BaseRuntype {
     } else {
       if (ctx.disallowExtraProperties) {
         const inputKeys = Object.keys(input);
-        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+        const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
         if (extraKeys.length > 0) {
           return extraKeys
             .map((k) => {
