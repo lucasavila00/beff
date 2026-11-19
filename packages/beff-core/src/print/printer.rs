@@ -991,7 +991,9 @@ fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Vec<
 }
 
 impl ParserExtractResult {
-    pub fn emit_code(self) -> Result<String> {
+    // Generated validate functions are limited to `max_validate_function_size` characters per named
+    // type. See `BeffUserSettings::validate_function_size_limit`.
+    pub fn emit_code(self, max_validate_function_size: usize) -> Result<String> {
         let built_parsers = self.built_decoders.unwrap_or_default();
         let named_schemas = validate_type_uniqueness(&self.validators)?;
         let all_names = NameIndex::new(named_schemas.iter().map(|it| &it.name));
@@ -1011,6 +1013,7 @@ impl ParserExtractResult {
             &hoisted.validate_nodes,
             &named.iter().cloned().collect(),
             &export_ids,
+            max_validate_function_size,
         );
 
         // An export with a generated validate function wraps its runtype in a GeneratedRuntype.

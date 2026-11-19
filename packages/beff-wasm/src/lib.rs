@@ -151,9 +151,10 @@ fn print_errors(errors: &[DiagnosticInformation]) {
 }
 
 fn bundle_to_string_inner(entry: EntryPoints) -> Result<String> {
+    let max_validate_function_size = entry.settings.validate_function_size_limit();
     let res = run_extraction(entry);
     if res.errors.is_empty() {
-        return res.emit_code();
+        return res.emit_code(max_validate_function_size);
     }
     print_errors(&res.errors);
     Err(anyhow!("Failed to bundle"))

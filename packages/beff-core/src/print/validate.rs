@@ -9,7 +9,7 @@
 //!
 //! The functions mirror the runtype classes in `@beff/client/codegen-v2`, and only `validate` uses
 //! them. Tests run with `BEFF_CHECK_GENERATED_VALIDATE=1`, which checks each result against the tree.
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use swc_ecma_ast::{Expr, Lit, Prop, PropName, PropOrSpread};
 
@@ -158,11 +158,19 @@ impl ValidateNode {
     }
 }
 
+// A call to the function of a root is printed as `ROOT_MARK<id>ROOT_MARK` until we know whether the root
+// is generated.
+const ROOT_MARK: char = '\u{1}';
+
 struct Generator<'a> {
     nodes: &'a [ValidateNode],
     named: &'a BTreeMap<String, usize>,
-    functions: BTreeMap<usize, String>,
+    // Named types and exports with a function. Each one has its own size budget.
+    roots: BTreeSet<usize>,
+    // The code of each node with a function, and the nodes with a function it calls.
+    functions: BTreeMap<usize, (String, Vec<usize>)>,
     pending: Vec<usize>,
+    calls: Vec<usize>,
 }
 
 fn property_access(key: &str) -> String {
@@ -179,7 +187,7 @@ fn property_access(key: &str) -> String {
 }
 
 impl Generator<'_> {
-    // Follows refs to the node they point to. A cycle of refs stays a ref, which calls the tree.
+    // Follows refs to the node they point to. A cycle of refs stays a ref, which calls the runtype.
     fn resolve(&self, mut id: usize) -> usize {
         for _ in 0..=self.nodes.len() {
             match &self.nodes[id] {
@@ -219,11 +227,15 @@ impl Generator<'_> {
     fn expr(&mut self, id: usize, v: &str) -> String {
         let id = self.resolve(id);
         if self.has_function(id) {
-            if let std::collections::btree_map::Entry::Vacant(e) = self.functions.entry(id) {
-                e.insert(String::new());
+            self.calls.push(id);
+            if !self.functions.contains_key(&id) {
                 self.pending.push(id);
             }
-            return format!("v{id}(c,{v})");
+            return if self.roots.contains(&id) {
+                format!("{ROOT_MARK}{id}{ROOT_MARK}(c,{v})")
+            } else {
+                format!("v{id}(c,{v})")
+            };
         }
         match &self.nodes[id] {
             ValidateNode::Typeof(t) => format!("typeof {v}=={}", js_str(t)),
@@ -282,39 +294,102 @@ impl Generator<'_> {
         };
         format!("function v{id}(c,i){{{body}}}")
     }
+
+    // The functions a root uses without calling another root: the functions of its inline types.
+    fn helpers_of(&self, root: usize) -> BTreeSet<usize> {
+        let mut acc = BTreeSet::new();
+        let mut stack = vec![root];
+        while let Some(id) = stack.pop() {
+            for call in &self.functions[&id].1 {
+                if !self.roots.contains(call) && acc.insert(*call) {
+                    stack.push(*call);
+                }
+            }
+        }
+        acc
+    }
 }
 
-// Generates the validate functions reachable from `exports` (hoisted ids). Returns, for each export,
-// the function that validates it, if it has one, and the code of all functions.
+// Generates the validate functions reachable from `exports` (hoisted ids). Each named type and export
+// gets a function only if its code, with the functions of its inline types, has at most `max_size`
+// characters. The others keep calling the runtype. Returns, for each export, the function that
+// validates it, if it has one, and the code of all functions.
 pub(super) fn generate(
     nodes: &[ValidateNode],
     named: &BTreeMap<String, usize>,
     exports: &[usize],
+    max_size: usize,
 ) -> (Vec<Option<String>>, String) {
     let mut generator = Generator {
         nodes,
         named,
+        roots: BTreeSet::new(),
         functions: BTreeMap::new(),
         pending: vec![],
+        calls: vec![],
     };
-    let export_fns = exports
+    let exports = exports
         .iter()
-        .map(|it| {
-            let id = generator.resolve(*it);
-            generator
-                .has_function(id)
-                .then(|| generator.expr(id, "i"))
-                .map(|_| format!("v{id}"))
-        })
+        .map(|it| generator.resolve(*it))
+        .collect::<Vec<_>>();
+    generator.roots = named
+        .values()
+        .chain(exports.iter())
+        .map(|it| generator.resolve(*it))
+        .filter(|it| generator.has_function(*it))
+        .collect();
+    generator.pending = exports
+        .iter()
+        .copied()
+        .filter(|it| generator.roots.contains(it))
         .collect();
     while let Some(id) = generator.pending.pop() {
+        if generator.functions.contains_key(&id) {
+            continue;
+        }
         let code = generator.function(id);
-        generator.functions.insert(id, code);
+        let calls = std::mem::take(&mut generator.calls);
+        generator.functions.insert(id, (code, calls));
     }
-    let code = generator
-        .functions
-        .into_values()
-        .map(|it| it + "\n")
+
+    // The roots within the size budget, and the functions they need.
+    let mut generated = BTreeSet::new();
+    let mut emitted = BTreeSet::new();
+    for root in &generator.roots {
+        if !generator.functions.contains_key(root) {
+            continue;
+        }
+        let helpers = generator.helpers_of(*root);
+        let size = std::iter::once(root)
+            .chain(helpers.iter())
+            .map(|it| generator.functions[it].0.len())
+            .sum::<usize>();
+        if size <= max_size {
+            generated.insert(*root);
+            emitted.insert(*root);
+            emitted.extend(helpers);
+        }
+    }
+
+    let mut code = String::new();
+    for id in &emitted {
+        for (idx, part) in generator.functions[id].0.split(ROOT_MARK).enumerate() {
+            if idx % 2 == 0 {
+                code.push_str(part);
+                continue;
+            }
+            let callee: usize = part.parse().expect("a marked root id");
+            if generated.contains(&callee) {
+                code.push_str(&format!("v{callee}"));
+            } else {
+                code.push_str(&format!("{}.validate", hoist_name(callee)));
+            }
+        }
+        code.push('\n');
+    }
+    let export_fns = exports
+        .iter()
+        .map(|it| generated.contains(it).then(|| format!("v{it}")))
         .collect();
     (export_fns, code)
 }

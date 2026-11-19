@@ -100,6 +100,7 @@ fn extract_types(fs: &[(&str, &str)]) -> ParserExtractResult {
                 "NonNegativeNumber".to_string(),
                 "Rate".to_string(),
             ]),
+            max_validate_function_size: None,
         },
     )
 }
@@ -127,6 +128,12 @@ pub fn print_cgen(from: &str) -> String {
     print_cgen_multifile(&sources)
 }
 pub fn print_cgen_multifile(sources: &[(&str, &str)]) -> String {
+    print_cgen_with_max_validate_function_size(sources, crate::DEFAULT_MAX_VALIDATE_FUNCTION_SIZE)
+}
+pub fn print_cgen_with_max_validate_function_size(
+    sources: &[(&str, &str)],
+    max_validate_function_size: usize,
+) -> String {
     let p = extract_types(sources);
     let errors = &p.errors;
 
@@ -136,7 +143,9 @@ pub fn print_cgen_multifile(sources: &[(&str, &str)]) -> String {
 
     let mut out = String::new();
 
-    let code = p.emit_code().expect("should be able to emit module");
+    let code = p
+        .emit_code(max_validate_function_size)
+        .expect("should be able to emit module");
     out.push_str(&code);
     out
 }

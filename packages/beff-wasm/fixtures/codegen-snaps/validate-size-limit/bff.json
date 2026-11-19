@@ -1,0 +1,7 @@
+{
+  "parser": "./parser.ts",
+  "outputDir": "./bff-generated",
+  "codegen": {
+    "maxValidateFunctionSize": 100
+  }
+}

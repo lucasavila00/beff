@@ -96,9 +96,22 @@ pub(crate) struct UnresolvedExport {
 pub struct BeffUserSettings {
     pub string_formats: BTreeSet<String>,
     pub number_formats: BTreeSet<String>,
+    // `codegen.maxValidateFunctionSize` in beff.json. See `validate_function_size_limit`.
+    #[serde(default)]
+    pub max_validate_function_size: Option<usize>,
 }
 
+// The default of `codegen.maxValidateFunctionSize`.
+pub(crate) const DEFAULT_MAX_VALIDATE_FUNCTION_SIZE: usize = 2000;
+
 impl BeffUserSettings {
+    // A named type gets a generated validate function only if its code, with the functions of its
+    // inline types, has at most this many characters. Larger types are validated by the runtype.
+    pub fn validate_function_size_limit(&self) -> usize {
+        self.max_validate_function_size
+            .unwrap_or(DEFAULT_MAX_VALIDATE_FUNCTION_SIZE)
+    }
+
     pub fn has_string_format(&self, name: &str) -> bool {
         self.string_formats.contains(name)
     }
