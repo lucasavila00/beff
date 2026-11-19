@@ -311,10 +311,10 @@ impl TypeAddress {
 /// Type addresses grouped by type name. `ts_identifier` only needs the
 /// addresses with the same name, so it does not scan all names.
 #[derive(Default)]
-pub struct NameIndex(BTreeMap<String, BTreeSet<TypeAddress>>);
+pub(crate) struct NameIndex(BTreeMap<String, BTreeSet<TypeAddress>>);
 
 impl NameIndex {
-    pub fn new<'a>(names: impl Iterator<Item = &'a RuntypeUUID>) -> Self {
+    pub(crate) fn new<'a>(names: impl Iterator<Item = &'a RuntypeUUID>) -> Self {
         let mut acc: BTreeMap<String, BTreeSet<TypeAddress>> = BTreeMap::new();
         for name in names {
             match &name.ty {
