@@ -243,4 +243,27 @@ mod tests {
         }
         "#);
     }
+
+    #[test]
+    fn intersection_of_objects_still_compiles() {
+        let from = r#"
+    type A = { a: string };
+    type T = A & { b: number };
+    type S = Date & Date;
+    parse.buildParsers<{ T: T, S: S }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type A = { "a": string };
+
+        type S = (Date);
+
+        type T = ({ "b": number } & A);
+
+
+        type BuiltParsers = {
+          S: S,
+          T: T,
+        }
+        "#);
+    }
 }

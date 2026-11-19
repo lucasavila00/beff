@@ -7,15 +7,15 @@ Beff has two packages:
 - `@beff/cli` generates the validator code.
 - `@beff/client` contains the runtime code that the generated validators use.
 
-Install the two packages. `@beff/client` also needs `zod` version 3:
+Install the two packages:
 
 ```shell
-npm i @beff/cli @beff/client zod@3
+npm i @beff/cli @beff/client
 ```
 
 ## Create the configuration file
 
-Beff reads its configuration from a JSON file. The file can have any name. The usual name is `beff.json`.
+Beff reads its configuration from a JSON file. The file can have any name. The default name is `beff.json`: without `-p`, the CLI reads `beff.json` in the current directory.
 
 ```json
 {

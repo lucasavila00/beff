@@ -24,14 +24,14 @@ const readProjectJson = (projectPath: string): ProjectJson => {
   try {
     projectJson = JSON.parse(file);
   } catch (e) {
-    throw bail(`Failed to parse bff.json: ${e}`);
+    throw bail(`Failed to parse beff.json: ${e}`);
   }
 
   if (!projectJson.parser) {
-    throw bail(`Field or "parser" not found in bff.json`);
+    throw bail(`Field or "parser" not found in beff.json`);
   }
   if (!projectJson.outputDir) {
-    throw bail(`Field "outputDir" not found in bff.json`);
+    throw bail(`Field "outputDir" not found in beff.json`);
   }
 
   return {
@@ -44,8 +44,7 @@ const readProjectJson = (projectPath: string): ProjectJson => {
 
 const getProjectPath = (projectPath: string | undefined): string => {
   if (projectPath == null) {
-    //TODO: beff.json
-    return path.join(process.cwd(), "bff.json");
+    return path.join(process.cwd(), "beff.json");
   }
   if (projectPath.startsWith("/")) {
     return projectPath;

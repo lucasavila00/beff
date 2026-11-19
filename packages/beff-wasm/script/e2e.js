@@ -15,7 +15,7 @@ const binPath = "../../beff-cli/bin/index.js";
 
 const oneCodegenSnap = (subFolder) => async () => {
   const bin = path.join(__dirname, binPath);
-  const p = path.join(__dirname, "../fixtures/codegen-snaps", subFolder, "bff.json");
+  const p = path.join(__dirname, "../fixtures/codegen-snaps", subFolder, "beff.json");
   const command = `node ${bin} -p ${p}`;
   console.log(command);
   const result = await execAsync(command);
@@ -30,7 +30,7 @@ const oneCodegenSnap = (subFolder) => async () => {
 
 const oneFuture = (subFolder) => async () => {
   const bin = path.join(__dirname, binPath);
-  const p = path.join(__dirname, "../fixtures/future", subFolder, "bff.json");
+  const p = path.join(__dirname, "../fixtures/future", subFolder, "beff.json");
   const command = `node ${bin} -p ${p}`;
   console.log(command);
   try {
@@ -61,7 +61,7 @@ const oneFuture = (subFolder) => async () => {
 };
 const oneFailure = (subFolder) => async () => {
   const bin = path.join(__dirname, binPath);
-  const p = path.join(__dirname, "../fixtures/errors", subFolder, "bff.json");
+  const p = path.join(__dirname, "../fixtures/errors", subFolder, "beff.json");
   const command = `NO_COLOR=1 node ${bin} -p ${p}`;
   console.log(command);
   try {
@@ -92,7 +92,7 @@ const oneFailure = (subFolder) => async () => {
 };
 // const oneVitest = (subFolder) => async () => {
 //   const bin = path.join(__dirname, binPath);
-//   const p = path.join(__dirname, "../vitest", subFolder, "bff.json");
+//   const p = path.join(__dirname, "../vitest", subFolder, "beff.json");
 //   const command = `node ${bin} -p ${p}`;
 //   console.log(command);
 //   const result = await execAsync(command);

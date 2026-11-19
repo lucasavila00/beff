@@ -99,6 +99,14 @@ Use Prettier for JS/TS/JSON/Markdown formatting; the repo enforces `printWidth: 
 
 Run `pnpm run all` or to debug `DEBUG=true pnpm run all` where it will not optimize the Rust code but makes it easier to debug it.
 
+## Bugs and Edge Cases
+
+- Fix only problems that real code or real data can cause. Before you write a fix, find the real input or the real type that causes the problem.
+- Real input is data that comes from outside the program (for example `JSON.parse` output) and normal values of the supported JavaScript types.
+- Do not fix problems that need values that only JavaScript code can make, for example an object with a changed prototype, a `Proxy`, or a cyclic value.
+- Do not fix problems that need types that nobody writes, for example `Date & { foo: string }`. If such a type gives wrong results, make the compiler reject it with a short error.
+- If a reported problem does not occur with real code or real data, close the issue and say why.
+
 ## Benchmarks
 
 - The benchmarks in `bench/` are manual. Do not run them as part of `pnpm test`, and do not add them to the Tests workflow or to any automatic trigger (push or pull request).
@@ -106,3 +114,30 @@ Run `pnpm run all` or to debug `DEBUG=true pnpm run all` where it will not optim
 - Do not run benchmarks or stress tests on a development machine, except to debug a benchmark script.
 - Compare versions in the same run or in runs started at the same time. CI runners vary between runs.
 - Every performance change needs before and after numbers from the Bench workflow in its PR.
+
+## Pull Requests
+
+- Put one change in each PR. Do not put unrelated changes in one PR.
+- Make each PR from `main`. Do not make a PR from the branch of a different PR, unless the code cannot exist without that PR. Do not expect that an open PR will merge.
+- Mark a breaking change with a `major` changeset for each affected package. Write the migration steps in the changeset.
+- Write PR bodies, issues, comments and docs in ASD-STE100 Simplified Technical English.
+- Keep the PR body short: the result in 1 or 2 sentences, what the change does in 2 or 3 sentences, and the issue references. Put all other details (tables, design notes, CI links, test lists) in a collapsed `<details><summary>For agents</summary>` section at the end.
+- Do not write a status line (for example "Status: draft") in a PR body. The draft flag on GitHub is the status.
+- Do not write long text in PR comments. Put it in the PR body.
+
+### Draft and ready
+
+- A draft PR has a merge conflict, or work on it is not complete. Work includes new commits, a merge of `main`, a CI run on new commits, and a review.
+- A ready PR is ready for the owner to review: CI passes, the review is complete, there is no merge conflict, and nobody is working on it.
+- When work starts on a PR, or a merge conflict occurs, mark the PR as a draft. When the work is complete, mark it as ready.
+- Make sure that a different reviewer reads the diff of each code change before the PR is ready. A small change that does not change code (for example `.gitignore` or a CI order) needs only a CI pass.
+
+## Generated Code
+
+- Generated code must be easy to read: use full names and normal formatting. Do not make code shorter to save bytes. Users run a minifier.
+- To compare code size, minify the code first (for example `esbuild --minify`), then use gzip. Do not compare the size of code that is not minified.
+
+## Where To Run Tests
+
+- Run the full test suite (`pnpm all`) in GitHub CI. Push the branch and read the results with `gh pr checks` and `gh run view --log-failed`.
+- On a development machine, run only small checks to find a problem, for example one test file or one `cargo test`.

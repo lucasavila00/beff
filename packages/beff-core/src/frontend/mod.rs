@@ -50,16 +50,7 @@ pub(crate) struct FrontendCtx<'a, R: FileManager> {
 
     pub type_application_stack: Vec<(String, Runtype)>,
     jsdoc_cache_by_file: BTreeMap<BffFileName, JsdocFileCache>,
-
-    /// How many named types are being extracted inside each other right now.
-    named_type_depth: usize,
-    /// Named types whose extraction was deferred because `named_type_depth` was too deep.
-    pending_named_types: Vec<PendingNamedType>,
 }
-
-/// Named types nested deeper than this are put on a work list instead of being extracted
-/// recursively, so long chains of references don't overflow the stack.
-const MAX_NESTED_NAMED_TYPES: usize = 32;
 
 /// The kind of a custom format (`StringFormat` or `NumberFormat`), with its diagnostics.
 #[derive(Clone, Copy)]
@@ -113,13 +104,6 @@ struct FormatDiagnostics {
     base_is_not_format: DiagnosticInfoMessage,
 }
 
-struct PendingNamedType {
-    uuid: RuntypeUUID,
-    name: RuntypeName,
-    type_args: Vec<Runtype>,
-    anchor: Anchor,
-}
-
 impl<'a, R: FileManager> FrontendCtx<'a, R> {
     pub(crate) fn new(files: &'a mut R, parser_file: BffFileName, settings: &'a BeffUserSettings) -> Self {
         FrontendCtx {
@@ -133,8 +117,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             type_application_stack: vec![],
             recursive_generic_uuids: BTreeSet::new(),
             jsdoc_cache_by_file: BTreeMap::new(),
-            named_type_depth: 0,
-            pending_named_types: vec![],
         }
     }
 
@@ -147,28 +129,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
 
     /// The runtype of a named type, if it has already been fully extracted.
-    fn resolved_validator(&mut self, name: &RuntypeUUID) -> Option<Runtype> {
-        self.extract_pending_named_types();
+    fn resolved_validator(&self, name: &RuntypeUUID) -> Option<Runtype> {
         self.partial_validators.get(name).and_then(|it| it.clone())
-    }
-
-    /// Extracts the named types on the work list, one at a time, until it is empty.
-    /// Errors go to `self.errors`, because the types that refer to them were already extracted.
-    pub(crate) fn extract_pending_named_types(&mut self) {
-        while let Some(pending) = self.pending_named_types.pop() {
-            // The deferred type must not see the type parameters of the type being extracted now.
-            let type_application_stack = std::mem::take(&mut self.type_application_stack);
-            let res = self.extract_named_type(
-                pending.uuid,
-                &pending.name,
-                pending.type_args,
-                &pending.anchor,
-            );
-            self.type_application_stack = type_application_stack;
-            if let Err(e) = res {
-                self.errors.push(*e);
-            }
-        }
     }
 
     fn anyhow_error<T>(&mut self, anchor: &Anchor, msg: DiagnosticInfoMessage) -> Result<T> {
@@ -1033,28 +995,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         self.partial_validators.insert(rt_uuid.clone(), None);
 
-        if self.named_type_depth >= MAX_NESTED_NAMED_TYPES {
-            self.pending_named_types.push(PendingNamedType {
-                uuid: rt_uuid.clone(),
-                name: fat,
-                type_args,
-                anchor: anchor.clone(),
-            });
-            return Ok(Runtype::ref_(rt_uuid));
-        }
-        self.extract_named_type(rt_uuid, &fat, type_args, anchor)
-    }
-
-    fn extract_named_type(
-        &mut self,
-        rt_uuid: RuntypeUUID,
-        fat: &RuntypeName,
-        type_args: Vec<Runtype>,
-        anchor: &Anchor,
-    ) -> Res<Runtype> {
-        self.named_type_depth += 1;
-        let ty = self.extract_addressed_type(fat, type_args, anchor);
-        self.named_type_depth -= 1;
+        let ty = self.extract_addressed_type(&fat, type_args, anchor);
         match ty {
             Ok(ty) => self.insert_definition(rt_uuid.clone(), ty),
             Err(e) => {
@@ -1713,13 +1654,77 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(Runtype::any_of(vs))
     }
 
-    fn intersection(&mut self, types: &[Box<TsType>], file: BffFileName) -> Res<Runtype> {
-        let vs: Vec<Runtype> = types
+    fn intersection(&mut self, it: &TsIntersectionType, file: BffFileName) -> Res<Runtype> {
+        let vs: Vec<Runtype> = it
+            .types
             .iter()
             .map(|it| self.extract_type(it, file.clone()))
             .collect::<Res<_>>()?;
 
+        self.check_built_in_intersection(&vs, it.span, &file)?;
+
         Ok(Runtype::all_of(vs))
+    }
+
+    /// The runtime checks Date, Map, Set and typed arrays with `instanceof`.
+    /// A value of one of these classes cannot also be a value of a different type.
+    /// Thus, an intersection of such a type with a different type is an error.
+    /// An intersection of the type with the same type (for example `Date & Date`) is correct.
+    fn check_built_in_intersection(
+        &mut self,
+        vs: &[Runtype],
+        span: Span,
+        file: &BffFileName,
+    ) -> Res<()> {
+        let resolved: Vec<RuntypeKind> = vs.iter().map(|it| self.resolve_refs(it)).collect();
+        let Some(built_in) = resolved.iter().find(|it| is_instanceof_built_in(it)) else {
+            return Ok(());
+        };
+        let Some(other) = resolved.iter().find(|it| *it != built_in) else {
+            return Ok(());
+        };
+        let built_in_name = match built_in {
+            RuntypeKind::Date => "Date",
+            RuntypeKind::Map(_, _) => "Map",
+            RuntypeKind::Set(_) => "Set",
+            RuntypeKind::TypedArray(kind) => kind.js_name(),
+            _ => unreachable!("is_instanceof_built_in accepts only these kinds"),
+        };
+        let msg = DiagnosticInfoMessage::IntersectionWithBuiltInType {
+            intersection: self.source_text(file, span),
+            built_in: built_in_name.to_string(),
+            other_is_object: matches!(other, RuntypeKind::Object { .. }),
+        };
+        self.error(&Anchor::new(file.clone(), span), msg)
+    }
+
+    /// Follows references to named types until the type is not a reference.
+    /// If a named type is not available yet (for example in a recursive type), it stops.
+    fn resolve_refs(&mut self, rt: &Runtype) -> RuntypeKind {
+        let mut current = rt.kind.clone();
+        let mut seen = BTreeSet::new();
+        while let RuntypeKind::Ref(uuid) = &current {
+            if !seen.insert(uuid.clone()) {
+                break;
+            }
+            match self.resolved_validator(uuid) {
+                Some(next) => current = next.kind,
+                None => break,
+            }
+        }
+        current
+    }
+
+    /// The source code of a span, on one line.
+    fn source_text(&self, file: &BffFileName, span: Span) -> String {
+        let Some(parsed) = self.files.get_existing_file(file) else {
+            return String::new();
+        };
+        let start = parsed.module.fm.start_pos.0;
+        let lo = span.lo.0.saturating_sub(start) as usize;
+        let hi = span.hi.0.saturating_sub(start) as usize;
+        let text = parsed.module.fm.src.get(lo..hi).unwrap_or_default();
+        text.split_whitespace().collect::<Vec<_>>().join(" ")
     }
     fn extract_ts_type_lit_members(
         &mut self,
@@ -1924,7 +1929,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             ))
         }
     }
-    fn extract_union(&mut self, tp: Runtype) -> Result<Vec<Runtype>, DiagnosticInfoMessage> {
+    fn extract_union(&self, tp: Runtype) -> Result<Vec<Runtype>, DiagnosticInfoMessage> {
         match tp.kind {
             RuntypeKind::AnyOf(v) => {
                 let mut vs = vec![];
@@ -2033,8 +2038,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         Ok(None)
     }
-    fn validators_vec(&mut self) -> Vec<NamedSchema> {
-        self.extract_pending_named_types();
+    fn validators_vec(&self) -> Vec<NamedSchema> {
         // TODO: this is very inefficient, optimize it
         let mut acc = vec![];
         for (name, schema_opt) in &self.partial_validators {
@@ -2290,9 +2294,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsUnionOrIntersectionType::TsUnionType(TsUnionType { types, .. }) => {
                     self.union(types, file)
                 }
-                TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
-                    types, ..
-                }) => self.intersection(types, file),
+                TsUnionOrIntersectionType::TsIntersectionType(it) => self.intersection(it, file),
             },
             TsType::TsParenthesizedType(TsParenthesizedType { type_ann, .. }) => {
                 self.extract_type(type_ann, file)
@@ -2452,4 +2454,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             None => self.anyhow_error(&anchor, DiagnosticInfoMessage::TooFewTypeParamsOnDecoder),
         }
     }
+}
+
+/// True for the built-in class types that the runtime checks with `instanceof`.
+fn is_instanceof_built_in(kind: &RuntypeKind) -> bool {
+    matches!(
+        kind,
+        RuntypeKind::Date
+            | RuntypeKind::Map(_, _)
+            | RuntypeKind::Set(_)
+            | RuntypeKind::TypedArray(_)
+    )
 }

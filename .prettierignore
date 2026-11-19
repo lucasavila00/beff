@@ -8,7 +8,7 @@ packages/web-docs/static/playground/assets/
 packages/beff-wasm/dist-ext/
 target/
 web-demo/demo/dist/
-packages/beff-wasm/fixtures/errors/invalid-bffconfig-1/bff.json
+packages/beff-wasm/fixtures/errors/invalid-bffconfig-1/beff.json
 packages/beff-wasm/fixtures/errors/parse-error/app.ts
 packages/beff-wasm/ts-node/tsc-slim/
 pnpm-lock.yaml/

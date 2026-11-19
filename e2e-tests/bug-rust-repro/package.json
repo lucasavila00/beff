@@ -10,7 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "@beff/cli": "workspace:^",
-    "@beff/client": "workspace:^",
-    "zod": "^3.23.5"
+    "@beff/client": "workspace:^"
   }
 }

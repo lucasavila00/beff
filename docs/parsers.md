@@ -7,7 +7,6 @@
 | [`parse(input, options?)`](#parse)           | The parsed value. Throws an error if the input is not valid. |
 | [`safeParse(input, options?)`](#safeparse)   | A result object. Does not throw an error.                    |
 | [`validate(input, options?)`](#validate)     | `true` or `false`.                                           |
-| [`zod()`](#zod)                              | A zod schema.                                                |
 | [`name`](#name)                              | The name of the validator.                                   |
 | [`schema()`](./json-schema.md)               | A JSON Schema.                                               |
 | [`schemaWithContext(ctx)`](./json-schema.md) | A JSON Schema with `$ref` values.                            |
@@ -85,15 +84,15 @@ Parsers.User.parse({ name: "John Doe", age: 42 }, { objectKeyOrder: "sorted" });
 // { age: 42, name: "John Doe" }
 ```
 
-## `zod`
+## Supported input
 
-`zod` returns a zod version 3 schema that uses the Beff validator. Use it to add Beff validators to a project that uses zod.
+The validators are for data that comes from outside your program, for example the result of `JSON.parse`. They also accept normal values of the JavaScript types that Beff supports, for example `Date`, `Map`, `Set`, and typed arrays. Beff uses `instanceof` to check these types.
+
+Values that only JavaScript code can make are not supported. Examples are an object with a changed prototype and a `Proxy`. For these values, the result is not defined: a validator can accept the value, or `safeParse` can throw an error.
 
 ```ts
-import { z } from "zod";
-
-const Users = z.array(Parsers.User.zod());
-Users.parse([{ name: "John Doe", age: 42 }]);
+// Not supported: this object is not a real Date, but `instanceof Date` is true.
+const fake = Object.setPrototypeOf({}, Date.prototype);
 ```
 
 ## `name`
