@@ -142,7 +142,7 @@ importers:
   packages/beff-client:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.154
+        specifier: workspace:^1.0.0
         version: link:../beff-cli
     devDependencies:
       typescript:
