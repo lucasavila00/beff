@@ -23,6 +23,11 @@ pub(crate) enum DiagnosticInfoMessage {
     ReadonlyShouldHaveOneTypeArgument,
     InvalidNumberOfTypeParametersForArray,
     ObjectHasConflictingKeyValueInIntersection,
+    IntersectionWithBuiltInType {
+        intersection: String,
+        built_in: String,
+        other_is_object: bool,
+    },
     EnumMemberNotFound,
     CannotResolveRefToTplLit,
     TypeOfJSXTextNotSupported,
@@ -253,6 +258,21 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::EnumMemberNotFound => "Enum member not found".to_string(),
             DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection => {
                 "Object has conflicting key value in intersection".to_string()
+            }
+            DiagnosticInfoMessage::IntersectionWithBuiltInType {
+                intersection,
+                built_in,
+                other_is_object,
+            } => {
+                let (other, other_value) = if *other_is_object {
+                    ("an object type", "a plain object")
+                } else {
+                    ("a different type", "a value of a different type")
+                };
+                format!(
+                    "`{intersection}`: Beff does not support an intersection of {built_in} with {other}. \
+                    A {built_in} value cannot also be {other_value}, so Beff cannot validate or parse it."
+                )
             }
             DiagnosticInfoMessage::InvalidUsageOfStringFormatExtendsTypeParameter => {
                 "Invalid usage of string format extends type parameter".to_string()
