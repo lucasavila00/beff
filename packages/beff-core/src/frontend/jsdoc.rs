@@ -38,8 +38,8 @@ fn clean_jsdoc_comment(text: &str) -> Option<String> {
 #[cfg(test)]
 mod jsdoc_tests {
     use super::{clean_jsdoc_comment, is_jsdoc_comment};
-    use swc_common::comments::{Comment, CommentKind};
     use swc_common::DUMMY_SP;
+    use swc_common::comments::{Comment, CommentKind};
 
     fn comment(kind: CommentKind, text: &str) -> Comment {
         Comment {
@@ -86,9 +86,18 @@ mod jsdoc_tests {
 
     #[test]
     fn is_jsdoc_comment_only_accepts_block_jsdoc_comments() {
-        assert!(is_jsdoc_comment(&comment(CommentKind::Block, "* Description.")));
-        assert!(!is_jsdoc_comment(&comment(CommentKind::Block, " Description.")));
-        assert!(!is_jsdoc_comment(&comment(CommentKind::Line, "* Description.")));
+        assert!(is_jsdoc_comment(&comment(
+            CommentKind::Block,
+            "* Description."
+        )));
+        assert!(!is_jsdoc_comment(&comment(
+            CommentKind::Block,
+            " Description."
+        )));
+        assert!(!is_jsdoc_comment(&comment(
+            CommentKind::Line,
+            "* Description."
+        )));
     }
 }
 
@@ -255,7 +264,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         description
     }
 
-    pub(super) fn with_jsdoc(&mut self, file: &BffFileName, span: Span, runtype: Runtype) -> Runtype {
+    pub(super) fn with_jsdoc(
+        &mut self,
+        file: &BffFileName,
+        span: Span,
+        runtype: Runtype,
+    ) -> Runtype {
         match self.jsdoc_description(file, span) {
             Some(description) => runtype.with_description(description),
             None => runtype,

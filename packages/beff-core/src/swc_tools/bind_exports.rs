@@ -46,7 +46,10 @@ pub(crate) struct ImportsVisitor<'a, R: FsModuleResolver> {
     pub unresolved_exports: Vec<UnresolvedExport>,
 }
 impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
-    pub(crate) fn from_file(current_file: BffFileName, resolver: &'a mut R) -> ImportsVisitor<'a, R> {
+    pub(crate) fn from_file(
+        current_file: BffFileName,
+        resolver: &'a mut R,
+    ) -> ImportsVisitor<'a, R> {
         ImportsVisitor {
             imports: HashMap::new(),
             symbol_exports: SymbolsExportsModule::new(),

@@ -209,14 +209,8 @@ mod tests {
         let definitions = vec![];
 
         let t1 = Runtype::object(vec![
-            (
-                "a".into(),
-                Runtype::single_string_const("abc").required(),
-            ),
-            (
-                "b".into(),
-                Runtype::single_string_const("def").required(),
-            ),
+            ("a".into(), Runtype::single_string_const("abc").required()),
+            ("b".into(), Runtype::single_string_const("def").required()),
         ]);
         let t2 = Runtype::object(vec![("a".into(), Runtype::string().required())]);
 
@@ -1048,12 +1042,10 @@ mod tests {
         let mut ctx = SemTypeContext::new();
 
         let format_amount = Runtype::number_with_format(CustomFormat("amount".into(), vec![]));
-        let literal_42 = Runtype::const_(RuntypeConst::Number(crate::ast::json::N::parse_f64(
-            42.0,
-        )));
-        let literal_100 = Runtype::const_(RuntypeConst::Number(
-            crate::ast::json::N::parse_f64(100.0),
-        ));
+        let literal_42 =
+            Runtype::const_(RuntypeConst::Number(crate::ast::json::N::parse_f64(42.0)));
+        let literal_100 =
+            Runtype::const_(RuntypeConst::Number(crate::ast::json::N::parse_f64(100.0)));
 
         let format_sem = format_amount
             .to_sem_type(&definitions, &mut ctx)
@@ -1594,7 +1586,8 @@ mod tests {
     fn recursive_types_mutual() {
         // type A = { b: B }
         // type B = { a: A }
-        let definitions = [NamedSchema {
+        let definitions = [
+            NamedSchema {
                 name: rt_uuid("A".into()),
                 schema: Runtype::object(vec![(
                     "b".into(),
@@ -1607,7 +1600,8 @@ mod tests {
                     "a".into(),
                     Runtype::ref_(rt_uuid("A".into())).required(),
                 )]),
-            }];
+            },
+        ];
         let defs_refs: Vec<&NamedSchema> = definitions.iter().collect();
 
         let ref_a = Runtype::ref_(rt_uuid("A".into()));

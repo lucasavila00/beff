@@ -218,6 +218,9 @@ impl PrintableRuntypeKindKey {
 
 struct PrintContext {
     hoisted: BTreeMap<PrintableRuntypeKey, (usize, Expr)>,
+    // The `optional(...)` wrappers, by the hoisted name of the inner type. Objects with an optional property of
+    // the same type share one wrapper.
+    hoisted_optional: BTreeMap<String, (usize, Expr)>,
     all_names: NameIndex,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
 }
@@ -768,8 +771,24 @@ fn hoist_identifier(name: usize) -> Expr {
     Expr::Ident(identifier(&hoist_name(name)))
 }
 
-fn optionality_wrapper(inner: Expr) -> Expr {
-    call("optional", vec![inner])
+impl PrintContext {
+    fn next_hoist_id(&self) -> usize {
+        self.hoisted.len() + self.hoisted_optional.len()
+    }
+}
+
+fn optionality_wrapper(inner: Expr, ctx: &mut PrintContext) -> Expr {
+    let Expr::Ident(inner_name) = &inner else {
+        return call("optional", vec![inner]);
+    };
+    let key = inner_name.sym.to_string();
+    if let Some((var_name, _)) = ctx.hoisted_optional.get(&key) {
+        return hoist_identifier(*var_name);
+    }
+    let new_id = ctx.next_hoist_id();
+    ctx.hoisted_optional
+        .insert(key, (new_id, call("optional", vec![inner])));
+    hoist_identifier(new_id)
 }
 
 fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut PrintContext) -> Expr {
@@ -887,7 +906,8 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
             for (k, v) in vs.iter() {
                 let r = match v {
                     Optionality::Optional(schema) => {
-                        optionality_wrapper(print_runtype(schema, named_schemas, ctx))
+                        let inner = print_runtype(schema, named_schemas, ctx);
+                        optionality_wrapper(inner, ctx)
                     }
                     Optionality::Required(schema) => print_runtype(schema, named_schemas, ctx),
                 };
@@ -899,7 +919,8 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
                 .map(|it| {
                     let value_rt = match &it.value {
                         Optionality::Optional(schema) => {
-                            optionality_wrapper(print_runtype(schema, named_schemas, ctx))
+                            let inner = print_runtype(schema, named_schemas, ctx);
+                            optionality_wrapper(inner, ctx)
                         }
                         Optionality::Required(schema) => print_runtype(schema, named_schemas, ctx),
                     };
@@ -926,7 +947,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &NamedSchemas, ctx: &mut Print
         RuntypeKind::Void => no_args_runtype("voidType", schema),
     };
 
-    let new_id = ctx.hoisted.len();
+    let new_id = ctx.next_hoist_id();
     ctx.hoisted.insert(hoist_key, (new_id, out.clone()));
     hoist_identifier(new_id)
 }
@@ -966,6 +987,7 @@ impl ParserExtractResult {
         let all_names = NameIndex::new(named_schemas.list.iter().map(|it| &it.name));
         let mut hoisted = PrintContext {
             hoisted: BTreeMap::new(),
+            hoisted_optional: BTreeMap::new(),
             all_names,
             type_with_args_names: BTreeMap::new(),
         };
@@ -984,7 +1006,11 @@ impl ParserExtractResult {
             .into(),
         }));
 
-        let mut sorted_direct_hoisted_values = hoisted.hoisted.into_values().collect::<Vec<_>>();
+        let mut sorted_direct_hoisted_values = hoisted
+            .hoisted
+            .into_values()
+            .chain(hoisted.hoisted_optional.into_values())
+            .collect::<Vec<_>>();
         sorted_direct_hoisted_values.sort_by_key(|it| it.0);
 
         let hoisted_direct_decls: Vec<ModuleItem> = sorted_direct_hoisted_values

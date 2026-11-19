@@ -491,7 +491,11 @@ impl SemTypeContext {
         };
         self.list_definition(Rc::new(atom))
     }
-    pub(crate) fn tuple(&mut self, prefix_items: Vec<Rc<SemType>>, items: Option<Rc<SemType>>) -> SemType {
+    pub(crate) fn tuple(
+        &mut self,
+        prefix_items: Vec<Rc<SemType>>,
+        items: Option<Rc<SemType>>,
+    ) -> SemType {
         let atom = ListAtomic {
             prefix_items,
             // todo: should be unknown?

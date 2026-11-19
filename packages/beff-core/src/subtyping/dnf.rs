@@ -148,7 +148,10 @@ fn mapping_is_empty_handle_recusrsion(
     Ok(is_empty)
 }
 
-pub(crate) fn dnf_mapping_is_empty(bdd: &Rc<Bdd>, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus> {
+pub(crate) fn dnf_mapping_is_empty(
+    bdd: &Rc<Bdd>,
+    ctx: &mut SemTypeContext,
+) -> Result<IsEmptyStatus> {
     let dnf = Rc::new(bdd_to_dnf(bdd));
     mapping_is_empty_handle_recusrsion(dnf, ctx, false)
 }

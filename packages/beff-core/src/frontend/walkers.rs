@@ -99,11 +99,7 @@ trait ModuleWalker<'a, R: FileManager + 'a, U> {
     ) -> Res<U>;
 
     /// The item of `export default <expr>`, when the expression is not an identifier.
-    fn get_addressed_item_from_default_expr(
-        &mut self,
-        expr: &Rc<Expr>,
-        anchor: &Anchor,
-    ) -> Res<U>;
+    fn get_addressed_item_from_default_expr(&mut self, expr: &Rc<Expr>, anchor: &Anchor) -> Res<U>;
 
     /// The item that the module declares or imports with the name of `addr`, if there is one.
     fn get_addressed_local_item(
@@ -188,9 +184,9 @@ trait ModuleWalker<'a, R: FileManager + 'a, U> {
                 file_name,
                 import_statement_anchor: import_st_anchor,
             } => self.get_addressed_exported_item(file_name, original_name, import_st_anchor),
-            ImportReference::Star {
-                file_name,
-            } => self.handle_import_star(file_name.clone(), err_anchor),
+            ImportReference::Star { file_name } => {
+                self.handle_import_star(file_name.clone(), err_anchor)
+            }
             ImportReference::Default {
                 file_name,
                 import_statement_anchor,
@@ -516,10 +512,9 @@ impl<'a, 'b, R: FileManager> ModuleWalker<'a, R, AddressedValue> for ValueWalker
                 expr.clone(),
                 original_file.clone(),
             )),
-            SymbolExport::ExprDecl {
-                original_file,
-                ty,
-            } => Ok(AddressedValue::TypeDecl(ty.clone(), original_file.clone())),
+            SymbolExport::ExprDecl { original_file, ty } => {
+                Ok(AddressedValue::TypeDecl(ty.clone(), original_file.clone()))
+            }
 
             SymbolExport::StarOfOtherFile { reference } => {
                 self.get_addressed_item_from_import_reference(reference.as_ref(), anchor)
