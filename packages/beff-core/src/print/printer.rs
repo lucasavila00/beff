@@ -809,7 +809,7 @@ fn print_literals_as_one_runtype(
 // time.
 //
 // The table does not replace the list of members. The list stays complete, because descriptions,
-// JSON schemas, hashes and error reports use it.
+// JSON schemas and error reports use it.
 fn print_union(
     schema: &Runtype,
     vs: &BTreeSet<Runtype>,
