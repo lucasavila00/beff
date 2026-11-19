@@ -4,8 +4,8 @@
 //
 // `--scale` is the size of the types (as in gen.mjs). The input size n doubles each row.
 // "invalid" inputs are the same values with the last leaf replaced by a value of the wrong type.
-// `--tables off` removes the tables of kinds from the unions of the generated code.
-// `--ab` runs every shape twice, each in its own process: without the tables, then with them.
+// `--tables off` removes the kind tables from the generated unions (see `withoutUnionTables` in gen.mjs).
+// `--ab` runs each shape two times, each in a new process: first without the tables, then with them.
 import { parseArgs } from "node:util";
 import { spawnSync } from "node:child_process";
 import { shapes, build, corrupt } from "./gen.mjs";

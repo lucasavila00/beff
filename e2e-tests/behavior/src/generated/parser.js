@@ -93,7 +93,12 @@ const direct_hoist_15 = new AnyOfRuntype(undefined, [
     direct_hoist_13,
     direct_hoist_11,
     direct_hoist_14
-], "0,2,3,1");
+], {
+    "nullish": 0,
+    "boolean": 2,
+    "number": 3,
+    "string": 1
+});
 const direct_hoist_16 = new AnyOfConstsRuntype(undefined, [
     "__proto__",
     "constructor",
@@ -179,7 +184,10 @@ const direct_hoist_44 = new ObjectRuntype(undefined, {
 const direct_hoist_45 = new AnyOfRuntype(undefined, [
     direct_hoist_0,
     direct_hoist_1
-], ",,1,0");
+], {
+    "number": 1,
+    "string": 0
+});
 const direct_hoist_46 = new RefRuntype(undefined, "ObjA");
 const direct_hoist_47 = new RefRuntype(undefined, "ObjB");
 const direct_hoist_48 = new AnyOfRuntype(undefined, [
@@ -191,7 +199,12 @@ const direct_hoist_49 = new AnyOfRuntype(undefined, [
     direct_hoist_0,
     direct_hoist_20,
     direct_hoist_46
-], "0,,,1,,2,3");
+], {
+    "nullish": 0,
+    "string": 1,
+    "array": 2,
+    "object": 3
+});
 const direct_hoist_50 = new RefRuntype(undefined, "Shape");
 const direct_hoist_51 = new RefRuntype(undefined, "NestedDiscriminated");
 const direct_hoist_52 = new RefRuntype(undefined, "ProtoDiscriminated");
@@ -418,11 +431,21 @@ const direct_hoist_142 = new AnyOfRuntype(undefined, [
     direct_hoist_1,
     direct_hoist_140,
     direct_hoist_141
-], "0,1,3,2,,5,4");
+], {
+    "nullish": 0,
+    "boolean": 1,
+    "number": 3,
+    "string": 2,
+    "array": 5,
+    "object": 4
+});
 const direct_hoist_143 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_87
-], "0,,,,,,1");
+], {
+    "nullish": 0,
+    "object": 1
+});
 const direct_hoist_144 = new ObjectRuntype(undefined, {
     "next": direct_hoist_143,
     "value": direct_hoist_1
@@ -553,15 +576,24 @@ const direct_hoist_172 = new AnyOfRuntype(undefined, [
 const direct_hoist_173 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_0
-], "0,,,1");
+], {
+    "nullish": 0,
+    "string": 1
+});
 const direct_hoist_174 = new AnyOfRuntype(undefined, [
     direct_hoist_4,
     direct_hoist_0
-], "0,,,1");
+], {
+    "nullish": 0,
+    "string": 1
+});
 const direct_hoist_175 = new AnyOfRuntype(undefined, [
     direct_hoist_5,
     direct_hoist_0
-], "0,,,1");
+], {
+    "nullish": 0,
+    "string": 1
+});
 const direct_hoist_176 = new ObjectRuntype(undefined, {
     "nul": direct_hoist_173,
     "opt": new OptionalFieldRuntype(direct_hoist_0),
@@ -609,11 +641,17 @@ const direct_hoist_187 = new ArrayRuntype(undefined, direct_hoist_92);
 const direct_hoist_188 = new AnyOfRuntype(undefined, [
     direct_hoist_0,
     direct_hoist_187
-], ",,,0,,1");
+], {
+    "string": 0,
+    "array": 1
+});
 const direct_hoist_189 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_95
-], "0,,,,,1");
+], {
+    "nullish": 0,
+    "array": 1
+});
 const direct_hoist_190 = new TupleRuntype(undefined, [
     direct_hoist_1,
     direct_hoist_189
@@ -623,7 +661,11 @@ const direct_hoist_192 = new AnyOfRuntype(undefined, [
     direct_hoist_0,
     direct_hoist_1,
     direct_hoist_191
-], ",,1,0,,2");
+], {
+    "number": 1,
+    "string": 0,
+    "array": 2
+});
 const direct_hoist_193 = new ObjectRuntype(undefined, {
     "child": direct_hoist_93
 }, []);
@@ -631,7 +673,11 @@ const direct_hoist_194 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_1,
     direct_hoist_193
-], "0,,1,,,,2");
+], {
+    "nullish": 0,
+    "number": 1,
+    "object": 2
+});
 const direct_hoist_195 = new ConstRuntype(undefined, "circle");
 const direct_hoist_196 = new ObjectRuntype(undefined, {
     "kind": direct_hoist_195,

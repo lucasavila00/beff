@@ -28,13 +28,15 @@ mod tests {
         assert!(out.contains("R1999"));
     }
 
-    // The kinds of the members of a union are computed without walking the chain.
+    // A chain of 2000 types. Each type refers to the next type through a union with null.
+    // The compiler must find the kinds of value that each union member accepts (`js_value_kinds`).
+    // It must do this without a walk through the full chain for each union.
     #[test]
     fn long_reference_chain_through_unions() {
         let types = chain(2000, "R0").replace(" };", " | null };");
         let out = print_cgen(&format!("{types}\nparse.buildParsers<{{ R0: R0 }}>();\n"));
         assert!(out.contains("R1999"));
-        assert!(out.contains(r#"], "0,,,,,,1");"#), "{}", &out[..600]);
+        assert!(out.contains(r#""nullish": 0"#), "{}", &out[..600]);
     }
 
     #[test]

@@ -8,8 +8,8 @@ use swc_common::{FilePathMapping, sync::Lrc};
 use swc_ecma_ast::Module;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, ComputedPropName, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit,
-    ModuleItem, NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str,
-    VarDecl, VarDeclKind, VarDeclarator,
+    ModuleItem, NewExpr, Null, Number, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt,
+    Str, VarDecl, VarDeclKind, VarDeclarator,
 };
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
@@ -21,7 +21,7 @@ use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
-use crate::subtyping::{ALL_JS_KINDS, JS_KIND_COUNT};
+use crate::subtyping::JsValueKind;
 use crate::{
     NamedSchema,
     ast::runtype::{
@@ -357,6 +357,14 @@ fn string_lit(s: &str) -> Expr {
     Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
         value: s.into(),
+        raw: None,
+    }))
+}
+
+fn number_lit(value: usize) -> Expr {
+    Expr::Lit(Lit::Num(Number {
+        span: DUMMY_SP,
+        value: value as f64,
         raw: None,
     }))
 }
@@ -769,9 +777,10 @@ fn maybe_runtype_any_of_consts(
     None
 }
 
-// The members of a union that accept the same kind of value, as one runtype that does not try
-// each member: this is possible when all of them are literals.
-fn lower_same_kind(
+// Prints the given literal members of a union as one `AnyOfConstsRuntype`.
+// That runtype compares the input with a list of literals. It does not try each member.
+// Returns `None` when a member is not a literal.
+fn print_literals_as_one_runtype(
     members: &[&Runtype],
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
@@ -784,16 +793,19 @@ fn lower_same_kind(
     maybe_runtype_any_of_consts(&union, &flat_values, ctx)
 }
 
-// Prints a union: literals, a discriminated union, or a union that tries each member.
+// Prints a union. There are three forms:
+// - All members are literals: `AnyOfConstsRuntype`.
+// - The members are objects that a discriminator property tells apart: `AnyOfDiscriminatedRuntype`.
+// - All other unions: `AnyOfRuntype`, which tries each member in order.
 //
-// When the members accept different kinds of value (`Runtype::js_kinds`), and one runtype can
-// check each kind, the union also gets a table. The table is a string with, for each kind in the
-// order of `JS_KIND_COUNT`, the index of the runtype that checks it: `"1,,,,,,0"` is "nullish is
-// member 1, an object is member 0". An index after the members points to the last argument,
-// which has the runtypes that are not a member (the literals of a kind). The runtime then calls
-// only the runtype of the kind of the input.
-// The list of members stays complete: descriptions, schemas, hashes and errors come from it.
-fn lower_union(
+// An `AnyOfRuntype` can also get a kind table (see `print_kind_table`). With the table, the
+// runtime finds the kind of the input and calls only the runtype for that kind. Without the
+// table, parse validates each member again at each level. A recursive type then takes quadratic
+// time.
+//
+// The table does not replace the list of members. The list stays complete, because descriptions,
+// JSON schemas, hashes and error reports use it.
+fn print_union(
     schema: &Runtype,
     vs: &BTreeSet<Runtype>,
     named_schemas: &[NamedSchema],
@@ -817,66 +829,82 @@ fn lower_union(
 
     let members = vs.iter().collect::<Vec<_>>();
     let mut args = vec![print_members(members.iter().copied(), named_schemas, ctx)];
-    if let Some((table, others)) = union_table(&members, named_schemas, ctx) {
-        args.push(string_lit(&table));
-        if !others.is_empty() {
-            args.push(array_lit(others));
-        }
+    if let Some(kind_table) = print_kind_table(&members, named_schemas, ctx) {
+        args.push(kind_table);
     }
     new_runtype_class("AnyOfRuntype", args, schema)
 }
 
-// The table of `lower_union`, and the runtypes of the table that are not a member.
-// `None` when a table does not help.
-fn union_table(
+// Prints the kind table of a union, or returns `None` when a table does not help.
+//
+// A "kind" is a group of JavaScript values (see `JsValueKind`). The kind table is an object
+// literal. It has one property for each kind that the union accepts. The value of the property is
+// the runtype that checks all inputs of that kind. The value has one of two forms:
+// - A number: the index of a member of the union.
+// - An `AnyOfConstsRuntype`: all the literal members of that kind, as one runtype.
+//
+// Example: `type Node = { next: Node | null }` prints the union as
+// `new AnyOfRuntype(undefined, [<null>, <Node>], { "nullish": 0, "object": 1 })`.
+// Example: `"a" | "b" | number` prints the table
+// `{ "number": 2, "string": new AnyOfConstsRuntype(undefined, ["a", "b"]) }`.
+fn print_kind_table(
     members: &[&Runtype],
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
-) -> Option<(String, Vec<Expr>)> {
+) -> Option<Expr> {
     let validators = named_schemas.iter().collect::<Vec<_>>();
-    let kinds = members
+    let kinds_of_members = members
         .iter()
-        .map(|it| it.js_kinds(&validators))
+        .map(|member| member.js_value_kinds(&validators))
         .collect::<Vec<_>>();
-    // A member that accepts every kind of value is in every group.
-    if kinds.contains(&ALL_JS_KINDS) {
+    // A member that accepts all kinds (for example `unknown`) must check every input. No table.
+    if kinds_of_members
+        .iter()
+        .any(|kinds| kinds.len() == JsValueKind::ALL.len())
+    {
         return None;
     }
 
-    let mut table = vec![];
-    let mut others = vec![];
-    for bit in 0..JS_KIND_COUNT {
-        // The members that accept this kind of value.
-        let group = (0..members.len())
-            .filter(|i| kinds[*i] & (1 << bit) != 0)
+    let mut entries = vec![];
+    for kind in JsValueKind::ALL {
+        // The indexes of the members that accept this kind.
+        let accepting = (0..members.len())
+            .filter(|index| kinds_of_members[*index].contains(&kind))
             .collect::<Vec<_>>();
-        // Every member accepts the same kinds: the table would point to the union itself.
-        if group.len() == members.len() {
+        // All members accept this kind. The runtype for this kind would be the same union again.
+        // No table.
+        if accepting.len() == members.len() {
             return None;
         }
-        let only_nullish = group.iter().all(|i| {
+        if accepting.is_empty() {
+            continue;
+        }
+        let all_are_nullish = accepting.iter().all(|index| {
             matches!(
-                members[*i].kind,
+                members[*index].kind,
                 RuntypeKind::Null | RuntypeKind::Undefined | RuntypeKind::Void
             )
         });
-        let entry = if group.is_empty() {
-            String::new()
-        } else if group.len() == 1 || only_nullish {
-            // null, undefined and void have the same check, and parsing returns the input
-            group[0].to_string()
+        let runtype_for_kind = if accepting.len() == 1 || all_are_nullish {
+            // One member is sufficient. For a group of null, undefined and void, use the first:
+            // the runtime checks all three with `== null`, and parse returns the input.
+            number_lit(accepting[0])
         } else {
-            let group = group.iter().map(|i| members[*i]).collect::<Vec<_>>();
-            // Without literals, the group needs a union. A plain union validates each member
-            // again when it parses, so the table would only add a step. A discriminated union
-            // would be a new runtype for each union, which costs too much code. The union stays
-            // as it is, without a table.
-            others.push(lower_same_kind(&group, named_schemas, ctx)?);
-            (members.len() + others.len() - 1).to_string()
+            // Two or more members accept this kind. If all of them are literals, one runtype
+            // checks them. If not, `?` returns `None` and the union gets no table. The reasons:
+            // - An `AnyOfRuntype` for these members validates each member again when it parses.
+            //   The table would then add a step and save no time.
+            // - An `AnyOfDiscriminatedRuntype` for these members would be a new runtype for each
+            //   union. That adds too much generated code.
+            let literals = accepting
+                .iter()
+                .map(|index| members[*index])
+                .collect::<Vec<_>>();
+            print_literals_as_one_runtype(&literals, named_schemas, ctx)?
         };
-        table.push(entry);
+        entries.push((kind.name().to_string(), runtype_for_kind));
     }
-    Some((table.join(",").trim_end_matches(',').to_string(), others))
+    Some(object_lit(entries))
 }
 
 fn hoist_name(name: usize) -> String {
@@ -963,7 +991,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
             let members = print_members(vs, named_schemas, ctx);
             new_runtype_class("AllOfRuntype", vec![members], schema)
         }
-        RuntypeKind::AnyOf(vs) => lower_union(schema, vs, named_schemas, ctx),
+        RuntypeKind::AnyOf(vs) => print_union(schema, vs, named_schemas, ctx),
         RuntypeKind::Tuple {
             prefix_items,
             items,

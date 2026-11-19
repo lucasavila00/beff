@@ -182,7 +182,10 @@ const direct_hoist_85 = new ObjectRuntype(undefined, {
 const direct_hoist_86 = new AnyOfRuntype(undefined, [
     direct_hoist_82,
     direct_hoist_85
-], "0,,,,,,1");
+], {
+    "nullish": 0,
+    "object": 1
+});
 const direct_hoist_87 = new ObjectRuntype(undefined, {
     "orderBy": direct_hoist_86
 }, []);
@@ -330,7 +333,10 @@ const direct_hoist_129 = new AllOfRuntype(undefined, [
 const direct_hoist_130 = new AnyOfRuntype(undefined, [
     direct_hoist_18,
     direct_hoist_22
-], ",,1,0");
+], {
+    "number": 1,
+    "string": 0
+});
 const direct_hoist_131 = new ObjectRuntype(undefined, {}, [
     {
         "key": direct_hoist_18,
@@ -584,14 +590,22 @@ const direct_hoist_200 = new AnyOfRuntype(undefined, [
     direct_hoist_82,
     direct_hoist_18,
     direct_hoist_22
-], "0,,3,2");
+], {
+    "nullish": 0,
+    "number": 3,
+    "string": 2
+});
 const direct_hoist_201 = new ArrayRuntype(undefined, direct_hoist_200);
 const direct_hoist_202 = new AnyOfRuntype(undefined, [
     direct_hoist_199,
     direct_hoist_82,
     direct_hoist_18,
     direct_hoist_201
-], "0,,,2,,3");
+], {
+    "nullish": 0,
+    "string": 2,
+    "array": 3
+});
 const direct_hoist_203 = new TypedArrayRuntype(undefined, "Uint8Array");
 const direct_hoist_204 = new RefRuntype(undefined, "OtherEnum__A");
 const direct_hoist_205 = new ObjectRuntype(undefined, {

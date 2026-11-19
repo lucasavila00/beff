@@ -907,7 +907,10 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_2,
             direct_hoist_1
-        ], "0,,,1");
+        ], {
+            "nullish": 0,
+            "string": 1
+        });
         const direct_hoist_4 = new ConstRuntype(undefined, "CRON");
         const direct_hoist_5 = new ObjectRuntype(undefined, {
             "cronExpression": direct_hoist_1,
@@ -2007,7 +2010,10 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
-        ], ",,1,0");
+        ], {
+            "number": 1,
+            "string": 0
+        });
         const namedRuntypes = {
             "Alias": direct_hoist_3
         };
@@ -2298,13 +2304,19 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
-        ], "0,,,,,,1");
+        ], {
+            "nullish": 0,
+            "object": 1
+        });
         const direct_hoist_4 = new TypeofRuntype(undefined, "string");
         const direct_hoist_5 = new TypeofRuntype(undefined, "boolean");
         const direct_hoist_6 = new AnyOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_4
-        ], ",0,,1");
+        ], {
+            "boolean": 0,
+            "string": 1
+        });
         const direct_hoist_7 = new ObjectRuntype(undefined, {
             "other": direct_hoist_3,
             "value": direct_hoist_4,
@@ -2314,12 +2326,18 @@ mod tests {
         const direct_hoist_9 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_8
-        ], "0,,,,,,1");
+        ], {
+            "nullish": 0,
+            "object": 1
+        });
         const direct_hoist_10 = new TypeofRuntype(undefined, "number");
         const direct_hoist_11 = new AnyOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_10
-        ], ",0,1");
+        ], {
+            "boolean": 0,
+            "number": 1
+        });
         const direct_hoist_12 = new ObjectRuntype(undefined, {
             "other": direct_hoist_9,
             "value": direct_hoist_10,
@@ -2366,7 +2384,10 @@ mod tests {
         const direct_hoist_4 = new AnyOfRuntype(undefined, [
             direct_hoist_3,
             direct_hoist_2
-        ], ",0,,1");
+        ], {
+            "boolean": 0,
+            "string": 1
+        });
         const direct_hoist_5 = new ObjectRuntype(undefined, {
             "other": direct_hoist_1,
             "value": direct_hoist_2,
@@ -2377,7 +2398,10 @@ mod tests {
         const direct_hoist_8 = new AnyOfRuntype(undefined, [
             direct_hoist_3,
             direct_hoist_7
-        ], ",0,1");
+        ], {
+            "boolean": 0,
+            "number": 1
+        });
         const direct_hoist_9 = new ObjectRuntype(undefined, {
             "other": direct_hoist_6,
             "value": direct_hoist_7,
@@ -2623,10 +2647,14 @@ mod tests {
         "#);
     }
 
-    // A union whose members accept different kinds of value is printed with a table: for each kind
-    // (nullish, boolean, number, string, bigint, array, object, function), the index of the runtype
-    // that checks it. An index after the members points to the last argument. A union has no table
-    // when a kind needs a union of several members.
+    // The tests below show which unions get a kind table and which unions do not.
+    // A kind is a group of JavaScript values: nullish (null or undefined), boolean, number, string,
+    // bigint, array, object, function.
+    // The table is the last argument of `AnyOfRuntype`, an object. It has one property for each
+    // kind that the union accepts. The value is the runtype that checks all inputs of that kind:
+    // the index of a member, or one `AnyOfConstsRuntype` for all the literal members of that kind.
+    // A union gets no table when two or more members accept the same kind and they are not all
+    // literals.
     #[test]
     fn union_table_recursive_or_null() {
         insta::assert_snapshot!(print_cgen(
@@ -2640,7 +2668,10 @@ mod tests {
         const direct_hoist_2 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_0
-        ], "0,,,,,,1");
+        ], {
+            "nullish": 0,
+            "object": 1
+        });
         const direct_hoist_3 = new TypeofRuntype(undefined, "number");
         const direct_hoist_4 = new ObjectRuntype(undefined, {
             "next": direct_hoist_2,
@@ -2668,7 +2699,10 @@ mod tests {
         const direct_hoist_2 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_0
-        ], ",,,0,,,1");
+        ], {
+            "string": 0,
+            "object": 1
+        });
         const direct_hoist_3 = new TypeofRuntype(undefined, "number");
         const direct_hoist_4 = new ObjectRuntype(undefined, {
             "next": direct_hoist_2,
@@ -2699,7 +2733,11 @@ mod tests {
             direct_hoist_1,
             direct_hoist_2,
             direct_hoist_3
-        ], "0,,2,1");
+        ], {
+            "nullish": 0,
+            "number": 2,
+            "string": 1
+        });
         const namedRuntypes = {
             "U": direct_hoist_4
         };
@@ -2864,7 +2902,10 @@ mod tests {
         const direct_hoist_10 = new AnyOfRuntype(undefined, [
             direct_hoist_8,
             direct_hoist_9
-        ], "0,,,,,,1");
+        ], {
+            "nullish": 0,
+            "object": 1
+        });
         const namedRuntypes = {
             "Disc": direct_hoist_7,
             "U": direct_hoist_10
@@ -2891,12 +2932,13 @@ mod tests {
             direct_hoist_1,
             direct_hoist_2,
             direct_hoist_3
-        ], ",,0,3", [
-            new AnyOfConstsRuntype(undefined, [
+        ], {
+            "number": 0,
+            "string": new AnyOfConstsRuntype(undefined, [
                 "a",
                 "b"
             ])
-        ]);
+        });
         const namedRuntypes = {
             "U": direct_hoist_4
         };
@@ -2920,7 +2962,12 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
-        ], ",,,0,,1,1,1");
+        ], {
+            "string": 0,
+            "array": 1,
+            "object": 1,
+            "function": 1
+        });
         const namedRuntypes = {
             "U": direct_hoist_3
         };

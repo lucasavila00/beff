@@ -33,8 +33,11 @@ impl IsEmptyStatus {
 struct ToSemTypeConverter<'a> {
     validators: &'a [&'a NamedSchema],
     seen_refs: BTreeSet<RuntypeUUID>,
-    // Do not look inside objects, arrays, maps and sets: they become "any object", "any array"...
-    // This is enough to know the basic types of a runtype, and does not walk the type graph.
+    // When true, the converter does not look inside objects, arrays, maps and sets.
+    // It converts each of them to the full basic type: "any object", "any array", "any map" or
+    // "any set". `Runtype::js_value_kinds` uses this mode, because it needs only the basic types
+    // of a runtype. In this mode the converter does not follow the references inside an object or
+    // an array, so a long chain of types does not make it slow.
     shallow: bool,
 }
 
@@ -73,7 +76,8 @@ impl<'a> ToSemTypeConverter<'a> {
                 }
                 RuntypeKind::Map(..) => Some(SubTypeTag::Map),
                 RuntypeKind::Set(_) => Some(SubTypeTag::Set),
-                // the complement of a shallow type would be too small
+                // A shallow type is larger than the real type, so its negation would be too
+                // small and could miss a kind. Fail here. `js_value_kinds` then returns all kinds.
                 RuntypeKind::StNot(_) => bail!("shallow semtype of a negation"),
                 _ => None,
             };
@@ -246,8 +250,9 @@ impl<'a> ToSemTypeConverter<'a> {
                 for v in vs {
                     let mut ty = self.convert_to_sem_type(v, builder)?;
                     if self.shallow {
-                        // Keep whole basic types, so the intersection cannot lose a kind
-                        // that the runtime checks of all members accept.
+                        // Replace each member with its full basic types before the intersection.
+                        // An exact intersection can remove a kind that the runtime checks of all
+                        // members accept. `js_value_kinds` must not miss such a kind.
                         ty = SemType::new_basic(ty.basic_types()).into();
                     }
                     acc = acc.intersect(&ty)?;
@@ -378,35 +383,79 @@ impl ToSemType for Runtype {
     }
 }
 
-/// The kinds of JavaScript value, as the generated code sees them (`kindOf` in the client).
-/// A set of kinds is a bit set. The bits are, in order: nullish, boolean, number, string, bigint,
-/// array, object, function.
-pub(crate) const JS_KIND_COUNT: usize = 8;
-pub(crate) const ALL_JS_KINDS: u32 = (1 << JS_KIND_COUNT) - 1;
+/// A kind of JavaScript value. Each value has one kind, or no kind (a symbol).
+/// The generated code finds the kind of an input with `valueKindIndexOf`, in
+/// `packages/beff-client/src/codegen-v2.ts`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum JsValueKind {
+    /// null or undefined
+    Nullish,
+    Boolean,
+    Number,
+    String,
+    BigInt,
+    Array,
+    /// An object that is not an array and not a function.
+    Object,
+    Function,
+}
+
+impl JsValueKind {
+    pub(crate) const ALL: [JsValueKind; 8] = [
+        JsValueKind::Nullish,
+        JsValueKind::Boolean,
+        JsValueKind::Number,
+        JsValueKind::String,
+        JsValueKind::BigInt,
+        JsValueKind::Array,
+        JsValueKind::Object,
+        JsValueKind::Function,
+    ];
+
+    /// The name of the kind in the generated code. The runtime has the same names in
+    /// `VALUE_KINDS` (codegen-v2.ts).
+    pub(crate) fn name(&self) -> &'static str {
+        match self {
+            JsValueKind::Nullish => "nullish",
+            JsValueKind::Boolean => "boolean",
+            JsValueKind::Number => "number",
+            JsValueKind::String => "string",
+            JsValueKind::BigInt => "bigint",
+            JsValueKind::Array => "array",
+            JsValueKind::Object => "object",
+            JsValueKind::Function => "function",
+        }
+    }
+}
 
 impl SubTypeTag {
-    /// The kinds of JavaScript value that the runtime check of this basic type can accept.
-    fn js_kinds(&self) -> u32 {
+    /// Returns the kinds of value that the runtime check for this basic type can accept.
+    fn js_value_kinds(&self) -> &'static [JsValueKind] {
         match self {
-            // the runtime checks all of these with `== null`
-            SubTypeTag::Null | SubTypeTag::VoidUndefined | SubTypeTag::OptionalProp => 1,
-            SubTypeTag::Boolean => 1 << 1,
-            SubTypeTag::Number => 1 << 2,
-            SubTypeTag::String => 1 << 3,
-            SubTypeTag::BigInt => 1 << 4,
-            SubTypeTag::List => 1 << 5,
-            SubTypeTag::Mapping => 1 << 6,
-            // checked with `instanceof`, which is also true for an array or a function
-            // that has the class in its prototype chain
-            SubTypeTag::Date | SubTypeTag::TypedArray | SubTypeTag::Map | SubTypeTag::Set => {
-                1 << 5 | 1 << 6 | 1 << 7
+            // The runtime checks these three with `== null`, so each accepts null and undefined.
+            SubTypeTag::Null | SubTypeTag::VoidUndefined | SubTypeTag::OptionalProp => {
+                &[JsValueKind::Nullish]
             }
+            SubTypeTag::Boolean => &[JsValueKind::Boolean],
+            SubTypeTag::Number => &[JsValueKind::Number],
+            SubTypeTag::String => &[JsValueKind::String],
+            SubTypeTag::BigInt => &[JsValueKind::BigInt],
+            SubTypeTag::List => &[JsValueKind::Array],
+            SubTypeTag::Mapping => &[JsValueKind::Object],
+            // The runtime checks these with `instanceof`. `instanceof` is also true for an array
+            // or a function that has the class in its prototype chain.
+            SubTypeTag::Date | SubTypeTag::TypedArray | SubTypeTag::Map | SubTypeTag::Set => &[
+                JsValueKind::Array,
+                JsValueKind::Object,
+                JsValueKind::Function,
+            ],
         }
     }
 }
 
 impl SemType {
-    /// The basic types this type has a part of.
+    /// Returns, as a bit set of `SubTypeTag` codes, each basic type that has one or more values
+    /// in this type.
     fn basic_types(&self) -> u32 {
         self.all
             | self
@@ -415,29 +464,33 @@ impl SemType {
                 .fold(0, |acc, it| acc | it.to_code())
     }
 
-    fn js_kinds(&self) -> u32 {
+    fn js_value_kinds(&self) -> BTreeSet<JsValueKind> {
         if self.is_any() {
-            return ALL_JS_KINDS;
+            return JsValueKind::ALL.into_iter().collect();
         }
-        let tags = self.basic_types();
+        let basic_types = self.basic_types();
         SubTypeTag::all()
             .into_iter()
-            .filter(|tag| tags & tag.code() != 0)
-            .fold(0, |acc, tag| acc | tag.js_kinds())
+            .filter(|tag| basic_types & tag.code() != 0)
+            .flat_map(|tag| tag.js_value_kinds().iter().copied())
+            .collect()
     }
 }
 
 impl Runtype {
-    /// The kinds of JavaScript value (`ALL_JS_KINDS`) that this runtype can accept, from the basic
-    /// types of its semantic type. It can include kinds that are never accepted, but it never
-    /// misses one.
-    pub(crate) fn js_kinds(&self, validators: &[&NamedSchema]) -> u32 {
+    /// Returns the kinds of JavaScript value that this runtype can accept.
+    /// The set comes from the basic types of the shallow semantic type of the runtype.
+    /// The set can include a kind that the runtype never accepts. It never misses a kind that the
+    /// runtype accepts. Thus, when a kind is not in the set, the runtype rejects all values of
+    /// that kind.
+    pub(crate) fn js_value_kinds(&self, validators: &[&NamedSchema]) -> BTreeSet<JsValueKind> {
         let mut converter = ToSemTypeConverter::new(validators);
         converter.shallow = true;
         match converter.convert_to_sem_type(self, &mut SemTypeContext::new()) {
-            Ok(ty) => ty.js_kinds(),
-            // not a semantic type (a function), or an alias that only refers to itself
-            Err(_) => ALL_JS_KINDS,
+            Ok(ty) => ty.js_value_kinds(),
+            // The conversion fails for a type that has no semantic type (a function), for a
+            // negation, and for an alias that refers only to itself. The safe result is all kinds.
+            Err(_) => JsValueKind::ALL.into_iter().collect(),
         }
     }
 }

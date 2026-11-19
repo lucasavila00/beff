@@ -1545,10 +1545,14 @@ function stableJsonSchemaDefinitionString(value: JSONSchema7Definition): string 
     .join(",")}}`;
 }
 
-// The kind of a value, as a number: nullish, boolean, number, string, bigint, array, object, function.
-// The compiler knows the kinds each member of a union accepts (`js_kinds` in beff-core), in this order.
-const KIND_COUNT = 8;
-const kindOf = (input: unknown): number => {
+// A "value kind" is a group of JavaScript values. Each value has one kind, or no kind (a symbol).
+// "nullish" is null or undefined. "object" is an object that is not an array and not a function.
+const VALUE_KINDS = ["nullish", "boolean", "number", "string", "bigint", "array", "object", "function"] as const;
+type ValueKind = (typeof VALUE_KINDS)[number];
+
+// Returns the index in VALUE_KINDS of the kind of the input.
+// Returns VALUE_KINDS.length for a value that has no kind (a symbol).
+const valueKindIndexOf = (input: unknown): number => {
   if (input == null) return 0;
   switch (typeof input) {
     case "boolean":
@@ -1564,30 +1568,37 @@ const kindOf = (input: unknown): number => {
     case "function":
       return 7;
     default:
-      return KIND_COUNT;
+      return VALUE_KINDS.length;
   }
 };
 
+// The kind table of a union, as the compiler prints it. It tells the union which runtype checks each kind.
+// Each property is a kind that the union accepts. A kind that the union does not accept has no property.
+// A number is the index of a member of the union. A runtype is used as it is.
+// Example for `Node | null`, with members [null, Node]: { nullish: 0, object: 1 }.
+// Example for `"a" | "b" | number`: { number: 2, string: new AnyOfConstsRuntype(undefined, ["a", "b"]) }.
+type UnionKindTable = Partial<Record<ValueKind, number | Runtype>>;
+
 export class AnyOfRuntype extends BaseRuntype {
   private schemas: Runtype[];
-  // For each kind of value, the one runtype that checks values of that kind, if the union accepts the kind.
-  // Only the compiler passes it: it is never computed here, because a named type can be overridden.
-  private byKind: (Runtype | undefined)[] | undefined;
-  // `kinds` has, for each kind, the index of its runtype in `schemas` followed by `others`: "1,,,,,,0" is
-  // "nullish is schemas[1], an object is schemas[0]".
-  constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[], kinds?: string, others?: Runtype[]) {
+  // The entry at index i is the runtype that checks all inputs of the kind VALUE_KINDS[i].
+  // An entry is undefined when the union does not accept that kind.
+  // The array is undefined when the union has no kind table. The union then tries each member in order.
+  private runtypeByKindIndex: (Runtype | undefined)[] | undefined;
+  // Only the compiler supplies `kindTable`. The runtime does not calculate it, because
+  // `overrideNamedType` can change the kinds that a named member accepts.
+  constructor(metadata: RuntypeMetadata | undefined, schemas: Runtype[], kindTable?: UnionKindTable) {
     super(metadata);
     this.schemas = schemas;
-    this.byKind = undefined;
-    if (kinds !== undefined) {
-      const all = others === undefined ? schemas : schemas.concat(others);
-      const indexes = kinds.split(",");
-      const byKind: (Runtype | undefined)[] = [];
-      // One more entry, for the kinds no type accepts (a symbol).
-      for (let k = 0; k <= KIND_COUNT; k++) {
-        byKind.push(indexes[k] ? all[Number(indexes[k])] : undefined);
-      }
-      this.byKind = byKind;
+    this.runtypeByKindIndex = undefined;
+    if (kindTable !== undefined) {
+      const runtypeByKindIndex: (Runtype | undefined)[] = VALUE_KINDS.map((kind) => {
+        const entry = kindTable[kind];
+        return typeof entry === "number" ? schemas[entry] : entry;
+      });
+      // The last entry is for a value that has no kind (see `valueKindIndexOf`). The union rejects it.
+      runtypeByKindIndex.push(undefined);
+      this.runtypeByKindIndex = runtypeByKindIndex;
     }
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -1596,10 +1607,10 @@ export class AnyOfRuntype extends BaseRuntype {
     });
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
-    const byKind = this.byKind;
-    if (byKind !== undefined) {
-      const it = byKind[kindOf(input)];
-      return it !== undefined && it.validate(ctx, input);
+    const runtypeByKindIndex = this.runtypeByKindIndex;
+    if (runtypeByKindIndex !== undefined) {
+      const runtypeForKind = runtypeByKindIndex[valueKindIndexOf(input)];
+      return runtypeForKind !== undefined && runtypeForKind.validate(ctx, input);
     }
     for (const it of this.schemas) {
       if (it.validate(ctx, input)) {
@@ -1609,10 +1620,11 @@ export class AnyOfRuntype extends BaseRuntype {
     return false;
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const byKind = this.byKind;
-    if (byKind !== undefined) {
-      // The input passed validate(), so its kind is in the table. Its runtype does not validate again.
-      return byKind[kindOf(input)]!.parseAfterValidation(ctx, input);
+    const runtypeByKindIndex = this.runtypeByKindIndex;
+    if (runtypeByKindIndex !== undefined) {
+      // validate() accepted the input, so the table has a runtype for its kind.
+      // Only that runtype parses the input. The union does not validate each member again.
+      return runtypeByKindIndex[valueKindIndexOf(input)]!.parseAfterValidation(ctx, input);
     }
     const items = [];
     for (const it of this.schemas) {

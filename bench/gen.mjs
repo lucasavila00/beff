@@ -62,7 +62,7 @@ export const shapes = {
       ) + `\ntype Root = R0;`,
     value: (_N, n) => range(n).reduce((next) => ({ name: "r", tags: ["a"], next }), null),
   },
-  // The same list, but it ends with a string: `next: R | string`.
+  // The `recursive` list, but the last `next` is a string and not null: `next: R | string`.
   "recursive-string": {
     types: (N) =>
       repeat(N, (i) => `type R${i} = { name: string; tags: string[]; next: R${(i + 1) % N} | string };`).join(
@@ -70,10 +70,13 @@ export const shapes = {
       ) + `\ntype Root = R0;`,
     value: (_N, n) => range(n).reduce((next) => ({ name: "r", tags: ["a"], next }), "end"),
   },
-  // N pairs of recursive types with a discriminator: `next: A | B | null`. The union tries each member,
-  // so parse validates each one again.
-  // `slowErrors`: the error report of an invalid input tries both members at every level, so it is
-  // exponential in the depth. The scripts do not report the errors of deep invalid inputs of these shapes.
+  // N pairs of recursive object types: `next: A | B | null`. The `kind` property tells A from B.
+  // Two members of the union accept an object, so the union has no kind table (see `withoutUnionTables`).
+  // Parse thus validates each level again, and the time grows with the square of the depth.
+  //
+  // `slowErrors: true` tells the scripts not to collect the errors of deep invalid inputs.
+  // To collect the errors, the union tries A and B at each level, and each try does the same one level down.
+  // The time thus doubles with each level.
   "recursive-disc": {
     slowErrors: true,
     types: (N) =>
@@ -87,7 +90,8 @@ export const shapes = {
         null,
       ),
   },
-  // The same pairs without a discriminator. Both branches are objects, so parse validates each one again.
+  // The `recursive-disc` pairs, but no property tells P from Q.
+  // This union also has no kind table, so parse validates each level again.
   "recursive-pair": {
     slowErrors: true,
     types: (N) =>
@@ -235,13 +239,17 @@ export function compile(dir) {
   return { ms, rssMb: rssKb / 1024 };
 }
 
-// Builds every union of the generated code without its table of kinds. The union then tries each
-// member, as it did before the tables. This gives a baseline in the same job and on the same machine.
+// Removes the kind table from each union in the generated code.
+// A kind table tells a union which member checks each kind of value (see `print_kind_table` in beff-core).
+// The replacement function passes only the first two arguments to `AnyOfRuntype`, so the table is lost.
+// Without a table, the union tries each member in order, as it did before the tables were added.
+// The runtime benchmark uses this code as its baseline, in the same job and on the same machine.
 const withoutUnionTables = (code) =>
   code.replaceAll("new AnyOfRuntype(", "anyOfWithoutTable(") +
   "\nfunction anyOfWithoutTable(metadata, schemas) {\n  return new AnyOfRuntype(metadata, schemas);\n}\n";
 
-// Generates and compiles a project, then returns its parsers. `tables: false` removes the union tables.
+// Generates and compiles a project, then returns its parsers.
+// `tables: false` loads a copy of the generated code that has no kind tables.
 export async function build(shape, N, { tables = true } = {}) {
   const dir = outDir(shape, N);
   generate(shape, N, dir);
