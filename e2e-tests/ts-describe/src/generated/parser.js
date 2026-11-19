@@ -158,9 +158,6 @@ const direct_hoist_50 = new AnyOfDiscriminatedRuntype(undefined, [
 ], "subType", {
     "a1": direct_hoist_47,
     "a2": direct_hoist_49
-}, {
-    "a1": direct_hoist_47,
-    "a2": direct_hoist_49
 });
 const direct_hoist_51 = new ConstRuntype(undefined, "b");
 const direct_hoist_52 = new ObjectRuntype(undefined, {
@@ -172,9 +169,6 @@ const direct_hoist_53 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_49,
     direct_hoist_52
 ], "type", {
-    "a": direct_hoist_50,
-    "b": direct_hoist_52
-}, {
     "a": direct_hoist_50,
     "b": direct_hoist_52
 });
@@ -195,7 +189,10 @@ const direct_hoist_57 = new AnyOfRuntype({
 }, [
     direct_hoist_3,
     direct_hoist_0
-]);
+], {
+    "nullish": direct_hoist_3,
+    "string": direct_hoist_0
+});
 const direct_hoist_58 = new TypeofRuntype({
     "description": "Stable lookup key."
 }, "string");
@@ -210,7 +207,10 @@ const direct_hoist_60 = new AnyOfRuntype({
 }, [
     direct_hoist_4,
     direct_hoist_1
-]);
+], {
+    "nullish": direct_hoist_4,
+    "number": direct_hoist_1
+});
 const direct_hoist_61 = new RefRuntype(undefined, "CompactId");
 const direct_hoist_62 = new ObjectRuntype(undefined, {
     "cursor": direct_hoist_60,
@@ -220,7 +220,10 @@ const direct_hoist_63 = new RefRuntype(undefined, "GenericWrapper_string");
 const direct_hoist_64 = new AnyOfRuntype(undefined, [
     direct_hoist_2,
     direct_hoist_0
-]);
+], {
+    "boolean": direct_hoist_2,
+    "string": direct_hoist_0
+});
 const direct_hoist_65 = new ObjectRuntype(undefined, {
     "other": direct_hoist_63,
     "value": direct_hoist_0,
@@ -230,7 +233,10 @@ const direct_hoist_66 = new RefRuntype(undefined, "GenericWrapper_number");
 const direct_hoist_67 = new AnyOfRuntype(undefined, [
     direct_hoist_2,
     direct_hoist_1
-]);
+], {
+    "boolean": direct_hoist_2,
+    "number": direct_hoist_1
+});
 const direct_hoist_68 = new ObjectRuntype(undefined, {
     "other": direct_hoist_66,
     "value": direct_hoist_1,
@@ -261,7 +267,10 @@ const direct_hoist_77 = new AnyOfRuntype({
 }, [
     direct_hoist_3,
     direct_hoist_0
-]);
+], {
+    "nullish": direct_hoist_3,
+    "string": direct_hoist_0
+});
 const direct_hoist_78 = new TypeofRuntype({
     "description": "Required second field."
 }, "string");
@@ -328,9 +337,6 @@ const direct_hoist_97 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_96,
     direct_hoist_93
 ], "kind", {
-    "left": direct_hoist_93,
-    "right": direct_hoist_96
-}, {
     "left": direct_hoist_93,
     "right": direct_hoist_96
 });

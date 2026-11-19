@@ -113,7 +113,10 @@ const direct_hoist_26 = new NullishRuntype(undefined, "undefined");
 const direct_hoist_27 = new AnyOfRuntype(undefined, [
     direct_hoist_26,
     direct_hoist_21
-]);
+], {
+    "nullish": direct_hoist_26,
+    "string": direct_hoist_21
+});
 const direct_hoist_28 = new ConstRuntype(undefined, "CRON");
 const direct_hoist_29 = new ObjectRuntype(undefined, {
     "cronExpression": direct_hoist_21,
@@ -163,17 +166,11 @@ const direct_hoist_43 = new AnyOfDiscriminatedRuntype(undefined, [
 ], "type", {
     "CRON": direct_hoist_17,
     "EVENT": direct_hoist_18
-}, {
-    "CRON": direct_hoist_17,
-    "EVENT": direct_hoist_18
 });
 const direct_hoist_44 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_18,
     direct_hoist_17
 ], "type", {
-    "CRON": direct_hoist_17,
-    "EVENT": direct_hoist_18
-}, {
     "CRON": direct_hoist_17,
     "EVENT": direct_hoist_18
 });
@@ -209,7 +206,11 @@ const direct_hoist_54 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_52,
     direct_hoist_53
-]);
+], {
+    "nullish": direct_hoist_39,
+    "number": direct_hoist_53,
+    "string": direct_hoist_52
+});
 const direct_hoist_55 = new AnyOfConstsRuntype(undefined, [
     "admin",
     "member"
@@ -228,12 +229,18 @@ const direct_hoist_59 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_26,
     direct_hoist_58
-]);
+], {
+    "nullish": direct_hoist_39,
+    "number": direct_hoist_58
+});
 const direct_hoist_60 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_26,
     direct_hoist_21
-]);
+], {
+    "nullish": direct_hoist_39,
+    "string": direct_hoist_21
+});
 const direct_hoist_61 = new ObjectRuntype(undefined, {
     "limit": new OptionalFieldRuntype(direct_hoist_59),
     "value": new OptionalFieldRuntype(direct_hoist_60)
@@ -243,11 +250,20 @@ const direct_hoist_63 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_52,
     direct_hoist_62
-]);
+], {
+    "nullish": direct_hoist_39,
+    "string": new AnyOfConstsRuntype(undefined, [
+        "fallback",
+        "primary"
+    ])
+});
 const direct_hoist_64 = new AnyOfRuntype(undefined, [
     direct_hoist_39,
     direct_hoist_21
-]);
+], {
+    "nullish": direct_hoist_39,
+    "string": direct_hoist_21
+});
 const direct_hoist_65 = new ObjectRuntype(undefined, {
     "maybeEnum": direct_hoist_63,
     "maybeText": direct_hoist_64,
@@ -317,9 +333,6 @@ const direct_hoist_81 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_79,
     direct_hoist_80
 ], "type", {
-    "CRON": direct_hoist_77,
-    "EVENT": direct_hoist_78
-}, {
     "CRON": direct_hoist_77,
     "EVENT": direct_hoist_78
 });

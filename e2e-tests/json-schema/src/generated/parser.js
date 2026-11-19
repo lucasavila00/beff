@@ -123,9 +123,6 @@ const direct_hoist_27 = new AnyOfDiscriminatedRuntype(undefined, [
 ], "subType", {
     "a1": direct_hoist_24,
     "a2": direct_hoist_26
-}, {
-    "a1": direct_hoist_24,
-    "a2": direct_hoist_26
 });
 const direct_hoist_28 = new ConstRuntype(undefined, "b");
 const direct_hoist_29 = new ObjectRuntype(undefined, {
@@ -137,9 +134,6 @@ const direct_hoist_30 = new AnyOfDiscriminatedRuntype(undefined, [
     direct_hoist_26,
     direct_hoist_29
 ], "type", {
-    "a": direct_hoist_27,
-    "b": direct_hoist_29
-}, {
     "a": direct_hoist_27,
     "b": direct_hoist_29
 });
@@ -177,12 +171,18 @@ const direct_hoist_41 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_4,
     direct_hoist_1
-]);
+], {
+    "nullish": direct_hoist_3,
+    "number": direct_hoist_1
+});
 const direct_hoist_42 = new AnyOfRuntype(undefined, [
     direct_hoist_3,
     direct_hoist_4,
     direct_hoist_0
-]);
+], {
+    "nullish": direct_hoist_3,
+    "string": direct_hoist_0
+});
 const direct_hoist_43 = new ObjectRuntype(undefined, {
     "limit": new OptionalFieldRuntype(direct_hoist_41),
     "value": new OptionalFieldRuntype(direct_hoist_42)

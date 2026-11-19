@@ -907,7 +907,10 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_2,
             direct_hoist_1
-        ]);
+        ], {
+            "nullish": direct_hoist_2,
+            "string": direct_hoist_1
+        });
         const direct_hoist_4 = new ConstRuntype(undefined, "CRON");
         const direct_hoist_5 = new ObjectRuntype(undefined, {
             "cronExpression": direct_hoist_1,
@@ -962,9 +965,6 @@ mod tests {
             direct_hoist_15,
             direct_hoist_16
         ], "type", {
-            "CRON": direct_hoist_13,
-            "EVENT": direct_hoist_14
-        }, {
             "CRON": direct_hoist_13,
             "EVENT": direct_hoist_14
         });
@@ -2010,7 +2010,10 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
-        ]);
+        ], {
+            "number": direct_hoist_2,
+            "string": direct_hoist_1
+        });
         const namedRuntypes = {
             "Alias": direct_hoist_3
         };
@@ -2301,13 +2304,19 @@ mod tests {
         const direct_hoist_3 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_2
-        ]);
+        ], {
+            "nullish": direct_hoist_1,
+            "object": direct_hoist_2
+        });
         const direct_hoist_4 = new TypeofRuntype(undefined, "string");
         const direct_hoist_5 = new TypeofRuntype(undefined, "boolean");
         const direct_hoist_6 = new AnyOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_4
-        ]);
+        ], {
+            "boolean": direct_hoist_5,
+            "string": direct_hoist_4
+        });
         const direct_hoist_7 = new ObjectRuntype(undefined, {
             "other": direct_hoist_3,
             "value": direct_hoist_4,
@@ -2317,12 +2326,18 @@ mod tests {
         const direct_hoist_9 = new AnyOfRuntype(undefined, [
             direct_hoist_1,
             direct_hoist_8
-        ]);
+        ], {
+            "nullish": direct_hoist_1,
+            "object": direct_hoist_8
+        });
         const direct_hoist_10 = new TypeofRuntype(undefined, "number");
         const direct_hoist_11 = new AnyOfRuntype(undefined, [
             direct_hoist_5,
             direct_hoist_10
-        ]);
+        ], {
+            "boolean": direct_hoist_5,
+            "number": direct_hoist_10
+        });
         const direct_hoist_12 = new ObjectRuntype(undefined, {
             "other": direct_hoist_9,
             "value": direct_hoist_10,
@@ -2369,7 +2384,10 @@ mod tests {
         const direct_hoist_4 = new AnyOfRuntype(undefined, [
             direct_hoist_3,
             direct_hoist_2
-        ]);
+        ], {
+            "boolean": direct_hoist_3,
+            "string": direct_hoist_2
+        });
         const direct_hoist_5 = new ObjectRuntype(undefined, {
             "other": direct_hoist_1,
             "value": direct_hoist_2,
@@ -2380,7 +2398,10 @@ mod tests {
         const direct_hoist_8 = new AnyOfRuntype(undefined, [
             direct_hoist_3,
             direct_hoist_7
-        ]);
+        ], {
+            "boolean": direct_hoist_3,
+            "number": direct_hoist_7
+        });
         const direct_hoist_9 = new ObjectRuntype(undefined, {
             "other": direct_hoist_6,
             "value": direct_hoist_7,
@@ -2483,9 +2504,6 @@ mod tests {
         ], "_tag", {
             "logical": direct_hoist_1,
             "none": direct_hoist_3
-        }, {
-            "logical": direct_hoist_1,
-            "none": direct_hoist_3
         });
         const direct_hoist_5 = new ConstRuntype(undefined, "custom");
         const direct_hoist_6 = new TypeofRuntype(undefined, "string");
@@ -2508,10 +2526,6 @@ mod tests {
             direct_hoist_1,
             direct_hoist_3
         ], "_tag", {
-            "custom": direct_hoist_13,
-            "logical": direct_hoist_1,
-            "none": direct_hoist_3
-        }, {
             "custom": direct_hoist_13,
             "logical": direct_hoist_1,
             "none": direct_hoist_3
@@ -2611,9 +2625,6 @@ mod tests {
         ], "kind", {
             ["__proto__"]: direct_hoist_5,
             "toString": direct_hoist_8
-        }, {
-            ["__proto__"]: direct_hoist_5,
-            "toString": direct_hoist_8
         });
         const direct_hoist_10 = new TypeofRuntype(undefined, "number");
         const direct_hoist_11 = new ObjectRuntype(undefined, {
@@ -2632,6 +2643,434 @@ mod tests {
             "ProtoDiscriminated": direct_hoist_0,
             "ProtoKeyObject": direct_hoist_1,
             ["__proto__"]: direct_hoist_2
+        };
+        "#);
+    }
+
+    // A union whose members accept different kinds of value is printed with the runtype of each kind:
+    // nullish, boolean, number, string, bigint, array, object, function.
+    #[test]
+    fn union_table_recursive_or_null() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type Node = { value: number; next: Node | null };
+            parse.buildParsers<{ Node: Node }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "Node");
+        const direct_hoist_1 = new NullishRuntype(undefined, "null");
+        const direct_hoist_2 = new AnyOfRuntype(undefined, [
+            direct_hoist_1,
+            direct_hoist_0
+        ], {
+            "nullish": direct_hoist_1,
+            "object": direct_hoist_0
+        });
+        const direct_hoist_3 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_4 = new ObjectRuntype(undefined, {
+            "next": direct_hoist_2,
+            "value": direct_hoist_3
+        }, []);
+        const namedRuntypes = {
+            "Node": direct_hoist_4
+        };
+        const buildParsersInput = {
+            "Node": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_table_recursive_or_string() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type Node = { value: number; next: Node | string };
+            parse.buildParsers<{ Node: Node }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "Node");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_2 = new AnyOfRuntype(undefined, [
+            direct_hoist_1,
+            direct_hoist_0
+        ], {
+            "string": direct_hoist_1,
+            "object": direct_hoist_0
+        });
+        const direct_hoist_3 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_4 = new ObjectRuntype(undefined, {
+            "next": direct_hoist_2,
+            "value": direct_hoist_3
+        }, []);
+        const namedRuntypes = {
+            "Node": direct_hoist_4
+        };
+        const buildParsersInput = {
+            "Node": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_table_primitives() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type U = string | number | null;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new NullishRuntype(undefined, "null");
+        const direct_hoist_2 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_3 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_4 = new AnyOfRuntype(undefined, [
+            direct_hoist_1,
+            direct_hoist_2,
+            direct_hoist_3
+        ], {
+            "nullish": direct_hoist_1,
+            "number": direct_hoist_3,
+            "string": direct_hoist_2
+        });
+        const namedRuntypes = {
+            "U": direct_hoist_4
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_discriminated() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type A = { t: "a"; a: string };
+            type B = { t: "b"; b: number };
+            type U = A | B;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_2 = new ConstRuntype(undefined, "a");
+        const direct_hoist_3 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_1,
+            "t": direct_hoist_2
+        }, []);
+        const direct_hoist_4 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_5 = new ConstRuntype(undefined, "b");
+        const direct_hoist_6 = new ObjectRuntype(undefined, {
+            "b": direct_hoist_4,
+            "t": direct_hoist_5
+        }, []);
+        const direct_hoist_7 = new RefRuntype(undefined, "A");
+        const direct_hoist_8 = new RefRuntype(undefined, "B");
+        const direct_hoist_9 = new AnyOfDiscriminatedRuntype(undefined, [
+            direct_hoist_7,
+            direct_hoist_8
+        ], "t", {
+            "a": direct_hoist_7,
+            "b": direct_hoist_8
+        });
+        const namedRuntypes = {
+            "A": direct_hoist_3,
+            "B": direct_hoist_6,
+            "U": direct_hoist_9
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_not_discriminated() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type A = { a: string };
+            type B = { b: number };
+            type U = A | B;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_2 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_1
+        }, []);
+        const direct_hoist_3 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_4 = new ObjectRuntype(undefined, {
+            "b": direct_hoist_3
+        }, []);
+        const direct_hoist_5 = new RefRuntype(undefined, "A");
+        const direct_hoist_6 = new RefRuntype(undefined, "B");
+        const direct_hoist_7 = new AnyOfRuntype(undefined, [
+            direct_hoist_5,
+            direct_hoist_6
+        ]);
+        const namedRuntypes = {
+            "A": direct_hoist_2,
+            "B": direct_hoist_4,
+            "U": direct_hoist_7
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_table_with_discriminated_objects() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type A = { t: "a"; a: string };
+            type B = { t: "b"; b: number };
+            type U = A | B | null;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_2 = new ConstRuntype(undefined, "a");
+        const direct_hoist_3 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_1,
+            "t": direct_hoist_2
+        }, []);
+        const direct_hoist_4 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_5 = new ConstRuntype(undefined, "b");
+        const direct_hoist_6 = new ObjectRuntype(undefined, {
+            "b": direct_hoist_4,
+            "t": direct_hoist_5
+        }, []);
+        const direct_hoist_7 = new NullishRuntype(undefined, "null");
+        const direct_hoist_8 = new RefRuntype(undefined, "A");
+        const direct_hoist_9 = new RefRuntype(undefined, "B");
+        const direct_hoist_10 = new AnyOfRuntype(undefined, [
+            direct_hoist_7,
+            direct_hoist_8,
+            direct_hoist_9
+        ], {
+            "nullish": direct_hoist_7,
+            "object": new AnyOfDiscriminatedRuntype(undefined, [
+                direct_hoist_8,
+                direct_hoist_9
+            ], "t", {
+                "a": direct_hoist_8,
+                "b": direct_hoist_9
+            })
+        });
+        const namedRuntypes = {
+            "A": direct_hoist_3,
+            "B": direct_hoist_6,
+            "U": direct_hoist_10
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_table_discriminated_ref_or_null() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type Disc = { t: "a"; a: string } | { t: "b"; b: number };
+            type U = Disc | null;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_2 = new ConstRuntype(undefined, "a");
+        const direct_hoist_3 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_1,
+            "t": direct_hoist_2
+        }, []);
+        const direct_hoist_4 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_5 = new ConstRuntype(undefined, "b");
+        const direct_hoist_6 = new ObjectRuntype(undefined, {
+            "b": direct_hoist_4,
+            "t": direct_hoist_5
+        }, []);
+        const direct_hoist_7 = new AnyOfDiscriminatedRuntype(undefined, [
+            direct_hoist_3,
+            direct_hoist_6
+        ], "t", {
+            "a": direct_hoist_3,
+            "b": direct_hoist_6
+        });
+        const direct_hoist_8 = new NullishRuntype(undefined, "null");
+        const direct_hoist_9 = new RefRuntype(undefined, "Disc");
+        const direct_hoist_10 = new AnyOfRuntype(undefined, [
+            direct_hoist_8,
+            direct_hoist_9
+        ], {
+            "nullish": direct_hoist_8,
+            "object": direct_hoist_9
+        });
+        const namedRuntypes = {
+            "Disc": direct_hoist_7,
+            "U": direct_hoist_10
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_table_literals_or_number() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type U = "a" | "b" | number;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_2 = new ConstRuntype(undefined, "a");
+        const direct_hoist_3 = new ConstRuntype(undefined, "b");
+        const direct_hoist_4 = new AnyOfRuntype(undefined, [
+            direct_hoist_1,
+            direct_hoist_2,
+            direct_hoist_3
+        ], {
+            "number": direct_hoist_1,
+            "string": new AnyOfConstsRuntype(undefined, [
+                "a",
+                "b"
+            ])
+        });
+        const namedRuntypes = {
+            "U": direct_hoist_4
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_table_date_or_string() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type U = Date | string;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_2 = new DateRuntype(undefined);
+        const direct_hoist_3 = new AnyOfRuntype(undefined, [
+            direct_hoist_1,
+            direct_hoist_2
+        ], {
+            "string": direct_hoist_1,
+            "array": direct_hoist_2,
+            "object": direct_hoist_2,
+            "function": direct_hoist_2
+        });
+        const namedRuntypes = {
+            "U": direct_hoist_3
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_without_table_unknown_or_string() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type U = { a: unknown | string; b: (() => void) | string };
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_2 = new AnyRuntype(undefined);
+        const direct_hoist_3 = new AnyOfRuntype(undefined, [
+            direct_hoist_1,
+            direct_hoist_2
+        ]);
+        const direct_hoist_4 = new TypeofRuntype(undefined, "function");
+        const direct_hoist_5 = new AnyOfRuntype(undefined, [
+            direct_hoist_1,
+            direct_hoist_4
+        ]);
+        const direct_hoist_6 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_3,
+            "b": direct_hoist_5
+        }, []);
+        const namedRuntypes = {
+            "U": direct_hoist_6
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_table_date_or_object() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type U = Date | { a: 1 };
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new ConstRuntype(undefined, 1);
+        const direct_hoist_2 = new ObjectRuntype(undefined, {
+            "a": direct_hoist_1
+        }, []);
+        const direct_hoist_3 = new DateRuntype(undefined);
+        const direct_hoist_4 = new AnyOfRuntype(undefined, [
+            direct_hoist_2,
+            direct_hoist_3
+        ], {
+            "array": direct_hoist_3,
+            "object": new AnyOfRuntype(undefined, [
+                direct_hoist_2,
+                direct_hoist_3
+            ]),
+            "function": direct_hoist_3
+        });
+        const namedRuntypes = {
+            "U": direct_hoist_4
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn union_without_table_same_kinds() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            type U = Date | Map<string, number> | Set<string>;
+            parse.buildParsers<{ U: U }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype(undefined, "U");
+        const direct_hoist_1 = new DateRuntype(undefined);
+        const direct_hoist_2 = new TypeofRuntype(undefined, "string");
+        const direct_hoist_3 = new TypeofRuntype(undefined, "number");
+        const direct_hoist_4 = new MapRuntype(undefined, direct_hoist_2, direct_hoist_3);
+        const direct_hoist_5 = new SetRuntype(undefined, direct_hoist_2);
+        const direct_hoist_6 = new AnyOfRuntype(undefined, [
+            direct_hoist_1,
+            direct_hoist_4,
+            direct_hoist_5
+        ]);
+        const namedRuntypes = {
+            "U": direct_hoist_6
+        };
+        const buildParsersInput = {
+            "U": direct_hoist_0
         };
         "#);
     }

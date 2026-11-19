@@ -138,7 +138,7 @@ const shapes = {
 // Proto-like JSON objects: JSON.parse creates own "__proto__" properties.
 const protoKeys = JSON.parse('{"__proto__": 1, "toString": 2, "constructor": 3, "hasOwnProperty": 4}');
 
-const cases: { [K in keyof Codecs]?: Case } = {
+export const cases: { [K in keyof Codecs]?: Case } = {
   // Primitives (#388: parse of a bigint input must not throw a TypeError)
   String: {
     valid: ["", "a", "with\nnewline"],
@@ -707,7 +707,7 @@ const cases: { [K in keyof Codecs]?: Case } = {
 };
 
 // Deterministic PRNG (mulberry32) so randomized checks are reproducible.
-const rng = (seed: number) => () => {
+export const rng = (seed: number) => () => {
   seed |= 0;
   seed = (seed + 0x6d2b79f5) | 0;
   let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
@@ -738,7 +738,7 @@ const SCALARS: unknown[] = [
 ];
 
 // Returns a randomly mutated copy of `value`: some node replaced, removed or given an extra key.
-const mutate = (value: unknown, rand: () => number, depth = 0): unknown => {
+export const mutate = (value: unknown, rand: () => number, depth = 0): unknown => {
   const pick = <T>(xs: T[]): T => xs[Math.floor(rand() * xs.length)]!;
   if (depth > 8 || rand() < 0.25) {
     return pick(SCALARS);

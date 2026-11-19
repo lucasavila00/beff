@@ -21,6 +21,7 @@ use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
+use crate::subtyping::{ALL_JS_KINDS, JS_KINDS};
 use crate::{
     NamedSchema,
     ast::runtype::{
@@ -438,18 +439,16 @@ fn print_index_key(key: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Print
     }
 }
 
-fn runtype_union_or_intersection(
-    constructor: &str,
-    vs: &BTreeSet<Runtype>,
+fn print_members<'a>(
+    vs: impl IntoIterator<Item = &'a Runtype>,
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
-    original_runtype: &Runtype,
 ) -> Expr {
-    let exprs = vs
-        .iter()
-        .map(|schema| print_runtype(schema, named_schemas, ctx))
-        .collect::<Vec<Expr>>();
-    new_runtype_class(constructor, vec![array_lit(exprs)], original_runtype)
+    array_lit(
+        vs.into_iter()
+            .map(|schema| print_runtype(schema, named_schemas, ctx))
+            .collect(),
+    )
 }
 
 fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
@@ -523,7 +522,7 @@ fn runtype_any_of_discriminated(
         }
     }
 
-    let schema_mapping_obj = object_lit(
+    let mapping_obj = object_lit(
         discriminator_strings
             .iter()
             .map(|current_key| {
@@ -550,9 +549,6 @@ fn runtype_any_of_discriminated(
             .collect(),
     );
 
-    // The validation mapping is printed from the same cases as the schema mapping.
-    let mapping_obj = schema_mapping_obj.clone();
-
     let flat_values_schema = flat_values
         .iter()
         .map(|it| {
@@ -565,12 +561,7 @@ fn runtype_any_of_discriminated(
 
     new_runtype_class(
         "AnyOfDiscriminatedRuntype",
-        vec![
-            flat_values_schema_arr,
-            disc.clone(),
-            mapping_obj,
-            schema_mapping_obj,
-        ],
+        vec![flat_values_schema_arr, disc.clone(), mapping_obj],
         original_runtype,
     )
 }
@@ -778,6 +769,112 @@ fn maybe_runtype_any_of_consts(
     None
 }
 
+// The members of a union that accept the same kinds of value: literals, a discriminated union,
+// or a union that tries each member. It never prints a table of kinds, so that `lower_union`
+// ends: the members of `Date | { a: 1 }` that accept an object are again `Date | { a: 1 }`.
+fn lower_same_kind(
+    original_runtype: &Runtype,
+    members: &[&Runtype],
+    named_schemas: &[NamedSchema],
+    ctx: &mut PrintContext,
+) -> Expr {
+    let flat_values = members
+        .iter()
+        .flat_map(|it| extract_union(it, named_schemas))
+        .collect::<BTreeSet<_>>();
+
+    if let Some(consts) = maybe_runtype_any_of_consts(original_runtype, &flat_values, ctx) {
+        consts
+    } else if let Some(discriminated) =
+        maybe_runtype_any_of_discriminated(original_runtype, &flat_values, named_schemas, ctx)
+    {
+        discriminated
+    } else {
+        let members = print_members(members.iter().copied(), named_schemas, ctx);
+        new_runtype_class("AnyOfRuntype", vec![members], original_runtype)
+    }
+}
+
+// Prints a union. When its members accept different kinds of value (`Runtype::js_kinds`), the
+// union gets a table with the node that checks each kind, and the runtime calls only that node.
+// The list of members stays complete: descriptions, schemas, hashes and errors come from it.
+fn lower_union(
+    schema: &Runtype,
+    vs: &BTreeSet<Runtype>,
+    named_schemas: &[NamedSchema],
+    ctx: &mut PrintContext,
+) -> Expr {
+    if vs.is_empty() {
+        panic!("empty anyOf is not allowed")
+    }
+    let flat_values = vs
+        .iter()
+        .flat_map(|it| extract_union(it, named_schemas))
+        .collect::<BTreeSet<_>>();
+    if let Some(consts) = maybe_runtype_any_of_consts(schema, &flat_values, ctx) {
+        return consts;
+    }
+
+    let members = vs.iter().collect::<Vec<_>>();
+    let validators = named_schemas.iter().collect::<Vec<_>>();
+    let kinds = members
+        .iter()
+        .map(|it| it.js_kinds(&validators))
+        .collect::<Vec<_>>();
+
+    // The members that accept each kind of value, for the kinds that have one.
+    let by_kind = JS_KINDS
+        .iter()
+        .enumerate()
+        .map(|(bit, name)| {
+            let group = members
+                .iter()
+                .zip(&kinds)
+                .filter(|(_, kinds)| *kinds & (1 << bit) != 0)
+                .map(|(it, _)| *it)
+                .collect::<Vec<_>>();
+            (*name, group)
+        })
+        .filter(|(_, group)| !group.is_empty())
+        .collect::<Vec<_>>();
+
+    // A table does not help when a member accepts every kind of value,
+    // or when every member accepts the same kinds.
+    if kinds.contains(&ALL_JS_KINDS)
+        || by_kind
+            .iter()
+            .all(|(_, group)| group.len() == members.len())
+    {
+        return lower_same_kind(schema, &members, named_schemas, ctx);
+    }
+
+    let printed_members = print_members(members.iter().copied(), named_schemas, ctx);
+    let table = by_kind
+        .into_iter()
+        .map(|(name, group)| {
+            let only_nullish = group.iter().all(|it| {
+                matches!(
+                    it.kind,
+                    RuntypeKind::Null | RuntypeKind::Undefined | RuntypeKind::Void
+                )
+            });
+            // null, undefined and void have the same check, and parsing returns the input
+            let node = if group.len() == 1 || only_nullish {
+                print_runtype(group[0], named_schemas, ctx)
+            } else {
+                let union = Runtype::any_of(group.iter().map(|it| (*it).clone()).collect());
+                lower_same_kind(&union, &group, named_schemas, ctx)
+            };
+            (name.to_string(), node)
+        })
+        .collect();
+    new_runtype_class(
+        "AnyOfRuntype",
+        vec![printed_members, object_lit(table)],
+        schema,
+    )
+}
+
 fn hoist_name(name: usize) -> String {
     format!("direct_hoist_{}", name)
 }
@@ -859,28 +956,10 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
             new_runtype_class("SetRuntype", vec![item_validator], schema)
         }
         RuntypeKind::AllOf(vs) => {
-            runtype_union_or_intersection("AllOfRuntype", vs, named_schemas, ctx, schema)
+            let members = print_members(vs, named_schemas, ctx);
+            new_runtype_class("AllOfRuntype", vec![members], schema)
         }
-        RuntypeKind::AnyOf(vs) => {
-            if vs.is_empty() {
-                panic!("empty anyOf is not allowed")
-            }
-
-            let flat_values = vs
-                .iter()
-                .flat_map(|it: &Runtype| extract_union(it, named_schemas))
-                .collect::<BTreeSet<_>>();
-
-            if let Some(consts) = maybe_runtype_any_of_consts(schema, &flat_values, ctx) {
-                consts
-            } else if let Some(discriminated) =
-                maybe_runtype_any_of_discriminated(schema, &flat_values, named_schemas, ctx)
-            {
-                discriminated
-            } else {
-                runtype_union_or_intersection("AnyOfRuntype", vs, named_schemas, ctx, schema)
-            }
-        }
+        RuntypeKind::AnyOf(vs) => lower_union(schema, vs, named_schemas, ctx),
         RuntypeKind::Tuple {
             prefix_items,
             items,
