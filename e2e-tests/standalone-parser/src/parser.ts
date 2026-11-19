@@ -243,6 +243,11 @@ export type IntersectionUnion = IA & ({ kind: "u"; u: string } | { kind: "v"; v?
 export type IntersectionTplIndex = IA & Record<`x_${string}`, number>;
 export type IntersectionTwoTplIndexes = IA & Record<`x_${string}`, number> & Record<`y_${string}`, string>;
 export type TplRecord = Record<`x_${string}`, number>;
+export type ProtoDiscriminated =
+  | { kind: "toString"; a: string }
+  | { kind: "constructor"; b: number }
+  | { kind: "__proto__"; c: boolean };
+export type ProtoKeyObject = { __proto__: string; toString: number };
 
 export const {
   Version,
@@ -311,6 +316,8 @@ export const {
   IntersectionTplIndex: IntersectionTplIndexCodec,
   IntersectionTwoTplIndexes: IntersectionTwoTplIndexesCodec,
   TplRecord: TplRecordCodec,
+  ProtoDiscriminated: ProtoDiscriminatedCodec,
+  ProtoKeyObject: ProtoKeyObjectCodec,
 } = parse.buildParsers<{
   Intersection: Intersection;
   IntersectionPartial: IntersectionPartial;
@@ -321,6 +328,8 @@ export const {
   IntersectionTplIndex: IntersectionTplIndex;
   IntersectionTwoTplIndexes: IntersectionTwoTplIndexes;
   TplRecord: TplRecord;
+  ProtoDiscriminated: ProtoDiscriminated;
+  ProtoKeyObject: ProtoKeyObject;
   Repro5: Repro5;
   Repro6: Repro6;
   M1: M1;

@@ -7,9 +7,9 @@ use swc_common::SyntaxContext;
 use swc_common::{FilePathMapping, sync::Lrc};
 use swc_ecma_ast::Module;
 use swc_ecma_ast::{
-    ArrayLit, BindingIdent, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit, ModuleItem,
-    NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str, VarDecl,
-    VarDeclKind, VarDeclarator,
+    ArrayLit, BindingIdent, ComputedPropName, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit,
+    ModuleItem, NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str,
+    VarDecl, VarDeclKind, VarDeclarator,
 };
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
@@ -311,6 +311,22 @@ fn new_runtype_class(constructor: &str, mut args: Vec<Expr>, original_runtype: &
     new_runtime_class(constructor, args)
 }
 
+// A non-computed "__proto__" key in an object literal sets the prototype instead of
+// creating an own property, so that key is emitted as a computed key.
+fn object_lit_key(key: String) -> PropName {
+    if key == "__proto__" {
+        return PropName::Computed(ComputedPropName {
+            span: DUMMY_SP,
+            expr: Box::new(string_lit(&key)),
+        });
+    }
+    PropName::Str(Str {
+        span: DUMMY_SP,
+        value: key.into(),
+        raw: None,
+    })
+}
+
 fn object_lit(props: Vec<(String, Expr)>) -> Expr {
     Expr::Object(ObjectLit {
         span: DUMMY_SP,
@@ -319,11 +335,7 @@ fn object_lit(props: Vec<(String, Expr)>) -> Expr {
             .map(|(key, value)| {
                 PropOrSpread::Prop(
                     Prop::KeyValue(KeyValueProp {
-                        key: PropName::Str(Str {
-                            span: DUMMY_SP,
-                            value: key.into(),
-                            raw: None,
-                        }),
+                        key: object_lit_key(key),
                         value: value.into(),
                     })
                     .into(),
