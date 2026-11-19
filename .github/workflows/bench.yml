@@ -1,7 +1,5 @@
 name: Bench
 on:
-  push:
-    branches: ["bench/**"]
   workflow_dispatch:
     inputs:
       shape:
