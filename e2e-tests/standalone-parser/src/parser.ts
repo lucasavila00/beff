@@ -229,6 +229,21 @@ export type M1 = Map<string, number>;
 
 export type S1 = Set<string>;
 
+type IA = { a: string };
+type IB = { b?: string };
+type IBase = { a: string; b: number; c: string };
+type IExtra = { d0: string; e: number };
+type IOther = { a: string; b: number; z: boolean };
+export type Intersection = IA & IB;
+export type IntersectionPartial = IA & Partial<{ c: string }>;
+export type IntersectionOmitPick = Omit<IBase & IExtra, "c"> & Partial<Pick<IOther, "a" | "b">>;
+export type IntersectionNested = IA & (IB & { n: { x: string } });
+export type IntersectionIndex = IA & { n: number } & Record<string, string | number>;
+export type IntersectionUnion = IA & ({ kind: "u"; u: string } | { kind: "v"; v?: number });
+export type IntersectionTplIndex = IA & Record<`x_${string}`, number>;
+export type IntersectionTwoTplIndexes = IA & Record<`x_${string}`, number> & Record<`y_${string}`, string>;
+export type TplRecord = Record<`x_${string}`, number>;
+
 export const {
   Version,
   Version2,
@@ -287,7 +302,25 @@ export const {
   M1: M1Codec,
   S1: S1Codec,
   Query: QueryCodec,
+  Intersection: IntersectionCodec,
+  IntersectionPartial: IntersectionPartialCodec,
+  IntersectionOmitPick: IntersectionOmitPickCodec,
+  IntersectionNested: IntersectionNestedCodec,
+  IntersectionIndex: IntersectionIndexCodec,
+  IntersectionUnion: IntersectionUnionCodec,
+  IntersectionTplIndex: IntersectionTplIndexCodec,
+  IntersectionTwoTplIndexes: IntersectionTwoTplIndexesCodec,
+  TplRecord: TplRecordCodec,
 } = parse.buildParsers<{
+  Intersection: Intersection;
+  IntersectionPartial: IntersectionPartial;
+  IntersectionOmitPick: IntersectionOmitPick;
+  IntersectionNested: IntersectionNested;
+  IntersectionIndex: IntersectionIndex;
+  IntersectionUnion: IntersectionUnion;
+  IntersectionTplIndex: IntersectionTplIndex;
+  IntersectionTwoTplIndexes: IntersectionTwoTplIndexes;
+  TplRecord: TplRecord;
   Repro5: Repro5;
   Repro6: Repro6;
   M1: M1;

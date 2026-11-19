@@ -506,17 +506,37 @@ type SchemaContext = {
 
 type ValidateContext = {
   disallowExtraProperties: boolean;
+  // The input an intersection is checking. Its members leave the keys of this input they do not know to the
+  // intersection: another member may know them.
+  intersectionInput?: unknown;
 };
 
-type ParseContext = {
-  disallowExtraProperties: boolean;
+type ParseContext = ValidateContext & {
   objectKeyOrder: "input" | "sorted";
 };
 
-type ReportContext = {
-  disallowExtraProperties: boolean;
+type ReportContext = ValidateContext & {
   path: string[];
 };
+
+// Should an intersection check the extra properties of this input against the keys of all its members?
+function intersectionChecksExtraProperties(ctx: ValidateContext, input: unknown): boolean {
+  return (
+    ctx.disallowExtraProperties &&
+    typeof input === "object" &&
+    input !== null &&
+    ctx.intersectionInput !== input
+  );
+}
+
+// Run the members of an intersection on its input.
+function withIntersectionInput<T>(ctx: ValidateContext, input: unknown, f: () => T): T {
+  const old = ctx.intersectionInput;
+  ctx.intersectionInput = input;
+  const result = f();
+  ctx.intersectionInput = old;
+  return result;
+}
 
 type HashContext = {
   seen: Record<string, boolean>;
@@ -1377,6 +1397,11 @@ export class AllOfRuntype extends BaseRuntype {
     });
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
+    const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
+    const ok = withIntersectionInput(ctx, input, () => this.validateMembers(ctx, input));
+    return ok && !(checksExtraProperties && this.extraKeys(input as object).length > 0);
+  }
+  private validateMembers(ctx: ValidateContext, input: unknown): boolean {
     for (const it of this.schemas) {
       const isObj = typeof input === "object";
       if (!isObj) {
@@ -1388,7 +1413,18 @@ export class AllOfRuntype extends BaseRuntype {
     }
     return true;
   }
+  // Keys of a valid input that no member of the intersection knows about.
+  private extraKeys(input: object): string[] {
+    const known = this.parseMembers(
+      { disallowExtraProperties: true, objectKeyOrder: "input", intersectionInput: input },
+      input,
+    );
+    return Object.keys(input).filter((k) => !hasOwn.call(known, k));
+  }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    return withIntersectionInput(ctx, input, () => this.parseMembers(ctx, input));
+  }
+  private parseMembers(ctx: ParseContext, input: any): object {
     let acc = {};
     for (const it of this.schemas) {
       const parsed = it.parseAfterValidation(ctx, input);
@@ -1400,6 +1436,20 @@ export class AllOfRuntype extends BaseRuntype {
     return acc;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    const checksExtraProperties = intersectionChecksExtraProperties(ctx, input);
+    const errors = withIntersectionInput(ctx, input, () => this.reportMembers(ctx, input));
+    if (errors.length > 0 || !checksExtraProperties) {
+      return errors;
+    }
+    const acc: DecodeError[] = [];
+    for (const k of this.extraKeys(input as object)) {
+      pushPath(ctx, k);
+      acc.push(...buildError(ctx, `extra property`, (input as any)[k]));
+      popPath(ctx);
+    }
+    return acc;
+  }
+  private reportMembers(ctx: ReportContext, input: unknown): DecodeError[] {
     const acc = [];
     for (const v of this.schemas) {
       const errors = v.reportDecodeError(ctx, input);
@@ -2128,12 +2178,12 @@ export class ObjectRuntype extends BaseRuntype {
             isValid = true;
             break;
           }
-          if (!isValid) {
+          if (!isValid && !this.leavesKeyToIntersection(ctx, input, k)) {
             return false;
           }
         }
       } else {
-        if (ctx.disallowExtraProperties) {
+        if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
           const inputKeys = Object.keys(input);
           const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
 
@@ -2216,6 +2266,9 @@ export class ObjectRuntype extends BaseRuntype {
       const inputKeys = Object.keys(input);
       const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
       for (const k of extraKeys) {
+        if (this.leavesKeyToIntersection(ctx, input, k)) {
+          continue;
+        }
         for (const p of this.indexedPropertiesParser) {
           const keyOk = p.key.validate(ctx, k);
           const valueOk = p.value.validate(ctx, input[k]);
@@ -2235,7 +2288,7 @@ export class ObjectRuntype extends BaseRuntype {
         }
       }
     } else {
-      if (ctx.disallowExtraProperties) {
+      if (ctx.disallowExtraProperties && ctx.intersectionInput !== input) {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !hasOwn.call(this.properties, k));
         if (extraKeys.length > 0) {
@@ -2252,6 +2305,12 @@ export class ObjectRuntype extends BaseRuntype {
     }
 
     return acc;
+  }
+  // In an intersection, an index signature only constrains the keys it matches: another member may know the rest.
+  private leavesKeyToIntersection(ctx: ValidateContext, input: object, k: string): boolean {
+    return (
+      ctx.intersectionInput === input && !this.indexedPropertiesParser.some((p) => p.key.validate(ctx, k))
+    );
   }
   hash(ctx: HashContext) {
     let acc: number[] = [objectHash];
