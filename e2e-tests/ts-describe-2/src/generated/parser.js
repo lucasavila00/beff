@@ -3,40 +3,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -69,64 +71,23 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "BeforeRequired");
-const direct_hoist_1 = new RefRuntype(undefined, "KeyofBeforeRequired");
-const direct_hoist_2 = new RefRuntype(undefined, "AfterRequired");
-const direct_hoist_3 = new RefRuntype(undefined, "KeyofAfterRequired");
-const direct_hoist_4 = new RefRuntype(undefined, "SomeString");
-const direct_hoist_5 = new RefRuntype(undefined, "SomeChar");
-const direct_hoist_6 = new TypeofRuntype(undefined, "string");
-const direct_hoist_7 = new NullishRuntype(undefined, "undefined");
-const direct_hoist_8 = new AnyOfRuntype(undefined, [
-    direct_hoist_7,
-    direct_hoist_6
-]);
-const direct_hoist_9 = new NullishRuntype(undefined, "void");
-const direct_hoist_10 = new AnyOfRuntype(undefined, [
-    direct_hoist_9,
-    direct_hoist_6
-]);
-const direct_hoist_11 = new NullishRuntype(undefined, "null");
-const direct_hoist_12 = new AnyOfRuntype(undefined, [
-    direct_hoist_11,
-    direct_hoist_6
-]);
-const direct_hoist_13 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_6,
-    "b": direct_hoist_8,
-    "c": direct_hoist_10,
-    "d": direct_hoist_12,
-    "e": direct_hoist_6
-}, []);
-const direct_hoist_14 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_6,
-    "b": direct_hoist_8,
-    "c": direct_hoist_10,
-    "d": direct_hoist_12,
-    "e": new OptionalFieldRuntype(direct_hoist_6)
-}, []);
-const direct_hoist_15 = new AnyOfConstsRuntype(undefined, [
-    "a",
-    "b",
-    "c",
-    "d",
-    "e"
-]);
-const namedRuntypes = {
-    "AfterRequired": direct_hoist_13,
-    "BeforeRequired": direct_hoist_14,
-    "KeyofAfterRequired": direct_hoist_15,
-    "KeyofBeforeRequired": direct_hoist_15,
-    "SomeChar": direct_hoist_6,
-    "SomeString": direct_hoist_6
-};
-const buildParsersInput = {
-    "BeforeRequired": direct_hoist_0,
-    "KeyofBeforeRequired": direct_hoist_1,
-    "AfterRequired": direct_hoist_2,
-    "KeyofAfterRequired": direct_hoist_3,
-    "SomeString": direct_hoist_4,
-    "SomeChar": direct_hoist_5
-};
+const h0=ref(R,"BeforeRequired");
+const h1=ref(R,"KeyofBeforeRequired");
+const h2=ref(R,"AfterRequired");
+const h3=ref(R,"KeyofAfterRequired");
+const h4=ref(R,"SomeString");
+const h5=ref(R,"SomeChar");
+const h6=str();
+const h7=undef();
+const h8=union([h7,h6]);
+const h9=voidType();
+const h10=union([h9,h6]);
+const h11=nul();
+const h12=union([h11,h6]);
+const h13=obj({a:h6,b:h8,c:h10,d:h12,e:h6});
+const h14=obj({a:h6,b:h8,c:h10,d:h12,e:opt(h6)});
+const h15=lits(["a","b","c","d","e"]);
+define(R,{AfterRequired:h13,BeforeRequired:h14,KeyofAfterRequired:h15,KeyofBeforeRequired:h15,SomeChar:h6,SomeString:h6});
+const buildParsersInput={BeforeRequired:h0,KeyofBeforeRequired:h1,AfterRequired:h2,KeyofAfterRequired:h3,SomeString:h4,SomeChar:h5};
 
 export default { buildParsers };

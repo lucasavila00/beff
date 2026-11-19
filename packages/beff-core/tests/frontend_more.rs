@@ -562,14 +562,10 @@ mod tests {
             export type T = typeof obj.a.b;
             parse.buildParsers<{ T: T }>();
         "#), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "T");
-        const direct_hoist_1 = new TypeofRuntype(undefined, "string");
-        const namedRuntypes = {
-            "T": direct_hoist_1
-        };
-        const buildParsersInput = {
-            "T": direct_hoist_0
-        };
+        const h0=ref(R,"T");
+        const h1=str();
+        define(R,{T:h1});
+        const buildParsersInput={T:h0};
         "#);
     }
 
@@ -1218,14 +1214,10 @@ mod tests {
             export type Alias = Uint8Array;
             parse.buildParsers<{ Dec: Alias }>();
         "#), @r#"
-        const direct_hoist_0 = new RefRuntype(undefined, "Alias");
-        const direct_hoist_1 = new TypedArrayRuntype(undefined, "Uint8Array");
-        const namedRuntypes = {
-            "Alias": direct_hoist_1
-        };
-        const buildParsersInput = {
-            "Dec": direct_hoist_0
-        };
+        const h0=ref(R,"Alias");
+        const h1=typedArray("Uint8Array");
+        define(R,{Alias:h1});
+        const buildParsersInput={Dec:h0};
         "#);
     }
 

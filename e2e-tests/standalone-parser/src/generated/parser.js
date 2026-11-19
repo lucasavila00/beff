@@ -3,40 +3,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -69,828 +71,240 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"];
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
-const direct_hoist_0 = new RefRuntype(undefined, "Intersection");
-const direct_hoist_1 = new RefRuntype(undefined, "IntersectionPartial");
-const direct_hoist_2 = new RefRuntype(undefined, "IntersectionOmitPick");
-const direct_hoist_3 = new RefRuntype(undefined, "IntersectionNested");
-const direct_hoist_4 = new RefRuntype(undefined, "IntersectionIndex");
-const direct_hoist_5 = new RefRuntype(undefined, "IntersectionUnion");
-const direct_hoist_6 = new RefRuntype(undefined, "IntersectionTplIndex");
-const direct_hoist_7 = new RefRuntype(undefined, "IntersectionTwoTplIndexes");
-const direct_hoist_8 = new RefRuntype(undefined, "TplRecord");
-const direct_hoist_9 = new RefRuntype(undefined, "ProtoDiscriminated");
-const direct_hoist_10 = new RefRuntype(undefined, "ProtoKeyObject");
-const direct_hoist_11 = new RefRuntype(undefined, "Repro5");
-const direct_hoist_12 = new RefRuntype(undefined, "Repro6");
-const direct_hoist_13 = new RefRuntype(undefined, "M1");
-const direct_hoist_14 = new RefRuntype(undefined, "S1");
-const direct_hoist_15 = new RefRuntype(undefined, "PartialRepro");
-const direct_hoist_16 = new RefRuntype(undefined, "TransportedValue");
-const direct_hoist_17 = new RefRuntype(undefined, "OnlyAKey");
-const direct_hoist_18 = new TypeofRuntype(undefined, "string");
-const direct_hoist_19 = new ArrayRuntype(undefined, direct_hoist_18);
-const direct_hoist_20 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_19
-}, []);
-const direct_hoist_21 = new BigIntRuntype(undefined);
-const direct_hoist_22 = new TypeofRuntype(undefined, "number");
-const direct_hoist_23 = new TupleRuntype(undefined, [
-    direct_hoist_22,
-    direct_hoist_22,
-    direct_hoist_22
-], null);
-const direct_hoist_24 = new TupleRuntype(undefined, [
-    direct_hoist_22,
-    direct_hoist_22
-], direct_hoist_18);
-const direct_hoist_25 = new RefRuntype(undefined, "AllTs");
-const direct_hoist_26 = new RefRuntype(undefined, "AObject");
-const direct_hoist_27 = new RefRuntype(undefined, "Version");
-const direct_hoist_28 = new RefRuntype(undefined, "Version2");
-const direct_hoist_29 = new RefRuntype(undefined, "PrefixedString");
-const direct_hoist_30 = new RefRuntype(undefined, "KeyedNumber");
-const direct_hoist_31 = new RefRuntype(undefined, "FlagTpl");
-const direct_hoist_32 = new RefRuntype(undefined, "AccessLevelTpl2");
-const direct_hoist_33 = new RefRuntype(undefined, "AccessLevelTpl");
-const direct_hoist_34 = new RefRuntype(undefined, "Arr3");
-const direct_hoist_35 = new RefRuntype(undefined, "OmitSettings");
-const direct_hoist_36 = new RefRuntype(undefined, "RequiredPartialObject");
-const direct_hoist_37 = new RefRuntype(undefined, "LevelAndDSettings");
-const direct_hoist_38 = new RefRuntype(undefined, "PartialSettings");
-const direct_hoist_39 = new RefRuntype(undefined, "Extra");
-const direct_hoist_40 = new RefRuntype(undefined, "User");
-const direct_hoist_41 = new RefRuntype(undefined, "PublicUser");
-const direct_hoist_42 = new RefRuntype(undefined, "Req");
-const direct_hoist_43 = new RefRuntype(undefined, "Repro1");
-const direct_hoist_44 = new RefRuntype(undefined, "SettingsUpdate");
-const direct_hoist_45 = new RefRuntype(undefined, "Mapped");
-const direct_hoist_46 = new RefRuntype(undefined, "MappedOptional");
-const direct_hoist_47 = new RefRuntype(undefined, "PartialObject");
-const direct_hoist_48 = new RefRuntype(undefined, "DiscriminatedUnion");
-const direct_hoist_49 = new RefRuntype(undefined, "DiscriminatedUnion2");
-const direct_hoist_50 = new RefRuntype(undefined, "DiscriminatedUnion3");
-const direct_hoist_51 = new RefRuntype(undefined, "DiscriminatedUnion4");
-const direct_hoist_52 = new RefRuntype(undefined, "AllTypes");
-const direct_hoist_53 = new RefRuntype(undefined, "AccessLevel");
-const direct_hoist_54 = new RefRuntype(undefined, "OtherEnum");
-const direct_hoist_55 = new RefRuntype(undefined, "Arr2");
-const direct_hoist_56 = new RefRuntype(undefined, "ValidCurrency");
-const direct_hoist_57 = new RefRuntype(undefined, "UnionWithEnumAccess");
-const direct_hoist_58 = new RefRuntype(undefined, "T3");
-const direct_hoist_59 = new RefRuntype(undefined, "AvatarSize");
-const direct_hoist_60 = new RefRuntype(undefined, "BObject");
-const direct_hoist_61 = new ConstRuntype(undefined, "a");
-const direct_hoist_62 = new ObjectRuntype(undefined, {
-    "A": direct_hoist_61
-}, []);
-const direct_hoist_63 = new RefRuntype(undefined, "KDEF");
-const direct_hoist_64 = new RefRuntype(undefined, "KABC");
-const direct_hoist_65 = new RefRuntype(undefined, "K");
-const direct_hoist_66 = new RefRuntype(undefined, "NonNegativeNumber");
-const direct_hoist_67 = new RefRuntype(undefined, "NonInfiniteNumber");
-const direct_hoist_68 = new RefRuntype(undefined, "Rate");
-const direct_hoist_69 = new RefRuntype(undefined, "UserId");
-const direct_hoist_70 = new RefRuntype(undefined, "ReadAuthorizedUserId");
-const direct_hoist_71 = new RefRuntype(undefined, "WriteAuthorizedUserId");
-const direct_hoist_72 = new RefRuntype(undefined, "CurrencyPrices");
-const direct_hoist_73 = new RefRuntype(undefined, "Uint8ArrayType");
-const direct_hoist_74 = new RefRuntype(undefined, "Int32ArrayType");
-const direct_hoist_75 = new RefRuntype(undefined, "Float64ArrayType");
-const direct_hoist_76 = new RefRuntype(undefined, "BigInt64ArrayType");
-const direct_hoist_77 = new RefRuntype(undefined, "TsxTask");
-const direct_hoist_78 = new RefRuntype(undefined, "Query");
-const direct_hoist_79 = new RefRuntype(undefined, "DtsConfig");
-const direct_hoist_80 = new RefRuntype(undefined, "DeploymentState");
-const direct_hoist_81 = new AnyOfConstsRuntype(undefined, [
-    "deployed",
-    "failed",
-    "pending"
-]);
-const direct_hoist_82 = new NullishRuntype(undefined, "undefined");
-const direct_hoist_83 = new AnyOfConstsRuntype(undefined, [
-    "asc",
-    "desc"
-]);
-const direct_hoist_84 = new AnyOfConstsRuntype(undefined, [
-    "age",
-    "name"
-]);
-const direct_hoist_85 = new ObjectRuntype(undefined, {
-    "direction": direct_hoist_83,
-    "field": direct_hoist_84
-}, []);
-const direct_hoist_86 = new AnyOfRuntype(undefined, [
-    direct_hoist_82,
-    direct_hoist_85
-]);
-const direct_hoist_87 = new ObjectRuntype(undefined, {
-    "orderBy": direct_hoist_86
-}, []);
-const direct_hoist_88 = new ObjectRuntype(undefined, {}, []);
-const direct_hoist_89 = new ObjectRuntype(undefined, {
-    "tag": direct_hoist_61
-}, []);
-const direct_hoist_90 = new AnyOfConstsRuntype(undefined, [
-    "ADMIN",
-    "USER"
-]);
-const direct_hoist_91 = new AnyOfConstsRuntype(undefined, [
-    "ADMIN Admin",
-    "USER User"
-]);
-const direct_hoist_92 = new RegexRuntype(undefined, /^((ADMIN)|(USER))$/, '`("ADMIN" | "USER")`');
-const direct_hoist_93 = new RegexRuntype(undefined, /^((ADMIN Admin)|(USER User))$/, '`("ADMIN Admin" | "USER User")`');
-const direct_hoist_94 = new AnyOfConstsRuntype(undefined, [
-    "LevelAndDSettings",
-    "OmitSettings",
-    "PartialSettings",
-    "RequiredPartialObject"
-]);
-const direct_hoist_95 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}x${number}`");
-const direct_hoist_96 = new ConstRuntype(undefined, "b");
-const direct_hoist_97 = new ObjectRuntype(undefined, {
-    "tag": direct_hoist_96
-}, []);
-const direct_hoist_98 = new TypedArrayRuntype(undefined, "BigInt64Array");
-const direct_hoist_99 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_18
-}, []);
-const direct_hoist_100 = new ConstRuntype(undefined, "a1");
-const direct_hoist_101 = new ObjectRuntype(undefined, {
-    "a1": direct_hoist_18,
-    "a11": new OptionalFieldRuntype(direct_hoist_18),
-    "subType": direct_hoist_100,
-    "type": direct_hoist_61
-}, []);
-const direct_hoist_102 = new ConstRuntype(undefined, "a2");
-const direct_hoist_103 = new ObjectRuntype(undefined, {
-    "a2": direct_hoist_18,
-    "subType": direct_hoist_102,
-    "type": direct_hoist_61
-}, []);
-const direct_hoist_104 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_101,
-    direct_hoist_103
-], "subType", {
-    "a1": direct_hoist_101,
-    "a2": direct_hoist_103
-}, {
-    "a1": direct_hoist_101,
-    "a2": direct_hoist_103
-});
-const direct_hoist_105 = new ObjectRuntype(undefined, {
-    "type": direct_hoist_96,
-    "value": direct_hoist_22
-}, []);
-const direct_hoist_106 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_101,
-    direct_hoist_103,
-    direct_hoist_105
-], "type", {
-    "a": direct_hoist_104,
-    "b": direct_hoist_105
-}, {
-    "a": direct_hoist_104,
-    "b": direct_hoist_105
-});
-const direct_hoist_107 = new ConstRuntype(undefined, "d");
-const direct_hoist_108 = new ObjectRuntype(undefined, {
-    "type": new OptionalFieldRuntype(direct_hoist_107),
-    "valueD": direct_hoist_22
-}, []);
-const direct_hoist_109 = new AnyOfRuntype(undefined, [
-    direct_hoist_101,
-    direct_hoist_103,
-    direct_hoist_108,
-    direct_hoist_105
-]);
-const direct_hoist_110 = new AnyOfConstsRuntype(undefined, [
-    "a",
-    "c"
-]);
-const direct_hoist_111 = new ObjectRuntype(undefined, {
-    "a1": direct_hoist_18,
-    "type": direct_hoist_110
-}, []);
-const direct_hoist_112 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_111,
-    direct_hoist_105
-], "type", {
-    "a": direct_hoist_111,
-    "b": direct_hoist_105,
-    "c": direct_hoist_111
-}, {
-    "a": direct_hoist_111,
-    "b": direct_hoist_105,
-    "c": direct_hoist_111
-});
-const direct_hoist_113 = new ObjectRuntype(undefined, {
-    "a1": direct_hoist_18,
-    "subType": direct_hoist_100
-}, []);
-const direct_hoist_114 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_113,
-    "type": direct_hoist_61
-}, []);
-const direct_hoist_115 = new ObjectRuntype(undefined, {
-    "a2": direct_hoist_18,
-    "subType": direct_hoist_102
-}, []);
-const direct_hoist_116 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_115,
-    "type": direct_hoist_61
-}, []);
-const direct_hoist_117 = new AnyOfRuntype(undefined, [
-    direct_hoist_114,
-    direct_hoist_116
-]);
-const direct_hoist_118 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_18,
-        "value": direct_hoist_18
-    }
-]);
-const direct_hoist_119 = new RegexRuntype(undefined, /^(true|false)$/, "`${boolean}`");
-const direct_hoist_120 = new TypedArrayRuntype(undefined, "Float64Array");
-const direct_hoist_121 = new ObjectRuntype(undefined, {
-    "b": new OptionalFieldRuntype(direct_hoist_18)
-}, []);
-const direct_hoist_122 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_18,
-    "b": direct_hoist_22,
-    "c": direct_hoist_18
-}, []);
-const direct_hoist_123 = new ObjectRuntype(undefined, {
-    "d0": direct_hoist_18,
-    "e": direct_hoist_22
-}, []);
-const direct_hoist_124 = new TypeofRuntype(undefined, "boolean");
-const direct_hoist_125 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_18,
-    "b": direct_hoist_22,
-    "z": direct_hoist_124
-}, []);
-const direct_hoist_126 = new TypedArrayRuntype(undefined, "Int32Array");
-const direct_hoist_127 = new RefRuntype(undefined, "IA");
-const direct_hoist_128 = new RefRuntype(undefined, "IB");
-const direct_hoist_129 = new AllOfRuntype(undefined, [
-    direct_hoist_127,
-    direct_hoist_128
-]);
-const direct_hoist_130 = new AnyOfRuntype(undefined, [
-    direct_hoist_18,
-    direct_hoist_22
-]);
-const direct_hoist_131 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_18,
-        "value": direct_hoist_130
-    }
-]);
-const direct_hoist_132 = new ObjectRuntype(undefined, {
-    "n": direct_hoist_22
-}, []);
-const direct_hoist_133 = new AllOfRuntype(undefined, [
-    direct_hoist_131,
-    direct_hoist_132,
-    direct_hoist_127
-]);
-const direct_hoist_134 = new ObjectRuntype(undefined, {
-    "x": direct_hoist_18
-}, []);
-const direct_hoist_135 = new ObjectRuntype(undefined, {
-    "n": direct_hoist_134
-}, []);
-const direct_hoist_136 = new AllOfRuntype(undefined, [
-    direct_hoist_135,
-    direct_hoist_128
-]);
-const direct_hoist_137 = new AllOfRuntype(undefined, [
-    direct_hoist_127,
-    direct_hoist_136
-]);
-const direct_hoist_138 = new ObjectRuntype(undefined, {
-    "a": new OptionalFieldRuntype(direct_hoist_18),
-    "b": new OptionalFieldRuntype(direct_hoist_22)
-}, []);
-const direct_hoist_139 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_18,
-    "b": direct_hoist_22,
-    "d0": direct_hoist_18,
-    "e": direct_hoist_22
-}, []);
-const direct_hoist_140 = new AllOfRuntype(undefined, [
-    direct_hoist_138,
-    direct_hoist_139
-]);
-const direct_hoist_141 = new ObjectRuntype(undefined, {
-    "c": new OptionalFieldRuntype(direct_hoist_18)
-}, []);
-const direct_hoist_142 = new AllOfRuntype(undefined, [
-    direct_hoist_141,
-    direct_hoist_127
-]);
-const direct_hoist_143 = new RegexRuntype(undefined, /^(x_)([\s\S]*)$/, "`x_${string}`");
-const direct_hoist_144 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_143,
-        "value": direct_hoist_22
-    }
-]);
-const direct_hoist_145 = new AllOfRuntype(undefined, [
-    direct_hoist_144,
-    direct_hoist_127
-]);
-const direct_hoist_146 = new RegexRuntype(undefined, /^(y_)([\s\S]*)$/, "`y_${string}`");
-const direct_hoist_147 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_146,
-        "value": direct_hoist_18
-    }
-]);
-const direct_hoist_148 = new AllOfRuntype(undefined, [
-    direct_hoist_144,
-    direct_hoist_147,
-    direct_hoist_127
-]);
-const direct_hoist_149 = new ConstRuntype(undefined, "u");
-const direct_hoist_150 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_149,
-    "u": direct_hoist_18
-}, []);
-const direct_hoist_151 = new ConstRuntype(undefined, "v");
-const direct_hoist_152 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_151,
-    "v": new OptionalFieldRuntype(direct_hoist_22)
-}, []);
-const direct_hoist_153 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_150,
-    direct_hoist_152
-], "kind", {
-    "u": direct_hoist_150,
-    "v": direct_hoist_152
-}, {
-    "u": direct_hoist_150,
-    "v": direct_hoist_152
-});
-const direct_hoist_154 = new AllOfRuntype(undefined, [
-    direct_hoist_127,
-    direct_hoist_153
-]);
-const direct_hoist_155 = new AnyOfConstsRuntype(undefined, [
-    "a"
-]);
-const direct_hoist_156 = new NeverRuntype(undefined);
-const direct_hoist_157 = new RegexRuntype(undefined, /^((a)|(b))(-)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, '`("a" | "b")-${number}`');
-const direct_hoist_158 = new ObjectRuntype(undefined, {
-    "tag": direct_hoist_107
-}, []);
-const direct_hoist_159 = new AnyOfConstsRuntype(undefined, [
-    "a",
-    "b"
-]);
-const direct_hoist_160 = new ObjectRuntype(undefined, {
-    "d": direct_hoist_158,
-    "level": direct_hoist_159
-}, []);
-const direct_hoist_161 = new MapRuntype(undefined, direct_hoist_18, direct_hoist_22);
-const direct_hoist_162 = new ObjectRuntype(undefined, {
-    "value": direct_hoist_61
-}, []);
-const direct_hoist_163 = new ObjectRuntype(undefined, {
-    "value": direct_hoist_96
-}, []);
-const direct_hoist_164 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_162,
-    "b": direct_hoist_163
-}, []);
-const direct_hoist_165 = new ObjectRuntype(undefined, {
-    "a": new OptionalFieldRuntype(direct_hoist_162),
-    "b": new OptionalFieldRuntype(direct_hoist_163)
-}, []);
-const direct_hoist_166 = new ObjectRuntype(undefined, {
-    "A": direct_hoist_18
-}, []);
-const direct_hoist_167 = new ObjectRuntype(undefined, {
-    "a": new OptionalFieldRuntype(direct_hoist_18),
-    "b": new OptionalFieldRuntype(direct_hoist_18)
-}, []);
-const direct_hoist_168 = new ObjectRuntype(undefined, {
-    "a": new OptionalFieldRuntype(direct_hoist_18),
-    "d": new OptionalFieldRuntype(direct_hoist_158),
-    "level": new OptionalFieldRuntype(direct_hoist_159)
-}, []);
-const direct_hoist_169 = new RegexRuntype(undefined, /^(a)([\s\S]*)$/, "`a${string}`");
-const direct_hoist_170 = new ConstRuntype(undefined, "__proto__");
-const direct_hoist_171 = new ObjectRuntype(undefined, {
-    "c": direct_hoist_124,
-    "kind": direct_hoist_170
-}, []);
-const direct_hoist_172 = new ConstRuntype(undefined, "constructor");
-const direct_hoist_173 = new ObjectRuntype(undefined, {
-    "b": direct_hoist_22,
-    "kind": direct_hoist_172
-}, []);
-const direct_hoist_174 = new ConstRuntype(undefined, "toString");
-const direct_hoist_175 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_18,
-    "kind": direct_hoist_174
-}, []);
-const direct_hoist_176 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_175,
-    direct_hoist_173,
-    direct_hoist_171
-], "kind", {
-    ["__proto__"]: direct_hoist_171,
-    "constructor": direct_hoist_173,
-    "toString": direct_hoist_175
-}, {
-    ["__proto__"]: direct_hoist_171,
-    "constructor": direct_hoist_173,
-    "toString": direct_hoist_175
-});
-const direct_hoist_177 = new ObjectRuntype(undefined, {
-    ["__proto__"]: direct_hoist_18,
-    "toString": direct_hoist_22
-}, []);
-const direct_hoist_178 = new ObjectRuntype(undefined, {
-    "accessLevel": direct_hoist_53,
-    "avatarSize": direct_hoist_59,
-    "extra": direct_hoist_39,
-    "name": direct_hoist_18
-}, []);
-const direct_hoist_179 = new RefRuntype(undefined, "Repro2");
-const direct_hoist_180 = new ObjectRuntype(undefined, {
-    "sizes": new OptionalFieldRuntype(direct_hoist_179)
-}, []);
-const direct_hoist_181 = new ObjectRuntype(undefined, {
-    "useSmallerSizes": direct_hoist_124
-}, []);
-const direct_hoist_182 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_18,
-        "value": direct_hoist_22
-    }
-]);
-const direct_hoist_183 = new ObjectRuntype(undefined, {
-    "accountEndpoints": direct_hoist_182
-}, []);
-const direct_hoist_184 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": new NumberKeyRuntype(undefined),
-        "value": direct_hoist_22
-    }
-]);
-const direct_hoist_185 = new ObjectRuntype(undefined, {
-    "accountEndpoints": direct_hoist_184
-}, []);
-const direct_hoist_186 = new ObjectRuntype(undefined, {
-    "optional": direct_hoist_18
-}, []);
-const direct_hoist_187 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_18,
-    "b": direct_hoist_22
-}, []);
-const direct_hoist_188 = new SetRuntype(undefined, direct_hoist_18);
-const direct_hoist_189 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_18,
-    "d": direct_hoist_158,
-    "level": direct_hoist_159
-}, []);
-const direct_hoist_190 = new AnyOfRuntype(undefined, [
-    direct_hoist_18,
-    direct_hoist_61,
-    direct_hoist_96,
-    direct_hoist_158
-]);
-const direct_hoist_191 = new ConstRuntype(undefined, "circle");
-const direct_hoist_192 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_191,
-    "radius": direct_hoist_22
-}, []);
-const direct_hoist_193 = new ConstRuntype(undefined, "square");
-const direct_hoist_194 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_193,
-    "x": direct_hoist_22
-}, []);
-const direct_hoist_195 = new ConstRuntype(undefined, "triangle");
-const direct_hoist_196 = new ObjectRuntype(undefined, {
-    "kind": direct_hoist_195,
-    "x": direct_hoist_22,
-    "y": direct_hoist_22
-}, []);
-const direct_hoist_197 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_192,
-    direct_hoist_194,
-    direct_hoist_196
-], "kind", {
-    "circle": direct_hoist_192,
-    "square": direct_hoist_194,
-    "triangle": direct_hoist_196
-}, {
-    "circle": direct_hoist_192,
-    "square": direct_hoist_194,
-    "triangle": direct_hoist_196
-});
-const direct_hoist_198 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_194,
-    direct_hoist_196
-], "kind", {
-    "square": direct_hoist_194,
-    "triangle": direct_hoist_196
-}, {
-    "square": direct_hoist_194,
-    "triangle": direct_hoist_196
-});
-const direct_hoist_199 = new NullishRuntype(undefined, "null");
-const direct_hoist_200 = new AnyOfRuntype(undefined, [
-    direct_hoist_199,
-    direct_hoist_82,
-    direct_hoist_18,
-    direct_hoist_22
-]);
-const direct_hoist_201 = new ArrayRuntype(undefined, direct_hoist_200);
-const direct_hoist_202 = new AnyOfRuntype(undefined, [
-    direct_hoist_199,
-    direct_hoist_82,
-    direct_hoist_18,
-    direct_hoist_201
-]);
-const direct_hoist_203 = new TypedArrayRuntype(undefined, "Uint8Array");
-const direct_hoist_204 = new RefRuntype(undefined, "OtherEnum__A");
-const direct_hoist_205 = new ObjectRuntype(undefined, {
-    "tag": direct_hoist_204,
-    "value": direct_hoist_18
-}, []);
-const direct_hoist_206 = new RefRuntype(undefined, "OtherEnum__B");
-const direct_hoist_207 = new ObjectRuntype(undefined, {
-    "tag": direct_hoist_206,
-    "value": direct_hoist_22
-}, []);
-const direct_hoist_208 = new RefRuntype(undefined, "OtherEnum2__C");
-const direct_hoist_209 = new ObjectRuntype(undefined, {
-    "tag": direct_hoist_208,
-    "value": direct_hoist_124
-}, []);
-const direct_hoist_210 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_209,
-    direct_hoist_205,
-    direct_hoist_207
-], "tag", {
-    "a": direct_hoist_205,
-    "b": direct_hoist_207,
-    "c": direct_hoist_209
-}, {
-    "a": direct_hoist_205,
-    "b": direct_hoist_207,
-    "c": direct_hoist_209
-});
-const direct_hoist_211 = new ArrayRuntype(undefined, direct_hoist_40);
-const direct_hoist_212 = new ObjectRuntype(undefined, {
-    "accessLevel": direct_hoist_53,
-    "avatarSize": direct_hoist_59,
-    "extra": direct_hoist_39,
-    "friends": direct_hoist_211,
-    "name": direct_hoist_18
-}, []);
-const direct_hoist_213 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}.${number}.${number}`");
-const direct_hoist_214 = new RegexRuntype(undefined, /^(v)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`v${number}.${number}.${number}`");
-const direct_hoist_215 = new ObjectRuntype(undefined, {
-    "optional": new OptionalFieldRuntype(direct_hoist_18)
-}, []);
-const direct_hoist_216 = new RefRuntype(undefined, "DtsStatus");
-const direct_hoist_217 = new ObjectRuntype(undefined, {
-    "enabled": direct_hoist_124,
-    "status": direct_hoist_216
-}, []);
-const direct_hoist_218 = new AnyOfConstsRuntype(undefined, [
-    "off",
-    "on"
-]);
-const direct_hoist_219 = new AnyOfConstsRuntype(undefined, [
-    "active",
-    "closed",
-    "pending"
-]);
-const direct_hoist_220 = new RefRuntype(undefined, "TsxLabel");
-const direct_hoist_221 = new ObjectRuntype(undefined, {
-    "id": direct_hoist_18,
-    "label": direct_hoist_220
-}, []);
-const direct_hoist_222 = new AnyOfConstsRuntype(undefined, [
-    "A",
-    "B",
-    "C"
-]);
-const direct_hoist_223 = new AnyOfConstsRuntype(undefined, [
-    "X",
-    "Y"
-]);
-const direct_hoist_224 = new StringWithFormatRuntype(undefined, [
-    "ValidCurrency"
-]);
-const direct_hoist_225 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_224,
-        "value": direct_hoist_68
-    }
-]);
-const direct_hoist_226 = new NumberWithFormatRuntype(undefined, [
-    "NonInfiniteNumber"
-]);
-const direct_hoist_227 = new NumberWithFormatRuntype(undefined, [
-    "NonInfiniteNumber",
-    "NonNegativeNumber"
-]);
-const direct_hoist_228 = new NumberWithFormatRuntype(undefined, [
-    "NonInfiniteNumber",
-    "NonNegativeNumber",
-    "Rate"
-]);
-const direct_hoist_229 = new StringWithFormatRuntype(undefined, [
-    "UserId",
-    "ReadAuthorizedUserId"
-]);
-const direct_hoist_230 = new StringWithFormatRuntype(undefined, [
-    "UserId"
-]);
-const direct_hoist_231 = new StringWithFormatRuntype(undefined, [
-    "UserId",
-    "ReadAuthorizedUserId",
-    "WriteAuthorizedUserId"
-]);
-const direct_hoist_232 = new ConstRuntype(undefined, "c");
-const namedRuntypes = {
-    "DeploymentState": direct_hoist_81,
-    "Query": direct_hoist_87,
-    "ABC": direct_hoist_88,
-    "AObject": direct_hoist_89,
-    "AccessLevel": direct_hoist_90,
-    "AccessLevel2": direct_hoist_91,
-    "AccessLevelTpl": direct_hoist_92,
-    "AccessLevelTpl2": direct_hoist_93,
-    "AllTypes": direct_hoist_94,
-    "AvatarSize": direct_hoist_95,
-    "BObject": direct_hoist_97,
-    "BigInt64ArrayType": direct_hoist_98,
-    "DEF": direct_hoist_99,
-    "DiscriminatedUnion": direct_hoist_106,
-    "DiscriminatedUnion2": direct_hoist_109,
-    "DiscriminatedUnion3": direct_hoist_112,
-    "DiscriminatedUnion4": direct_hoist_117,
-    "Extra": direct_hoist_118,
-    "FlagTpl": direct_hoist_119,
-    "Float64ArrayType": direct_hoist_120,
-    "IA": direct_hoist_99,
-    "IB": direct_hoist_121,
-    "IBase": direct_hoist_122,
-    "IExtra": direct_hoist_123,
-    "IOther": direct_hoist_125,
-    "Int32ArrayType": direct_hoist_126,
-    "Intersection": direct_hoist_129,
-    "IntersectionIndex": direct_hoist_133,
-    "IntersectionNested": direct_hoist_137,
-    "IntersectionOmitPick": direct_hoist_140,
-    "IntersectionPartial": direct_hoist_142,
-    "IntersectionTplIndex": direct_hoist_145,
-    "IntersectionTwoTplIndexes": direct_hoist_148,
-    "IntersectionUnion": direct_hoist_154,
-    "K": direct_hoist_155,
-    "KABC": direct_hoist_156,
-    "KDEF": direct_hoist_61,
-    "KeyedNumber": direct_hoist_157,
-    "LevelAndDSettings": direct_hoist_160,
-    "M1": direct_hoist_161,
-    "Mapped": direct_hoist_164,
-    "MappedOptional": direct_hoist_165,
-    "OmitSettings": direct_hoist_160,
-    "OnlyAKey": direct_hoist_166,
-    "PartialObject": direct_hoist_138,
-    "PartialRepro": direct_hoist_167,
-    "PartialSettings": direct_hoist_168,
-    "PrefixedString": direct_hoist_169,
-    "ProtoDiscriminated": direct_hoist_176,
-    "ProtoKeyObject": direct_hoist_177,
-    "PublicUser": direct_hoist_178,
-    "Repro1": direct_hoist_180,
-    "Repro2": direct_hoist_181,
-    "Repro5": direct_hoist_183,
-    "Repro6": direct_hoist_185,
-    "Req": direct_hoist_186,
-    "RequiredPartialObject": direct_hoist_187,
-    "S1": direct_hoist_188,
-    "Settings": direct_hoist_189,
-    "SettingsUpdate": direct_hoist_190,
-    "Shape": direct_hoist_197,
-    "T3": direct_hoist_198,
-    "TplRecord": direct_hoist_144,
-    "TransportedValue": direct_hoist_202,
-    "Uint8ArrayType": direct_hoist_203,
-    "UnionWithEnumAccess": direct_hoist_210,
-    "User": direct_hoist_212,
-    "Version": direct_hoist_213,
-    "Version2": direct_hoist_214,
-    "WithOptionals": direct_hoist_215,
-    "DtsConfig": direct_hoist_217,
-    "DtsStatus": direct_hoist_218,
-    "TsxLabel": direct_hoist_219,
-    "TsxTask": direct_hoist_221,
-    "Arr2": direct_hoist_222,
-    "OtherEnum": direct_hoist_159,
-    "Arr3": direct_hoist_223,
-    "CurrencyPrices": direct_hoist_225,
-    "NonInfiniteNumber": direct_hoist_226,
-    "NonNegativeNumber": direct_hoist_227,
-    "Rate": direct_hoist_228,
-    "ReadAuthorizedUserId": direct_hoist_229,
-    "UserId": direct_hoist_230,
-    "ValidCurrency": direct_hoist_224,
-    "WriteAuthorizedUserId": direct_hoist_231,
-    "AllTs": direct_hoist_159,
-    "OtherEnum__A": direct_hoist_61,
-    "OtherEnum__B": direct_hoist_96,
-    "OtherEnum2__C": direct_hoist_232
-};
-const buildParsersInput = {
-    "Intersection": direct_hoist_0,
-    "IntersectionPartial": direct_hoist_1,
-    "IntersectionOmitPick": direct_hoist_2,
-    "IntersectionNested": direct_hoist_3,
-    "IntersectionIndex": direct_hoist_4,
-    "IntersectionUnion": direct_hoist_5,
-    "IntersectionTplIndex": direct_hoist_6,
-    "IntersectionTwoTplIndexes": direct_hoist_7,
-    "TplRecord": direct_hoist_8,
-    "ProtoDiscriminated": direct_hoist_9,
-    "ProtoKeyObject": direct_hoist_10,
-    "Repro5": direct_hoist_11,
-    "Repro6": direct_hoist_12,
-    "M1": direct_hoist_13,
-    "S1": direct_hoist_14,
-    "PartialRepro": direct_hoist_15,
-    "TransportedValue": direct_hoist_16,
-    "OnlyAKey": direct_hoist_17,
-    "ObjectWithArr": direct_hoist_20,
-    "BigIntCodec": direct_hoist_21,
-    "TupleCodec": direct_hoist_23,
-    "TupleCodecRest": direct_hoist_24,
-    "StringArrCodec": direct_hoist_19,
-    "AllTs": direct_hoist_25,
-    "AObject": direct_hoist_26,
-    "Version": direct_hoist_27,
-    "Version2": direct_hoist_28,
-    "PrefixedString": direct_hoist_29,
-    "KeyedNumber": direct_hoist_30,
-    "FlagTpl": direct_hoist_31,
-    "AccessLevelTpl2": direct_hoist_32,
-    "AccessLevelTpl": direct_hoist_33,
-    "Arr3": direct_hoist_34,
-    "OmitSettings": direct_hoist_35,
-    "RequiredPartialObject": direct_hoist_36,
-    "LevelAndDSettings": direct_hoist_37,
-    "PartialSettings": direct_hoist_38,
-    "Extra": direct_hoist_39,
-    "User": direct_hoist_40,
-    "PublicUser": direct_hoist_41,
-    "Req": direct_hoist_42,
-    "Repro1": direct_hoist_43,
-    "SettingsUpdate": direct_hoist_44,
-    "Mapped": direct_hoist_45,
-    "MappedOptional": direct_hoist_46,
-    "PartialObject": direct_hoist_47,
-    "DiscriminatedUnion": direct_hoist_48,
-    "DiscriminatedUnion2": direct_hoist_49,
-    "DiscriminatedUnion3": direct_hoist_50,
-    "DiscriminatedUnion4": direct_hoist_51,
-    "AllTypes": direct_hoist_52,
-    "AccessLevel": direct_hoist_53,
-    "OtherEnum": direct_hoist_54,
-    "Arr2C": direct_hoist_55,
-    "ValidCurrency": direct_hoist_56,
-    "UnionWithEnumAccess": direct_hoist_57,
-    "T3": direct_hoist_58,
-    "AccessLevelCodec": direct_hoist_53,
-    "AvatarSize": direct_hoist_59,
-    "BObject": direct_hoist_60,
-    "ImportEnumTypeof": direct_hoist_62,
-    "KDEF": direct_hoist_63,
-    "KABC": direct_hoist_64,
-    "K": direct_hoist_65,
-    "NonNegativeNumber": direct_hoist_66,
-    "NonInfiniteNumber": direct_hoist_67,
-    "Rate": direct_hoist_68,
-    "UserId": direct_hoist_69,
-    "ReadAuthorizedUserId": direct_hoist_70,
-    "WriteAuthorizedUserId": direct_hoist_71,
-    "CurrencyPrices": direct_hoist_72,
-    "Uint8ArrayCodec": direct_hoist_73,
-    "Int32ArrayCodec": direct_hoist_74,
-    "Float64ArrayCodec": direct_hoist_75,
-    "BigInt64ArrayCodec": direct_hoist_76,
-    "TsxTask": direct_hoist_77,
-    "Query": direct_hoist_78,
-    "DtsConfig": direct_hoist_79,
-    "DeploymentState": direct_hoist_80
-};
+const h0=ref(R,"Intersection");
+const h1=ref(R,"IntersectionPartial");
+const h2=ref(R,"IntersectionOmitPick");
+const h3=ref(R,"IntersectionNested");
+const h4=ref(R,"IntersectionIndex");
+const h5=ref(R,"IntersectionUnion");
+const h6=ref(R,"IntersectionTplIndex");
+const h7=ref(R,"IntersectionTwoTplIndexes");
+const h8=ref(R,"TplRecord");
+const h9=ref(R,"ProtoDiscriminated");
+const h10=ref(R,"ProtoKeyObject");
+const h11=ref(R,"Repro5");
+const h12=ref(R,"Repro6");
+const h13=ref(R,"M1");
+const h14=ref(R,"S1");
+const h15=ref(R,"PartialRepro");
+const h16=ref(R,"TransportedValue");
+const h17=ref(R,"OnlyAKey");
+const h18=str();
+const h19=arr(h18);
+const h20=obj({a:h19});
+const h21=bigint();
+const h22=num();
+const h23=tuple([h22,h22,h22]);
+const h24=tuple([h22,h22],h18);
+const h25=ref(R,"AllTs");
+const h26=ref(R,"AObject");
+const h27=ref(R,"Version");
+const h28=ref(R,"Version2");
+const h29=ref(R,"PrefixedString");
+const h30=ref(R,"KeyedNumber");
+const h31=ref(R,"FlagTpl");
+const h32=ref(R,"AccessLevelTpl2");
+const h33=ref(R,"AccessLevelTpl");
+const h34=ref(R,"Arr3");
+const h35=ref(R,"OmitSettings");
+const h36=ref(R,"RequiredPartialObject");
+const h37=ref(R,"LevelAndDSettings");
+const h38=ref(R,"PartialSettings");
+const h39=ref(R,"Extra");
+const h40=ref(R,"User");
+const h41=ref(R,"PublicUser");
+const h42=ref(R,"Req");
+const h43=ref(R,"Repro1");
+const h44=ref(R,"SettingsUpdate");
+const h45=ref(R,"Mapped");
+const h46=ref(R,"MappedOptional");
+const h47=ref(R,"PartialObject");
+const h48=ref(R,"DiscriminatedUnion");
+const h49=ref(R,"DiscriminatedUnion2");
+const h50=ref(R,"DiscriminatedUnion3");
+const h51=ref(R,"DiscriminatedUnion4");
+const h52=ref(R,"AllTypes");
+const h53=ref(R,"AccessLevel");
+const h54=ref(R,"OtherEnum");
+const h55=ref(R,"Arr2");
+const h56=ref(R,"ValidCurrency");
+const h57=ref(R,"UnionWithEnumAccess");
+const h58=ref(R,"T3");
+const h59=ref(R,"AvatarSize");
+const h60=ref(R,"BObject");
+const h61=lit("a");
+const h62=obj({A:h61});
+const h63=ref(R,"KDEF");
+const h64=ref(R,"KABC");
+const h65=ref(R,"K");
+const h66=ref(R,"NonNegativeNumber");
+const h67=ref(R,"NonInfiniteNumber");
+const h68=ref(R,"Rate");
+const h69=ref(R,"UserId");
+const h70=ref(R,"ReadAuthorizedUserId");
+const h71=ref(R,"WriteAuthorizedUserId");
+const h72=ref(R,"CurrencyPrices");
+const h73=ref(R,"Uint8ArrayType");
+const h74=ref(R,"Int32ArrayType");
+const h75=ref(R,"Float64ArrayType");
+const h76=ref(R,"BigInt64ArrayType");
+const h77=ref(R,"TsxTask");
+const h78=ref(R,"Query");
+const h79=ref(R,"DtsConfig");
+const h80=ref(R,"DeploymentState");
+const h81=lits(["deployed","failed","pending"]);
+const h82=undef();
+const h83=lits(["asc","desc"]);
+const h84=lits(["age","name"]);
+const h85=obj({direction:h83,field:h84});
+const h86=union([h82,h85]);
+const h87=obj({orderBy:h86});
+const h88=obj({});
+const h89=obj({tag:h61});
+const h90=lits(["ADMIN","USER"]);
+const h91=lits(["ADMIN Admin","USER User"]);
+const h92=regex(/^((ADMIN)|(USER))$/,'`("ADMIN" | "USER")`');
+const h93=regex(/^((ADMIN Admin)|(USER User))$/,'`("ADMIN Admin" | "USER User")`');
+const h94=lits(["LevelAndDSettings","OmitSettings","PartialSettings","RequiredPartialObject"]);
+const h95=regex(/^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/,"`${number}x${number}`");
+const h96=lit("b");
+const h97=obj({tag:h96});
+const h98=typedArray("BigInt64Array");
+const h99=obj({a:h18});
+const h100=lit("a1");
+const h101=obj({a1:h18,a11:opt(h18),subType:h100,type:h61});
+const h102=lit("a2");
+const h103=obj({a2:h18,subType:h102,type:h61});
+const h104=disc("subType",{a1:h101,a2:h103},[h101,h103]);
+const h105=obj({type:h96,value:h22});
+const h106=disc("type",{a:h104,b:h105},[h101,h103,h105]);
+const h107=lit("d");
+const h108=obj({type:opt(h107),valueD:h22});
+const h109=union([h101,h103,h108,h105]);
+const h110=lits(["a","c"]);
+const h111=obj({a1:h18,type:h110});
+const h112=disc("type",{a:h111,b:h105,c:h111},[h111,h105]);
+const h113=obj({a1:h18,subType:h100});
+const h114=obj({a:h113,type:h61});
+const h115=obj({a2:h18,subType:h102});
+const h116=obj({a:h115,type:h61});
+const h117=union([h114,h116]);
+const h118=obj({},[{key:h18,value:h18}]);
+const h119=regex(/^(true|false)$/,"`${boolean}`");
+const h120=typedArray("Float64Array");
+const h121=obj({b:opt(h18)});
+const h122=obj({a:h18,b:h22,c:h18});
+const h123=obj({d0:h18,e:h22});
+const h124=bool();
+const h125=obj({a:h18,b:h22,z:h124});
+const h126=typedArray("Int32Array");
+const h127=ref(R,"IA");
+const h128=ref(R,"IB");
+const h129=allOf([h127,h128]);
+const h130=union([h18,h22]);
+const h131=obj({},[{key:h18,value:h130}]);
+const h132=obj({n:h22});
+const h133=allOf([h131,h132,h127]);
+const h134=obj({x:h18});
+const h135=obj({n:h134});
+const h136=allOf([h135,h128]);
+const h137=allOf([h127,h136]);
+const h138=obj({a:opt(h18),b:opt(h22)});
+const h139=obj({a:h18,b:h22,d0:h18,e:h22});
+const h140=allOf([h138,h139]);
+const h141=obj({c:opt(h18)});
+const h142=allOf([h141,h127]);
+const h143=regex(/^(x_)([\s\S]*)$/,"`x_${string}`");
+const h144=obj({},[{key:h143,value:h22}]);
+const h145=allOf([h144,h127]);
+const h146=regex(/^(y_)([\s\S]*)$/,"`y_${string}`");
+const h147=obj({},[{key:h146,value:h18}]);
+const h148=allOf([h144,h147,h127]);
+const h149=lit("u");
+const h150=obj({kind:h149,u:h18});
+const h151=lit("v");
+const h152=obj({kind:h151,v:opt(h22)});
+const h153=disc("kind",{u:h150,v:h152},[h150,h152]);
+const h154=allOf([h127,h153]);
+const h155=lits(["a"]);
+const h156=never();
+const h157=regex(/^((a)|(b))(-)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/,'`("a" | "b")-${number}`');
+const h158=obj({tag:h107});
+const h159=lits(["a","b"]);
+const h160=obj({d:h158,level:h159});
+const h161=map(h18,h22);
+const h162=obj({value:h61});
+const h163=obj({value:h96});
+const h164=obj({a:h162,b:h163});
+const h165=obj({a:opt(h162),b:opt(h163)});
+const h166=obj({A:h18});
+const h167=obj({a:opt(h18),b:opt(h18)});
+const h168=obj({a:opt(h18),d:opt(h158),level:opt(h159)});
+const h169=regex(/^(a)([\s\S]*)$/,"`a${string}`");
+const h170=lit("__proto__");
+const h171=obj({c:h124,kind:h170});
+const h172=lit("constructor");
+const h173=obj({b:h22,kind:h172});
+const h174=lit("toString");
+const h175=obj({a:h18,kind:h174});
+const h176=disc("kind",{["__proto__"]:h171,constructor:h173,toString:h175},[h175,h173,h171]);
+const h177=obj({["__proto__"]:h18,toString:h22});
+const h178=obj({accessLevel:h53,avatarSize:h59,extra:h39,name:h18});
+const h179=ref(R,"Repro2");
+const h180=obj({sizes:opt(h179)});
+const h181=obj({useSmallerSizes:h124});
+const h182=obj({},[{key:h18,value:h22}]);
+const h183=obj({accountEndpoints:h182});
+const h184=obj({},[{key:numKey(),value:h22}]);
+const h185=obj({accountEndpoints:h184});
+const h186=obj({optional:h18});
+const h187=obj({a:h18,b:h22});
+const h188=set(h18);
+const h189=obj({a:h18,d:h158,level:h159});
+const h190=union([h18,h61,h96,h158]);
+const h191=lit("circle");
+const h192=obj({kind:h191,radius:h22});
+const h193=lit("square");
+const h194=obj({kind:h193,x:h22});
+const h195=lit("triangle");
+const h196=obj({kind:h195,x:h22,y:h22});
+const h197=disc("kind",{circle:h192,square:h194,triangle:h196},[h192,h194,h196]);
+const h198=disc("kind",{square:h194,triangle:h196},[h194,h196]);
+const h199=nul();
+const h200=union([h199,h82,h18,h22]);
+const h201=arr(h200);
+const h202=union([h199,h82,h18,h201]);
+const h203=typedArray("Uint8Array");
+const h204=ref(R,"OtherEnum__A");
+const h205=obj({tag:h204,value:h18});
+const h206=ref(R,"OtherEnum__B");
+const h207=obj({tag:h206,value:h22});
+const h208=ref(R,"OtherEnum2__C");
+const h209=obj({tag:h208,value:h124});
+const h210=disc("tag",{a:h205,b:h207,c:h209},[h209,h205,h207]);
+const h211=arr(h40);
+const h212=obj({accessLevel:h53,avatarSize:h59,extra:h39,friends:h211,name:h18});
+const h213=regex(/^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/,"`${number}.${number}.${number}`");
+const h214=regex(/^(v)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(\.)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/,"`v${number}.${number}.${number}`");
+const h215=obj({optional:opt(h18)});
+const h216=ref(R,"DtsStatus");
+const h217=obj({enabled:h124,status:h216});
+const h218=lits(["off","on"]);
+const h219=lits(["active","closed","pending"]);
+const h220=ref(R,"TsxLabel");
+const h221=obj({id:h18,label:h220});
+const h222=lits(["A","B","C"]);
+const h223=lits(["X","Y"]);
+const h224=strFormat(["ValidCurrency"]);
+const h225=obj({},[{key:h224,value:h68}]);
+const h226=numFormat(["NonInfiniteNumber"]);
+const h227=numFormat(["NonInfiniteNumber","NonNegativeNumber"]);
+const h228=numFormat(["NonInfiniteNumber","NonNegativeNumber","Rate"]);
+const h229=strFormat(["UserId","ReadAuthorizedUserId"]);
+const h230=strFormat(["UserId"]);
+const h231=strFormat(["UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"]);
+const h232=lit("c");
+define(R,{DeploymentState:h81,Query:h87,ABC:h88,AObject:h89,AccessLevel:h90,AccessLevel2:h91,AccessLevelTpl:h92,AccessLevelTpl2:h93,AllTypes:h94,AvatarSize:h95,BObject:h97,BigInt64ArrayType:h98,DEF:h99,DiscriminatedUnion:h106,DiscriminatedUnion2:h109,DiscriminatedUnion3:h112,DiscriminatedUnion4:h117,Extra:h118,FlagTpl:h119,Float64ArrayType:h120,IA:h99,IB:h121,IBase:h122,IExtra:h123,IOther:h125,Int32ArrayType:h126,Intersection:h129,IntersectionIndex:h133,IntersectionNested:h137,IntersectionOmitPick:h140,IntersectionPartial:h142,IntersectionTplIndex:h145,IntersectionTwoTplIndexes:h148,IntersectionUnion:h154,K:h155,KABC:h156,KDEF:h61,KeyedNumber:h157,LevelAndDSettings:h160,M1:h161,Mapped:h164,MappedOptional:h165,OmitSettings:h160,OnlyAKey:h166,PartialObject:h138,PartialRepro:h167,PartialSettings:h168,PrefixedString:h169,ProtoDiscriminated:h176,ProtoKeyObject:h177,PublicUser:h178,Repro1:h180,Repro2:h181,Repro5:h183,Repro6:h185,Req:h186,RequiredPartialObject:h187,S1:h188,Settings:h189,SettingsUpdate:h190,Shape:h197,T3:h198,TplRecord:h144,TransportedValue:h202,Uint8ArrayType:h203,UnionWithEnumAccess:h210,User:h212,Version:h213,Version2:h214,WithOptionals:h215,DtsConfig:h217,DtsStatus:h218,TsxLabel:h219,TsxTask:h221,Arr2:h222,OtherEnum:h159,Arr3:h223,CurrencyPrices:h225,NonInfiniteNumber:h226,NonNegativeNumber:h227,Rate:h228,ReadAuthorizedUserId:h229,UserId:h230,ValidCurrency:h224,WriteAuthorizedUserId:h231,AllTs:h159,OtherEnum__A:h61,OtherEnum__B:h96,OtherEnum2__C:h232});
+const buildParsersInput={Intersection:h0,IntersectionPartial:h1,IntersectionOmitPick:h2,IntersectionNested:h3,IntersectionIndex:h4,IntersectionUnion:h5,IntersectionTplIndex:h6,IntersectionTwoTplIndexes:h7,TplRecord:h8,ProtoDiscriminated:h9,ProtoKeyObject:h10,Repro5:h11,Repro6:h12,M1:h13,S1:h14,PartialRepro:h15,TransportedValue:h16,OnlyAKey:h17,ObjectWithArr:h20,BigIntCodec:h21,TupleCodec:h23,TupleCodecRest:h24,StringArrCodec:h19,AllTs:h25,AObject:h26,Version:h27,Version2:h28,PrefixedString:h29,KeyedNumber:h30,FlagTpl:h31,AccessLevelTpl2:h32,AccessLevelTpl:h33,Arr3:h34,OmitSettings:h35,RequiredPartialObject:h36,LevelAndDSettings:h37,PartialSettings:h38,Extra:h39,User:h40,PublicUser:h41,Req:h42,Repro1:h43,SettingsUpdate:h44,Mapped:h45,MappedOptional:h46,PartialObject:h47,DiscriminatedUnion:h48,DiscriminatedUnion2:h49,DiscriminatedUnion3:h50,DiscriminatedUnion4:h51,AllTypes:h52,AccessLevel:h53,OtherEnum:h54,Arr2C:h55,ValidCurrency:h56,UnionWithEnumAccess:h57,T3:h58,AccessLevelCodec:h53,AvatarSize:h59,BObject:h60,ImportEnumTypeof:h62,KDEF:h63,KABC:h64,K:h65,NonNegativeNumber:h66,NonInfiniteNumber:h67,Rate:h68,UserId:h69,ReadAuthorizedUserId:h70,WriteAuthorizedUserId:h71,CurrencyPrices:h72,Uint8ArrayCodec:h73,Int32ArrayCodec:h74,Float64ArrayCodec:h75,BigInt64ArrayCodec:h76,TsxTask:h77,Query:h78,DtsConfig:h79,DeploymentState:h80};
 
 export default { buildParsers };

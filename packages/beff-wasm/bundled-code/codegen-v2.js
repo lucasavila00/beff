@@ -1,40 +1,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};

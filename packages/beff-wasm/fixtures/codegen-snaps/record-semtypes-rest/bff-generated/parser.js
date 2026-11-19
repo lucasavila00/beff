@@ -3,40 +3,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -69,29 +71,13 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "User");
-const direct_hoist_1 = new TypeofRuntype(undefined, "number");
-const direct_hoist_2 = new TypeofRuntype(undefined, "string");
-const direct_hoist_3 = new ObjectRuntype(undefined, {
-    "data1": direct_hoist_1,
-    "data2": direct_hoist_2
-}, []);
-const direct_hoist_4 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_2,
-        "value": direct_hoist_2
-    }
-]);
-const direct_hoist_5 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_2
-}, []);
-const namedRuntypes = {
-    "User": direct_hoist_3,
-    "X": direct_hoist_4,
-    "Y": direct_hoist_5
-};
-const buildParsersInput = {
-    "User": direct_hoist_0
-};
+const h0=ref(R,"User");
+const h1=num();
+const h2=str();
+const h3=obj({data1:h1,data2:h2});
+const h4=obj({},[{key:h2,value:h2}]);
+const h5=obj({a:h2});
+define(R,{User:h3,X:h4,Y:h5});
+const buildParsersInput={User:h0};
 
 export default { buildParsers };

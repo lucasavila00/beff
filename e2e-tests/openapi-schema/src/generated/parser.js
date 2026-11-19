@@ -7,40 +7,42 @@ Object.defineProperty(exports, "__esModule", {
 "use strict";
 
 const {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } = require("@beff/client/codegen-v2");
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -73,316 +75,91 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "Address");
-const direct_hoist_1 = new RefRuntype(undefined, "User");
-const direct_hoist_2 = new RefRuntype(undefined, "DocumentedPayload");
-const direct_hoist_3 = new RefRuntype(undefined, "CreateUserRequest");
-const direct_hoist_4 = new RefRuntype(undefined, "CreateUserResponse");
-const direct_hoist_5 = new RefRuntype(undefined, "UpdateUserRequest");
-const direct_hoist_6 = new RefRuntype(undefined, "SearchUsersResponse");
-const direct_hoist_7 = new RefRuntype(undefined, "RecursiveTree");
-const direct_hoist_8 = new RefRuntype(undefined, "RecursiveEnvelope");
-const direct_hoist_9 = new RefRuntype(undefined, "OpenApiCompatConstPayload");
-const direct_hoist_10 = new RefRuntype(undefined, "OpenApiCompatEnumPayload");
-const direct_hoist_11 = new RefRuntype(undefined, "OpenApiCompatRecordPayload");
-const direct_hoist_12 = new RefRuntype(undefined, "OpenApiCompatEmptyRecordPayload");
-const direct_hoist_13 = new RefRuntype(undefined, "OpenApiCompatOptionalizedPayload");
-const direct_hoist_14 = new RefRuntype(undefined, "OpenApiCompatOptinal");
-const direct_hoist_15 = new RefRuntype(undefined, "OpenApiCompatOptionalNullishPayload");
-const direct_hoist_16 = new RefRuntype(undefined, "OpenApiCompatDiscUnion");
-const direct_hoist_17 = new RefRuntype(undefined, "OpenApiCompatDiscUnionCron");
-const direct_hoist_18 = new RefRuntype(undefined, "OpenApiCompatDiscUnionEvent");
-const direct_hoist_19 = new RefRuntype(undefined, "OpenApiCompatDiscUnionAndNamedTypes");
-const direct_hoist_20 = new RefRuntype(undefined, "WorkflowSource");
-const direct_hoist_21 = new TypeofRuntype(undefined, "string");
-const direct_hoist_22 = new ObjectRuntype(undefined, {
-    "city": direct_hoist_21,
-    "street": direct_hoist_21
-}, []);
-const direct_hoist_23 = new ObjectRuntype(undefined, {
-    "source": direct_hoist_21
-}, []);
-const direct_hoist_24 = new ObjectRuntype(undefined, {
-    "metadata": direct_hoist_23,
-    "user": direct_hoist_1
-}, []);
-const direct_hoist_25 = new ObjectRuntype(undefined, {
-    "user": direct_hoist_1
-}, []);
-const direct_hoist_26 = new NullishRuntype(undefined, "undefined");
-const direct_hoist_27 = new AnyOfRuntype(undefined, [
-    direct_hoist_26,
-    direct_hoist_21
-]);
-const direct_hoist_28 = new ConstRuntype(undefined, "CRON");
-const direct_hoist_29 = new ObjectRuntype(undefined, {
-    "cronExpression": direct_hoist_21,
-    "eventName": direct_hoist_27,
-    "type": direct_hoist_28
-}, []);
-const direct_hoist_30 = new RefRuntype(undefined, "WorkflowSourceBase");
-const direct_hoist_31 = new AllOfRuntype(undefined, [
-    direct_hoist_29,
-    direct_hoist_30
-]);
-const direct_hoist_32 = new TypeofRuntype({
-    "description": "Stable payload id."
-}, "string");
-const direct_hoist_33 = new TypeofRuntype({
-    "description": "Optional retry count."
-}, "number");
-const direct_hoist_34 = new ObjectRuntype({
-    "description": "Documented payload for contextual JSON Schema."
-}, {
-    "id": direct_hoist_32,
-    "retries": new OptionalFieldRuntype(direct_hoist_33)
-}, []);
-const direct_hoist_35 = new ConstRuntype(undefined, "EVENT");
-const direct_hoist_36 = new ObjectRuntype(undefined, {
-    "cronExpression": direct_hoist_27,
-    "eventName": direct_hoist_21,
-    "type": direct_hoist_35
-}, []);
-const direct_hoist_37 = new AllOfRuntype(undefined, [
-    direct_hoist_36,
-    direct_hoist_30
-]);
-const direct_hoist_38 = new ConstRuntype(undefined, true);
-const direct_hoist_39 = new NullishRuntype(undefined, "null");
-const direct_hoist_40 = new ConstRuntype(undefined, 3);
-const direct_hoist_41 = new ConstRuntype(undefined, "ok");
-const direct_hoist_42 = new ObjectRuntype(undefined, {
-    "enabled": direct_hoist_38,
-    "nullable": direct_hoist_39,
-    "retries": direct_hoist_40,
-    "status": direct_hoist_41
-}, []);
-const direct_hoist_43 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_18,
-    direct_hoist_17
-], "type", {
-    "CRON": direct_hoist_17,
-    "EVENT": direct_hoist_18
-}, {
-    "CRON": direct_hoist_17,
-    "EVENT": direct_hoist_18
-});
-const direct_hoist_44 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_18,
-    direct_hoist_17
-], "type", {
-    "CRON": direct_hoist_17,
-    "EVENT": direct_hoist_18
-}, {
-    "CRON": direct_hoist_17,
-    "EVENT": direct_hoist_18
-});
-const direct_hoist_45 = new ObjectRuntype(undefined, {
-    "schedule": direct_hoist_21,
-    "type": direct_hoist_28
-}, []);
-const direct_hoist_46 = new ObjectRuntype(undefined, {
-    "eventName": direct_hoist_21,
-    "type": direct_hoist_35
-}, []);
-const direct_hoist_47 = new NeverRuntype(undefined);
-const direct_hoist_48 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_21,
-        "value": direct_hoist_47
-    }
-]);
-const direct_hoist_49 = new ObjectRuntype(undefined, {
-    "payload": direct_hoist_48
-}, []);
-const direct_hoist_50 = new AnyOfConstsRuntype(undefined, [
-    200,
-    201
-]);
-const direct_hoist_51 = new AnyOfConstsRuntype(undefined, [
-    false,
-    true
-]);
-const direct_hoist_52 = new ConstRuntype(undefined, "fallback");
-const direct_hoist_53 = new ConstRuntype(undefined, 0);
-const direct_hoist_54 = new AnyOfRuntype(undefined, [
-    direct_hoist_39,
-    direct_hoist_52,
-    direct_hoist_53
-]);
-const direct_hoist_55 = new AnyOfConstsRuntype(undefined, [
-    "admin",
-    "member"
-]);
-const direct_hoist_56 = new ObjectRuntype(undefined, {
-    "code": direct_hoist_50,
-    "enabled": direct_hoist_51,
-    "mixed": direct_hoist_54,
-    "role": direct_hoist_55
-}, []);
-const direct_hoist_57 = new ObjectRuntype(undefined, {
-    "it": new OptionalFieldRuntype(direct_hoist_21)
-}, []);
-const direct_hoist_58 = new TypeofRuntype(undefined, "number");
-const direct_hoist_59 = new AnyOfRuntype(undefined, [
-    direct_hoist_39,
-    direct_hoist_26,
-    direct_hoist_58
-]);
-const direct_hoist_60 = new AnyOfRuntype(undefined, [
-    direct_hoist_39,
-    direct_hoist_26,
-    direct_hoist_21
-]);
-const direct_hoist_61 = new ObjectRuntype(undefined, {
-    "limit": new OptionalFieldRuntype(direct_hoist_59),
-    "value": new OptionalFieldRuntype(direct_hoist_60)
-}, []);
-const direct_hoist_62 = new ConstRuntype(undefined, "primary");
-const direct_hoist_63 = new AnyOfRuntype(undefined, [
-    direct_hoist_39,
-    direct_hoist_52,
-    direct_hoist_62
-]);
-const direct_hoist_64 = new AnyOfRuntype(undefined, [
-    direct_hoist_39,
-    direct_hoist_21
-]);
-const direct_hoist_65 = new ObjectRuntype(undefined, {
-    "maybeEnum": direct_hoist_63,
-    "maybeText": direct_hoist_64,
-    "onlyNull": direct_hoist_39,
-    "optional": new OptionalFieldRuntype(direct_hoist_21),
-    "orUndefined": direct_hoist_27
-}, []);
-const direct_hoist_66 = new AnyRuntype(undefined);
-const direct_hoist_67 = new ObjectRuntype(undefined, {}, [
-    {
-        "key": direct_hoist_21,
-        "value": direct_hoist_66
-    }
-]);
-const direct_hoist_68 = new ObjectRuntype(undefined, {
-    "payload": direct_hoist_67
-}, []);
-const direct_hoist_69 = new ObjectRuntype(undefined, {
-    "previous": new OptionalFieldRuntype(direct_hoist_8),
-    "root": direct_hoist_7
-}, []);
-const direct_hoist_70 = new ArrayRuntype(undefined, direct_hoist_7);
-const direct_hoist_71 = new ObjectRuntype(undefined, {
-    "children": direct_hoist_70,
-    "value": direct_hoist_21
-}, []);
-const direct_hoist_72 = new ArrayRuntype(undefined, direct_hoist_1);
-const direct_hoist_73 = new ObjectRuntype(undefined, {
-    "items": direct_hoist_72,
-    "primaryAddress": direct_hoist_0
-}, []);
-const direct_hoist_74 = new ObjectRuntype(undefined, {
-    "address": direct_hoist_0,
-    "id": direct_hoist_21
-}, []);
-const direct_hoist_75 = new ObjectRuntype(undefined, {
-    "displayName": direct_hoist_21
-}, []);
-const direct_hoist_76 = new ObjectRuntype(undefined, {
-    "address": direct_hoist_0,
-    "id": direct_hoist_21,
-    "profile": direct_hoist_75
-}, []);
-const direct_hoist_77 = new ObjectRuntype(undefined, {
-    "createdAt": direct_hoist_21,
-    "cronExpression": direct_hoist_21,
-    "eventName": direct_hoist_27,
-    "id": direct_hoist_21,
-    "metadata": direct_hoist_67,
-    "type": direct_hoist_28,
-    "updatedAt": direct_hoist_21,
-    "workflowID": direct_hoist_21
-}, []);
-const direct_hoist_78 = new ObjectRuntype(undefined, {
-    "createdAt": direct_hoist_21,
-    "cronExpression": direct_hoist_27,
-    "eventName": direct_hoist_21,
-    "id": direct_hoist_21,
-    "metadata": direct_hoist_67,
-    "type": direct_hoist_35,
-    "updatedAt": direct_hoist_21,
-    "workflowID": direct_hoist_21
-}, []);
-const direct_hoist_79 = new RefRuntype(undefined, "EventWorkflowSource");
-const direct_hoist_80 = new RefRuntype(undefined, "CronWorkflowSource");
-const direct_hoist_81 = new AnyOfDiscriminatedRuntype(undefined, [
-    direct_hoist_79,
-    direct_hoist_80
-], "type", {
-    "CRON": direct_hoist_77,
-    "EVENT": direct_hoist_78
-}, {
-    "CRON": direct_hoist_77,
-    "EVENT": direct_hoist_78
-});
-const direct_hoist_82 = new AnyOfConstsRuntype(undefined, [
-    "CRON",
-    "EVENT"
-]);
-const direct_hoist_83 = new ObjectRuntype(undefined, {
-    "createdAt": direct_hoist_21,
-    "id": direct_hoist_21,
-    "metadata": direct_hoist_67,
-    "type": direct_hoist_82,
-    "updatedAt": direct_hoist_21,
-    "workflowID": direct_hoist_21
-}, []);
-const namedRuntypes = {
-    "Address": direct_hoist_22,
-    "CreateUserRequest": direct_hoist_24,
-    "CreateUserResponse": direct_hoist_25,
-    "CronWorkflowSource": direct_hoist_31,
-    "DocumentedPayload": direct_hoist_34,
-    "EventWorkflowSource": direct_hoist_37,
-    "OpenApiCompatConstPayload": direct_hoist_42,
-    "OpenApiCompatDiscUnion": direct_hoist_43,
-    "OpenApiCompatDiscUnionAndNamedTypes": direct_hoist_44,
-    "OpenApiCompatDiscUnionCron": direct_hoist_45,
-    "OpenApiCompatDiscUnionEvent": direct_hoist_46,
-    "OpenApiCompatEmptyRecordPayload": direct_hoist_49,
-    "OpenApiCompatEnumPayload": direct_hoist_56,
-    "OpenApiCompatOptinal": direct_hoist_57,
-    "OpenApiCompatOptionalNullishPayload": direct_hoist_61,
-    "OpenApiCompatOptionalizedPayload": direct_hoist_65,
-    "OpenApiCompatRecordPayload": direct_hoist_68,
-    "RecursiveEnvelope": direct_hoist_69,
-    "RecursiveTree": direct_hoist_71,
-    "SearchUsersResponse": direct_hoist_73,
-    "UpdateUserRequest": direct_hoist_74,
-    "User": direct_hoist_76,
-    "WorkflowSource": direct_hoist_81,
-    "WorkflowSourceBase": direct_hoist_83
-};
-const buildParsersInput = {
-    "Address": direct_hoist_0,
-    "User": direct_hoist_1,
-    "DocumentedPayload": direct_hoist_2,
-    "CreateUserRequest": direct_hoist_3,
-    "CreateUserResponse": direct_hoist_4,
-    "UpdateUserRequest": direct_hoist_5,
-    "SearchUsersResponse": direct_hoist_6,
-    "RecursiveTree": direct_hoist_7,
-    "RecursiveEnvelope": direct_hoist_8,
-    "OpenApiCompatConstPayload": direct_hoist_9,
-    "OpenApiCompatEnumPayload": direct_hoist_10,
-    "OpenApiCompatRecordPayload": direct_hoist_11,
-    "OpenApiCompatEmptyRecordPayload": direct_hoist_12,
-    "OpenApiCompatOptionalizedPayload": direct_hoist_13,
-    "OpenApiCompatOptinal": direct_hoist_14,
-    "OpenApiCompatOptionalNullishPayload": direct_hoist_15,
-    "OpenApiCompatDiscUnion": direct_hoist_16,
-    "OpenApiCompatDiscUnionCron": direct_hoist_17,
-    "OpenApiCompatDiscUnionEvent": direct_hoist_18,
-    "OpenApiCompatDiscUnionAndNamedTypes": direct_hoist_19,
-    "WorkflowSource": direct_hoist_20
-};
+const h0=ref(R,"Address");
+const h1=ref(R,"User");
+const h2=ref(R,"DocumentedPayload");
+const h3=ref(R,"CreateUserRequest");
+const h4=ref(R,"CreateUserResponse");
+const h5=ref(R,"UpdateUserRequest");
+const h6=ref(R,"SearchUsersResponse");
+const h7=ref(R,"RecursiveTree");
+const h8=ref(R,"RecursiveEnvelope");
+const h9=ref(R,"OpenApiCompatConstPayload");
+const h10=ref(R,"OpenApiCompatEnumPayload");
+const h11=ref(R,"OpenApiCompatRecordPayload");
+const h12=ref(R,"OpenApiCompatEmptyRecordPayload");
+const h13=ref(R,"OpenApiCompatOptionalizedPayload");
+const h14=ref(R,"OpenApiCompatOptinal");
+const h15=ref(R,"OpenApiCompatOptionalNullishPayload");
+const h16=ref(R,"OpenApiCompatDiscUnion");
+const h17=ref(R,"OpenApiCompatDiscUnionCron");
+const h18=ref(R,"OpenApiCompatDiscUnionEvent");
+const h19=ref(R,"OpenApiCompatDiscUnionAndNamedTypes");
+const h20=ref(R,"WorkflowSource");
+const h21=str();
+const h22=obj({city:h21,street:h21});
+const h23=obj({source:h21});
+const h24=obj({metadata:h23,user:h1});
+const h25=obj({user:h1});
+const h26=undef();
+const h27=union([h26,h21]);
+const h28=lit("CRON");
+const h29=obj({cronExpression:h21,eventName:h27,type:h28});
+const h30=ref(R,"WorkflowSourceBase");
+const h31=allOf([h29,h30]);
+const h32=doc(str(),"Stable payload id.");
+const h33=doc(num(),"Optional retry count.");
+const h34=doc(obj({id:h32,retries:opt(h33)}),"Documented payload for contextual JSON Schema.");
+const h35=lit("EVENT");
+const h36=obj({cronExpression:h27,eventName:h21,type:h35});
+const h37=allOf([h36,h30]);
+const h38=lit(true);
+const h39=nul();
+const h40=lit(3);
+const h41=lit("ok");
+const h42=obj({enabled:h38,nullable:h39,retries:h40,status:h41});
+const h43=disc("type",{CRON:h17,EVENT:h18},[h18,h17]);
+const h44=disc("type",{CRON:h17,EVENT:h18},[h18,h17]);
+const h45=obj({schedule:h21,type:h28});
+const h46=obj({eventName:h21,type:h35});
+const h47=never();
+const h48=obj({},[{key:h21,value:h47}]);
+const h49=obj({payload:h48});
+const h50=lits([200,201]);
+const h51=lits([false,true]);
+const h52=lit("fallback");
+const h53=lit(0);
+const h54=union([h39,h52,h53]);
+const h55=lits(["admin","member"]);
+const h56=obj({code:h50,enabled:h51,mixed:h54,role:h55});
+const h57=obj({it:opt(h21)});
+const h58=num();
+const h59=union([h39,h26,h58]);
+const h60=union([h39,h26,h21]);
+const h61=obj({limit:opt(h59),value:opt(h60)});
+const h62=lit("primary");
+const h63=union([h39,h52,h62]);
+const h64=union([h39,h21]);
+const h65=obj({maybeEnum:h63,maybeText:h64,onlyNull:h39,optional:opt(h21),orUndefined:h27});
+const h66=any();
+const h67=obj({},[{key:h21,value:h66}]);
+const h68=obj({payload:h67});
+const h69=obj({previous:opt(h8),root:h7});
+const h70=arr(h7);
+const h71=obj({children:h70,value:h21});
+const h72=arr(h1);
+const h73=obj({items:h72,primaryAddress:h0});
+const h74=obj({address:h0,id:h21});
+const h75=obj({displayName:h21});
+const h76=obj({address:h0,id:h21,profile:h75});
+const h77=obj({createdAt:h21,cronExpression:h21,eventName:h27,id:h21,metadata:h67,type:h28,updatedAt:h21,workflowID:h21});
+const h78=obj({createdAt:h21,cronExpression:h27,eventName:h21,id:h21,metadata:h67,type:h35,updatedAt:h21,workflowID:h21});
+const h79=ref(R,"EventWorkflowSource");
+const h80=ref(R,"CronWorkflowSource");
+const h81=disc("type",{CRON:h77,EVENT:h78},[h79,h80]);
+const h82=lits(["CRON","EVENT"]);
+const h83=obj({createdAt:h21,id:h21,metadata:h67,type:h82,updatedAt:h21,workflowID:h21});
+define(R,{Address:h22,CreateUserRequest:h24,CreateUserResponse:h25,CronWorkflowSource:h31,DocumentedPayload:h34,EventWorkflowSource:h37,OpenApiCompatConstPayload:h42,OpenApiCompatDiscUnion:h43,OpenApiCompatDiscUnionAndNamedTypes:h44,OpenApiCompatDiscUnionCron:h45,OpenApiCompatDiscUnionEvent:h46,OpenApiCompatEmptyRecordPayload:h49,OpenApiCompatEnumPayload:h56,OpenApiCompatOptinal:h57,OpenApiCompatOptionalNullishPayload:h61,OpenApiCompatOptionalizedPayload:h65,OpenApiCompatRecordPayload:h68,RecursiveEnvelope:h69,RecursiveTree:h71,SearchUsersResponse:h73,UpdateUserRequest:h74,User:h76,WorkflowSource:h81,WorkflowSourceBase:h83});
+const buildParsersInput={Address:h0,User:h1,DocumentedPayload:h2,CreateUserRequest:h3,CreateUserResponse:h4,UpdateUserRequest:h5,SearchUsersResponse:h6,RecursiveTree:h7,RecursiveEnvelope:h8,OpenApiCompatConstPayload:h9,OpenApiCompatEnumPayload:h10,OpenApiCompatRecordPayload:h11,OpenApiCompatEmptyRecordPayload:h12,OpenApiCompatOptionalizedPayload:h13,OpenApiCompatOptinal:h14,OpenApiCompatOptionalNullishPayload:h15,OpenApiCompatDiscUnion:h16,OpenApiCompatDiscUnionCron:h17,OpenApiCompatDiscUnionEvent:h18,OpenApiCompatDiscUnionAndNamedTypes:h19,WorkflowSource:h20};
 
 exports.default = { buildParsers };

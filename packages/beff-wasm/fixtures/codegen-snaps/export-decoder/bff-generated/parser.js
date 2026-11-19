@@ -3,40 +3,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -69,73 +71,26 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "User");
-const direct_hoist_1 = new ArrayRuntype(undefined, direct_hoist_0);
-const direct_hoist_2 = new RefRuntype(undefined, "NotPublic");
-const direct_hoist_3 = new RefRuntype(undefined, "StartsWithA");
-const direct_hoist_4 = new RefRuntype(undefined, "Password");
-const direct_hoist_5 = new ConstRuntype(undefined, 123.456);
-const direct_hoist_6 = new ConstRuntype(undefined, 123);
-const direct_hoist_7 = new RefRuntype(undefined, "UnionNested");
-const direct_hoist_8 = new AnyOfConstsRuntype(undefined, [
-    1,
-    2
-]);
-const direct_hoist_9 = new AnyOfConstsRuntype(undefined, [
-    2,
-    3
-]);
-const direct_hoist_10 = new AnyOfConstsRuntype(undefined, [
-    4,
-    5
-]);
-const direct_hoist_11 = new AnyOfConstsRuntype(undefined, [
-    5,
-    6
-]);
-const direct_hoist_12 = new TypeofRuntype(undefined, "string");
-const direct_hoist_13 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_12
-}, []);
-const direct_hoist_14 = new StringWithFormatRuntype(undefined, [
-    "password"
-]);
-const direct_hoist_15 = new StringWithFormatRuntype(undefined, [
-    "StartsWithA"
-]);
-const direct_hoist_16 = new AnyOfConstsRuntype(undefined, [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6
-]);
-const direct_hoist_17 = new TypeofRuntype(undefined, "number");
-const direct_hoist_18 = new ObjectRuntype(undefined, {
-    "age": direct_hoist_17,
-    "name": direct_hoist_12
-}, []);
-const namedRuntypes = {
-    "A": direct_hoist_8,
-    "B": direct_hoist_9,
-    "D": direct_hoist_10,
-    "E": direct_hoist_11,
-    "NotPublic": direct_hoist_13,
-    "Password": direct_hoist_14,
-    "StartsWithA": direct_hoist_15,
-    "UnionNested": direct_hoist_16,
-    "User": direct_hoist_18
-};
-const buildParsersInput = {
-    "User": direct_hoist_0,
-    "Users": direct_hoist_1,
-    "NotPublicRenamed": direct_hoist_2,
-    "StartsWithA": direct_hoist_3,
-    "Password": direct_hoist_4,
-    "float": direct_hoist_5,
-    "int": direct_hoist_6,
-    "union": direct_hoist_7
-};
+const h0=ref(R,"User");
+const h1=arr(h0);
+const h2=ref(R,"NotPublic");
+const h3=ref(R,"StartsWithA");
+const h4=ref(R,"Password");
+const h5=lit(123.456);
+const h6=lit(123);
+const h7=ref(R,"UnionNested");
+const h8=lits([1,2]);
+const h9=lits([2,3]);
+const h10=lits([4,5]);
+const h11=lits([5,6]);
+const h12=str();
+const h13=obj({a:h12});
+const h14=strFormat(["password"]);
+const h15=strFormat(["StartsWithA"]);
+const h16=lits([1,2,3,4,5,6]);
+const h17=num();
+const h18=obj({age:h17,name:h12});
+define(R,{A:h8,B:h9,D:h10,E:h11,NotPublic:h13,Password:h14,StartsWithA:h15,UnionNested:h16,User:h18});
+const buildParsersInput={User:h0,Users:h1,NotPublicRenamed:h2,StartsWithA:h3,Password:h4,float:h5,int:h6,union:h7};
 
 export default { buildParsers };

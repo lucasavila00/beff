@@ -1021,7 +1021,7 @@ export function lits(values: Const[]): Runtype {
   );
 }
 
-export function tuple(prefix: Runtype[], rest: Runtype | null): Runtype {
+export function tuple(prefix: Runtype[], rest: Runtype | null = null): Runtype {
   const count = prefix.length;
   const vs = prefix.map((it) => it.v);
   const ps = prefix.map((it) => it.p);

@@ -3,40 +3,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -69,31 +71,16 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "User");
-const direct_hoist_1 = new AnyOfConstsRuntype(undefined, [
-    "ADMIN",
-    "USER"
-]);
-const direct_hoist_2 = new RegexRuntype(undefined, /^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/, "`${number}x${number}`");
-const direct_hoist_3 = new RefRuntype(undefined, "AccessLevel");
-const direct_hoist_4 = new RefRuntype(undefined, "AvatarSize");
-const direct_hoist_5 = new TypeofRuntype(undefined, "function");
-const direct_hoist_6 = new ArrayRuntype(undefined, direct_hoist_0);
-const direct_hoist_7 = new TypeofRuntype(undefined, "string");
-const direct_hoist_8 = new ObjectRuntype(undefined, {
-    "accessLevel": direct_hoist_3,
-    "avatarSize": direct_hoist_4,
-    "extra": direct_hoist_5,
-    "friends": direct_hoist_6,
-    "name": direct_hoist_7
-}, []);
-const namedRuntypes = {
-    "AccessLevel": direct_hoist_1,
-    "AvatarSize": direct_hoist_2,
-    "User": direct_hoist_8
-};
-const buildParsersInput = {
-    "User": direct_hoist_0
-};
+const h0=ref(R,"User");
+const h1=lits(["ADMIN","USER"]);
+const h2=regex(/^(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)(x)(-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)$/,"`${number}x${number}`");
+const h3=ref(R,"AccessLevel");
+const h4=ref(R,"AvatarSize");
+const h5=fn();
+const h6=arr(h0);
+const h7=str();
+const h8=obj({accessLevel:h3,avatarSize:h4,extra:h5,friends:h6,name:h7});
+define(R,{AccessLevel:h1,AvatarSize:h2,User:h8});
+const buildParsersInput={User:h0};
 
 export default { buildParsers };

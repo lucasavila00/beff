@@ -3,40 +3,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -69,41 +71,18 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "UsesGenericWrapper");
-const direct_hoist_1 = new RefRuntype(undefined, "GenericWrapper_string");
-const direct_hoist_2 = new TypeofRuntype(undefined, "string");
-const direct_hoist_3 = new TypeofRuntype(undefined, "boolean");
-const direct_hoist_4 = new AnyOfRuntype(undefined, [
-    direct_hoist_3,
-    direct_hoist_2
-]);
-const direct_hoist_5 = new ObjectRuntype(undefined, {
-    "other": direct_hoist_1,
-    "value": direct_hoist_2,
-    "value2": direct_hoist_4
-}, []);
-const direct_hoist_6 = new RefRuntype(undefined, "GenericWrapper_number");
-const direct_hoist_7 = new TypeofRuntype(undefined, "number");
-const direct_hoist_8 = new AnyOfRuntype(undefined, [
-    direct_hoist_3,
-    direct_hoist_7
-]);
-const direct_hoist_9 = new ObjectRuntype(undefined, {
-    "other": direct_hoist_6,
-    "value": direct_hoist_7,
-    "value2": direct_hoist_8
-}, []);
-const direct_hoist_10 = new ObjectRuntype(undefined, {
-    "wrappedNumber": direct_hoist_6,
-    "wrappedString": direct_hoist_1
-}, []);
-const namedRuntypes = {
-    "GenericWrapper_string": direct_hoist_5,
-    "GenericWrapper_number": direct_hoist_9,
-    "UsesGenericWrapper": direct_hoist_10
-};
-const buildParsersInput = {
-    "UsesGenericWrapper": direct_hoist_0
-};
+const h0=ref(R,"UsesGenericWrapper");
+const h1=ref(R,"GenericWrapper_string");
+const h2=str();
+const h3=bool();
+const h4=union([h3,h2]);
+const h5=obj({other:h1,value:h2,value2:h4});
+const h6=ref(R,"GenericWrapper_number");
+const h7=num();
+const h8=union([h3,h7]);
+const h9=obj({other:h6,value:h7,value2:h8});
+const h10=obj({wrappedNumber:h6,wrappedString:h1});
+define(R,{GenericWrapper_string:h5,GenericWrapper_number:h9,UsesGenericWrapper:h10});
+const buildParsersInput={UsesGenericWrapper:h0};
 
 export default { buildParsers };

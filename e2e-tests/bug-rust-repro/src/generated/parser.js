@@ -3,40 +3,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -69,19 +71,11 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "T");
-const direct_hoist_1 = new RefRuntype(undefined, "A");
-const direct_hoist_2 = new TypeofRuntype(undefined, "string");
-const direct_hoist_3 = new ObjectRuntype(undefined, {
-    "value": direct_hoist_2
-}, []);
-const namedRuntypes = {
-    "A": direct_hoist_2,
-    "T": direct_hoist_3
-};
-const buildParsersInput = {
-    "T": direct_hoist_0,
-    "A": direct_hoist_1
-};
+const h0=ref(R,"T");
+const h1=ref(R,"A");
+const h2=str();
+const h3=obj({value:h2});
+define(R,{A:h2,T:h3});
+const buildParsersInput={T:h0,A:h1};
 
 export default { buildParsers };

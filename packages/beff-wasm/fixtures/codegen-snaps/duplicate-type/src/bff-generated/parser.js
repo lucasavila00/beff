@@ -3,40 +3,42 @@
 "use strict";
 
 import {
-  TypeofRuntype,
-  AnyRuntype,
-  NullishRuntype,
-  NeverRuntype,
-  ConstRuntype,
-  RegexRuntype,
-  DateRuntype,
-  BigIntRuntype,
-  StringWithFormatRuntype,
-  NumberWithFormatRuntype,
-  AnyOfConstsRuntype,
-  TupleRuntype,
-  AllOfRuntype,
-  AnyOfRuntype,
-  ArrayRuntype,
-  AnyOfDiscriminatedRuntype,
-  ObjectRuntype,
-  OptionalFieldRuntype,
-  BaseRefRuntype,
+  str,
+  num,
+  bool,
+  fn,
+  numKey,
+  any,
+  nul,
+  undef,
+  voidType,
+  never,
+  lit,
+  lits,
+  regex,
+  date,
+  bigint,
+  typedArray,
+  strFormat,
+  numFormat,
+  tuple,
+  allOf,
+  union,
+  arr,
+  map,
+  set,
+  disc,
+  opt,
+  obj,
+  ref,
+  doc,
+  define,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
-  generateHashFromString,
-  TypedArrayRuntype,
-  MapRuntype,
-  SetRuntype,
-  NumberKeyRuntype,
 } from "@beff/client/codegen-v2";
 
-class RefRuntype extends BaseRefRuntype  {
-  getNamedRuntypes() {
-    return namedRuntypes;
-  }
-}
+const R = new Map();
 
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -69,31 +71,17 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype(undefined, "UserObj");
-const direct_hoist_1 = new RefRuntype(undefined, "UserList");
-const direct_hoist_2 = new TypeofRuntype(undefined, "string");
-const direct_hoist_3 = new ObjectRuntype(undefined, {
-    "a": direct_hoist_2
-}, []);
-const direct_hoist_4 = new RefRuntype(undefined, "parser_ts__User");
-const direct_hoist_5 = new ObjectRuntype(undefined, {
-    "x": direct_hoist_4
-}, []);
-const direct_hoist_6 = new TypeofRuntype(undefined, "number");
-const direct_hoist_7 = new ObjectRuntype(undefined, {
-    "b": direct_hoist_6
-}, []);
-const direct_hoist_8 = new RefRuntype(undefined, "types_ts__User");
-const direct_hoist_9 = new ArrayRuntype(undefined, direct_hoist_8);
-const namedRuntypes = {
-    "parser_ts__User": direct_hoist_3,
-    "UserObj": direct_hoist_5,
-    "types_ts__User": direct_hoist_7,
-    "UserList": direct_hoist_9
-};
-const buildParsersInput = {
-    "UserObj": direct_hoist_0,
-    "UserList": direct_hoist_1
-};
+const h0=ref(R,"UserObj");
+const h1=ref(R,"UserList");
+const h2=str();
+const h3=obj({a:h2});
+const h4=ref(R,"parser_ts__User");
+const h5=obj({x:h4});
+const h6=num();
+const h7=obj({b:h6});
+const h8=ref(R,"types_ts__User");
+const h9=arr(h8);
+define(R,{parser_ts__User:h3,UserObj:h5,types_ts__User:h7,UserList:h9});
+const buildParsersInput={UserObj:h0,UserList:h1};
 
 export default { buildParsers };
