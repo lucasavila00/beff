@@ -575,13 +575,10 @@ export class Compiled {
   validate: ValidateFn;
   parse: ParseFn;
   report: ReportFn;
-  // The kinds of value validate can accept. See kindOfValue.
-  kinds: () => number;
-  constructor(validate: ValidateFn, parse: ParseFn, report: ReportFn, kinds: () => number) {
+  constructor(validate: ValidateFn, parse: ParseFn, report: ReportFn) {
     this.validate = validate;
     this.parse = parse;
     this.report = report;
-    this.kinds = kinds;
   }
 }
 
@@ -600,45 +597,8 @@ let refGeneration = 0;
 
 const identityParse: ParseFn = (_ctx, input) => input;
 
-function leafCompiled(kinds: number, validate: ValidateFn, message: (input: any) => string): Compiled {
-  return new Compiled(
-    validate,
-    identityParse,
-    (ctx, input) => buildError(ctx, message(input), input),
-    () => kinds,
-  );
-}
-
-// The kinds of value a runtype can accept, as a bitmask. A union only parses the branches that
-// accept the kind of its input.
-const KIND_NULLISH = 1;
-const KIND_BOOLEAN = 2;
-const KIND_NUMBER = 4;
-const KIND_STRING = 8;
-const KIND_BIGINT = 16;
-const KIND_ARRAY = 32;
-const KIND_OBJECT = 64;
-const KIND_OTHER = 128;
-const KIND_ALL = 255;
-// `instanceof` only checks the prototype chain, which arrays and functions can also have.
-const KIND_INSTANCE = KIND_ARRAY | KIND_OBJECT | KIND_OTHER;
-
-function kindOfValue(input: unknown): number {
-  if (input == null) return KIND_NULLISH;
-  switch (typeof input) {
-    case "boolean":
-      return KIND_BOOLEAN;
-    case "number":
-      return KIND_NUMBER;
-    case "string":
-      return KIND_STRING;
-    case "bigint":
-      return KIND_BIGINT;
-    case "object":
-      return Array.isArray(input) ? KIND_ARRAY : KIND_OBJECT;
-    default:
-      return KIND_OTHER;
-  }
+function leafCompiled(validate: ValidateFn, message: (input: any) => string): Compiled {
+  return new Compiled(validate, identityParse, (ctx, input) => buildError(ctx, message(input), input));
 }
 
 export type RuntypeMetadata = {
@@ -776,11 +736,11 @@ export class TypeofRuntype extends BaseRuntype {
     const message = () => "expected " + this.typeName;
     switch (this.typeName) {
       case "string":
-        return leafCompiled(KIND_STRING, (_ctx, input) => typeof input === "string", message);
+        return leafCompiled((_ctx, input) => typeof input === "string", message);
       case "number":
-        return leafCompiled(KIND_NUMBER, (_ctx, input) => typeof input === "number", message);
+        return leafCompiled((_ctx, input) => typeof input === "number", message);
       case "boolean":
-        return leafCompiled(KIND_BOOLEAN, (_ctx, input) => typeof input === "boolean", message);
+        return leafCompiled((_ctx, input) => typeof input === "boolean", message);
     }
   }
   hash(_ctx: HashContext): number {
@@ -812,7 +772,6 @@ export class NumberKeyRuntype extends BaseRuntype {
   }
   compile(): Compiled {
     return leafCompiled(
-      KIND_STRING,
       (_ctx, input) => typeof input === "string" && NUMBER_KEY_REGEX.test(input),
       () => "expected number key",
     );
@@ -840,7 +799,6 @@ export class AnyRuntype extends BaseRuntype {
   }
   compile(): Compiled {
     return leafCompiled(
-      KIND_ALL,
       () => true,
       () => "expected any",
     );
@@ -868,7 +826,6 @@ export class NullishRuntype extends BaseRuntype {
   }
   compile(): Compiled {
     return leafCompiled(
-      KIND_NULLISH,
       (_ctx, input) => input == null,
       () => "expected nullish value",
     );
@@ -894,7 +851,6 @@ export class NeverRuntype extends BaseRuntype {
   }
   compile(): Compiled {
     return leafCompiled(
-      0,
       () => false,
       () => "expected never",
     );
@@ -966,9 +922,9 @@ export class ConstRuntype extends BaseRuntype {
     const value = this.value;
     const message = () => `expected ${JSON.stringify(value)}`;
     if (value == null) {
-      return leafCompiled(KIND_NULLISH, (_ctx, input) => input == null, message);
+      return leafCompiled((_ctx, input) => input == null, message);
     }
-    return leafCompiled(kindOfValue(value), (_ctx, input) => input === value, message);
+    return leafCompiled((_ctx, input) => input === value, message);
   }
   hash(_ctx: HashContext): number {
     if (this.value == null) {
@@ -1025,7 +981,6 @@ export class RegexRuntype extends BaseRuntype {
   compile(): Compiled {
     const regex = this.regex;
     return leafCompiled(
-      KIND_STRING,
       (_ctx, input) => typeof input === "string" && regex.test(input),
       () => `expected string matching ${this.description}`,
     );
@@ -1052,7 +1007,6 @@ export class DateRuntype extends BaseRuntype {
   }
   compile(): Compiled {
     return leafCompiled(
-      KIND_INSTANCE,
       (_ctx, input) => input instanceof Date,
       () => `expected Date`,
     );
@@ -1078,7 +1032,6 @@ export class BigIntRuntype extends BaseRuntype {
   }
   compile(): Compiled {
     return leafCompiled(
-      KIND_BIGINT,
       (_ctx, input) => typeof input === "bigint",
       () => `expected BigInt`,
     );
@@ -1103,7 +1056,6 @@ export class TypedArrayRuntype extends BaseRuntype {
   compile(): Compiled {
     const ctorName = this.ctorName;
     return leafCompiled(
-      KIND_INSTANCE,
       (_ctx, input) => {
         const ctor = (globalThis as any)[ctorName];
         return ctor != null && input instanceof ctor;
@@ -1147,7 +1099,6 @@ export class StringWithFormatRuntype extends BaseRuntype {
     const formats = this.formats;
     const expected = `expected string with format "${formats.join(" and ")}"`;
     return leafCompiled(
-      KIND_STRING,
       (_ctx, input) => typeof input === "string" && checkFormats(stringFormatters, formats, input),
       (input) =>
         typeof input === "string"
@@ -1183,7 +1134,6 @@ export class NumberWithFormatRuntype extends BaseRuntype {
     const formats = this.formats;
     const expected = `expected number with format "${formats.join(" and ")}"`;
     return leafCompiled(
-      KIND_NUMBER,
       (_ctx, input) => typeof input === "number" && checkFormats(numberFormatters, formats, input),
       (input) =>
         typeof input === "number"
@@ -1230,12 +1180,7 @@ export class AnyOfConstsRuntype extends BaseRuntype {
   compile(): Compiled {
     const values = new Set<unknown>(this.values);
     const hasNull = values.has(null);
-    let kinds = 0;
-    for (const it of this.values) {
-      kinds |= kindOfValue(it);
-    }
     return leafCompiled(
-      kinds,
       (_ctx, input) => values.has(input) || (hasNull && input === undefined),
       () => `expected one of ${limitedCommaJoinJson(this.values)}`,
     );
@@ -1353,7 +1298,6 @@ export class TupleRuntype extends BaseRuntype {
         }
         return acc;
       },
-      () => KIND_ARRAY,
     );
   }
   hash(ctx: HashContext): number {
@@ -1471,7 +1415,6 @@ export class AllOfRuntype extends BaseRuntype {
         }
         return acc;
       },
-      () => KIND_ALL,
     );
   }
   hash(ctx: HashContext): number {
@@ -1576,10 +1519,6 @@ export class AnyOfRuntype extends BaseRuntype {
   compile(): Compiled {
     const branches = this.schemas.map(getCompiled);
     const n = branches.length;
-    // The accepted kinds of each branch. Refs can change with overrideNamedType, so this is
-    // computed on first use and again after an override.
-    let kinds: number[] = [];
-    let kindsGeneration = -1;
     return new Compiled(
       (ctx, input) => {
         for (let i = 0; i < n; i++) {
@@ -1590,27 +1529,9 @@ export class AnyOfRuntype extends BaseRuntype {
         return false;
       },
       (ctx, input) => {
-        if (kindsGeneration !== refGeneration) {
-          kinds = branches.map((it) => it.kinds());
-          kindsGeneration = refGeneration;
-        }
-        // Only branches that accept the kind of the input can match.
-        const kind = kindOfValue(input);
-        let candidates = 0;
-        let lastCandidate = 0;
-        for (let i = 0; i < n; i++) {
-          if ((kinds[i] & kind) !== 0) {
-            candidates++;
-            lastCandidate = i;
-          }
-        }
-        // The input is valid, so a single candidate must be the match.
-        if (candidates === 1) {
-          return branches[lastCandidate].parse(ctx, input);
-        }
         const items = [];
         for (let i = 0; i < n; i++) {
-          if ((kinds[i] & kind) !== 0 && branches[i].validate(ctx, input)) {
+          if (branches[i].validate(ctx, input)) {
             items.push(branches[i].parse(ctx, input));
           }
         }
@@ -1636,7 +1557,6 @@ export class AnyOfRuntype extends BaseRuntype {
 
         return buildUnionError(ctx, filtered, input);
       },
-      () => KIND_ALL,
     );
   }
   protected describeTypeExpr(ctx: DescribeContext): string {
@@ -1701,7 +1621,6 @@ export class ArrayRuntype extends BaseRuntype {
         }
         return acc;
       },
-      () => KIND_ARRAY,
     );
   }
   protected describeTypeExpr(ctx: DescribeContext): string {
@@ -1769,7 +1688,6 @@ export class MapRuntype extends BaseRuntype {
         }
         return acc;
       },
-      () => KIND_INSTANCE,
     );
   }
   hash(_ctx: HashContext): number {
@@ -1828,7 +1746,6 @@ export class SetRuntype extends BaseRuntype {
         }
         return acc;
       },
-      () => KIND_INSTANCE,
     );
   }
   hash(_ctx: HashContext): number {
@@ -2010,8 +1927,6 @@ export class AnyOfDiscriminatedRuntype extends BaseRuntype {
         }
         return v.report(ctx, input);
       },
-      // Checks `typeof input === "object"`, which is also true for arrays.
-      () => KIND_ARRAY | KIND_OBJECT,
     );
   }
   protected describeTypeExpr(ctx: DescribeContext): string {
@@ -2064,7 +1979,6 @@ export class OptionalFieldRuntype implements Runtype {
       // Null and undefined are valid, so report is only called on other values. Reporting "expected
       // nullish value" here would be noise: only the inner type's errors are relevant.
       (ctx, input) => t.report(ctx, input),
-      () => KIND_ALL,
     );
   }
   describe(ctx: DescribeContext): TypeDescription {
@@ -2343,7 +2257,6 @@ export class ObjectRuntype extends BaseRuntype {
         }
         return acc;
       },
-      () => KIND_OBJECT,
     );
   }
   hash(ctx: HashContext) {
@@ -2476,13 +2389,12 @@ export abstract class BaseRefRuntype extends BaseRuntype {
   // The target is looked up on first use (it may not exist yet, and recursive types would not
   // terminate), and again after overrideNamedType.
   compile(): Compiled {
-    let target: Compiled;
     let validate: ValidateFn;
     let parse: ParseFn;
     let report: ReportFn;
     let generation = -1;
     const resolve = () => {
-      target = getCompiled(this.getNamedRuntypes()[this.refName]);
+      const target = getCompiled(this.getNamedRuntypes()[this.refName]);
       validate = target.validate;
       parse = target.parse;
       report = target.report;
@@ -2500,10 +2412,6 @@ export abstract class BaseRefRuntype extends BaseRuntype {
       (ctx, input) => {
         if (generation !== refGeneration) resolve();
         return report(ctx, input);
-      },
-      () => {
-        if (generation !== refGeneration) resolve();
-        return target.kinds();
       },
     );
   }
