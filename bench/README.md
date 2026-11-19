@@ -1,6 +1,6 @@
 # bench
 
-Manual stress tests and benchmarks for the compiler and the generated validators. They are not part of `pnpm test` or CI.
+Manual stress tests and benchmarks for the compiler and the generated validators. They are not part of `pnpm test` or the Tests workflow; they run in the separate Bench workflow (see [Running in CI](#running-in-ci)).
 
 Build first. Use a release build for numbers, because `DEBUG=true` builds are much slower:
 
@@ -48,6 +48,26 @@ node runtime.mjs [--shape recursive] [--scale 16] [--from 1000] [--rows 6]
 # Also prints the deepest recursive input that does not overflow the stack.
 node stress.mjs [--shape records] [--scale 8] [--runs 500] [--seed 1]
 ```
+
+## Running in CI
+
+`.github/workflows/bench.yml` does a release build and runs `compile.mjs`, `runtime.mjs` and `stress.mjs`. The tables go to the job summary, the raw output to the `bench-results` artifact. The job fails if `stress.mjs` finds failures.
+
+Push a branch named `bench/<name>` that contains the harness and the change to measure. Every push runs all shapes with default options:
+
+```sh
+git switch -c bench/my-change my-change
+git merge origin/bench/harness      # or cherry-pick the harness commit, until it is on main
+git push -u origin bench/my-change
+```
+
+Or run it by hand on any branch that has the harness, with a shape and extra options per script:
+
+```sh
+gh workflow run bench.yml --ref <branch> -f shape=recursive -f runtime_args="--scale 32" -f stress_args="--runs 2000"
+```
+
+`workflow_dispatch` only works once the workflow is on the default branch; pushes to `bench/**` branches work right away. Read the results with `gh run view <id>` (job summary) or `gh run download <id> -n bench-results`.
 
 ## Profiling
 

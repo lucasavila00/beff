@@ -1,0 +1,82 @@
+name: Bench
+on:
+  push:
+    branches: ["bench/**"]
+  workflow_dispatch:
+    inputs:
+      shape:
+        description: "Shape to run (empty = all shapes)"
+        required: false
+        default: ""
+      compile_args:
+        description: "Extra args for compile.mjs (--from, --rows)"
+        required: false
+        default: ""
+      runtime_args:
+        description: "Extra args for runtime.mjs (--scale, --from, --rows)"
+        required: false
+        default: ""
+      stress_args:
+        description: "Extra args for stress.mjs (--scale, --runs, --seed)"
+        required: false
+        default: ""
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  bench:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "22.x"
+      - name: Build (release)
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          pnpm install
+          pnpm build
+      - name: Bench
+        working-directory: bench
+        env:
+          SHAPE: ${{ inputs.shape }}
+          COMPILE_ARGS: ${{ inputs.compile_args }}
+          RUNTIME_ARGS: ${{ inputs.runtime_args }}
+          STRESS_ARGS: ${{ inputs.stress_args }}
+        run: |
+          shape=${SHAPE:+--shape $SHAPE}
+          status=0
+          for s in "compile $COMPILE_ARGS" "runtime $RUNTIME_ARGS" "stress $STRESS_ARGS"; do
+            set -- $s
+            name=$1
+            shift
+            echo "## node $name.mjs $shape $*" >> "$GITHUB_STEP_SUMMARY"
+            set +e
+            node "$name.mjs" $shape "$@" 2>&1 | tee "$name.txt"
+            code=${PIPESTATUS[0]}
+            set -e
+            # compile and runtime print markdown tables; stress prints plain text.
+            if [ "$name" = stress ]; then
+              printf '\n```\n%s\n```\n' "$(cat "$name.txt")" >> "$GITHUB_STEP_SUMMARY"
+            else
+              cat "$name.txt" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ "$code" != 0 ]; then
+              echo "**$name.mjs exited with code $code**" >> "$GITHUB_STEP_SUMMARY"
+              status=1
+            fi
+            echo >> "$GITHUB_STEP_SUMMARY"
+          done
+          exit $status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench-results
+          path: bench/*.txt
