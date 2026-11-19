@@ -769,8 +769,8 @@ fn maybe_runtype_any_of_consts(
     None
 }
 
-// The members of a union that accept the same kinds of value, as one runtype that does not try
-// each member: literals or a discriminated union. `None` when only a plain union can check them.
+// The members of a union that accept the same kind of value, as one runtype that does not try
+// each member: this is possible when all of them are literals.
 fn lower_same_kind(
     members: &[&Runtype],
     named_schemas: &[NamedSchema],
@@ -782,7 +782,6 @@ fn lower_same_kind(
         .flat_map(|it| extract_union(it, named_schemas))
         .collect::<BTreeSet<_>>();
     maybe_runtype_any_of_consts(&union, &flat_values, ctx)
-        .or_else(|| maybe_runtype_any_of_discriminated(&union, &flat_values, named_schemas, ctx))
 }
 
 // Prints a union: literals, a discriminated union, or a union that tries each member.
@@ -791,8 +790,8 @@ fn lower_same_kind(
 // check each kind, the union also gets a table. The table is a string with, for each kind in the
 // order of `JS_KIND_COUNT`, the index of the runtype that checks it: `"1,,,,,,0"` is "nullish is
 // member 1, an object is member 0". An index after the members points to the last argument,
-// which has the runtypes that are not a member (the literals or the discriminated union of a
-// kind). The runtime then calls only the runtype of the kind of the input.
+// which has the runtypes that are not a member (the literals of a kind). The runtime then calls
+// only the runtype of the kind of the input.
 // The list of members stays complete: descriptions, schemas, hashes and errors come from it.
 fn lower_union(
     schema: &Runtype,
@@ -868,8 +867,10 @@ fn union_table(
             group[0].to_string()
         } else {
             let group = group.iter().map(|i| members[*i]).collect::<Vec<_>>();
-            // A plain union of the group validates each member again when it parses, so the
-            // table would only add a step: the union stays as it is without a table.
+            // Without literals, the group needs a union. A plain union validates each member
+            // again when it parses, so the table would only add a step. A discriminated union
+            // would be a new runtype for each union, which costs too much code. The union stays
+            // as it is, without a table.
             others.push(lower_same_kind(&group, named_schemas, ctx)?);
             (members.len() + others.len() - 1).to_string()
         };

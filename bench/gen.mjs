@@ -70,7 +70,8 @@ export const shapes = {
       ) + `\ntype Root = R0;`,
     value: (_N, n) => range(n).reduce((next) => ({ name: "r", tags: ["a"], next }), "end"),
   },
-  // N pairs of recursive types with a discriminator: `next: A | B | null`.
+  // N pairs of recursive types with a discriminator: `next: A | B | null`. The union tries each member,
+  // so parse validates each one again.
   // `slowErrors`: the error report of an invalid input tries both members at every level, so it is
   // exponential in the depth. The scripts do not report the errors of deep invalid inputs of these shapes.
   "recursive-disc": {

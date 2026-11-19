@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { b, buntyped, createNamedType, overrideNamedType } from "../src/index.js";
 import {
-  AnyOfDiscriminatedRuntype,
+  AnyOfConstsRuntype,
   AnyOfRuntype,
   buildParserFromRuntype,
   ConstRuntype,
@@ -100,20 +100,19 @@ describe("union with the runtype of each kind", () => {
     expect(U.validate([])).toBe(false);
   });
 
-  it("uses a discriminated union for the object kind", () => {
-    const a = new ObjectRuntype(undefined, { t: new ConstRuntype(undefined, "a"), a: str }, []);
-    const c = new ObjectRuntype(undefined, { t: new ConstRuntype(undefined, "c"), c: num }, []);
+  it("uses the literals after the members for a kind", () => {
+    const a = new ConstRuntype(undefined, "a");
+    const c = new ConstRuntype(undefined, "c");
+    // number is member 2, a string is the runtype after the members
     const U = buildParserFromRuntype(
-      // nullish is member 2, an object is the runtype after the members
-      new AnyOfRuntype(undefined, [a, c, nul], "2,,,,,,3", [
-        new AnyOfDiscriminatedRuntype(undefined, [a, c], "t", { a, c }),
-      ]),
+      new AnyOfRuntype(undefined, [a, c, num], ",,2,3", [new AnyOfConstsRuntype(undefined, ["a", "c"])]),
       "U",
       false,
     );
-    expect(U.parse({ t: "a", a: "x", z: 1 })).toEqual({ t: "a", a: "x" });
-    expect(U.parse(null)).toBe(null);
-    expect(U.validate({ t: "c", a: "x" })).toBe(false);
+    expect(U.parse("a")).toBe("a");
+    expect(U.parse(1)).toBe(1);
+    expect(U.validate("b")).toBe(false);
+    expect(U.validate(null)).toBe(false);
   });
 
   it("sends an array or a function with the prototype of a Date to the Date member", () => {

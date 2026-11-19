@@ -2625,7 +2625,8 @@ mod tests {
 
     // A union whose members accept different kinds of value is printed with a table: for each kind
     // (nullish, boolean, number, string, bigint, array, object, function), the index of the runtype
-    // that checks it. An index after the members points to the last argument.
+    // that checks it. An index after the members points to the last argument. A union has no table
+    // when a kind needs a union of several members.
     #[test]
     fn union_table_recursive_or_null() {
         insta::assert_snapshot!(print_cgen(
@@ -2788,7 +2789,7 @@ mod tests {
     }
 
     #[test]
-    fn union_table_with_discriminated_objects() {
+    fn union_without_table_discriminated_objects() {
         insta::assert_snapshot!(print_cgen(
             r#"
             type A = { t: "a"; a: string };
@@ -2817,14 +2818,6 @@ mod tests {
             direct_hoist_7,
             direct_hoist_8,
             direct_hoist_9
-        ], "0,,,,,,3", [
-            new AnyOfDiscriminatedRuntype(undefined, [
-                direct_hoist_8,
-                direct_hoist_9
-            ], "t", {
-                "a": direct_hoist_8,
-                "b": direct_hoist_9
-            })
         ]);
         const namedRuntypes = {
             "A": direct_hoist_3,
